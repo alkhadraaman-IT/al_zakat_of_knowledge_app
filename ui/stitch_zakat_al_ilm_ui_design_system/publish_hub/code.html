@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+
+<html dir="rtl" lang="ar"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>انشر صدقتك العلمية</title>
+<!-- Google Fonts: Cairo & Tajawal -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&amp;family=Tajawal:wght@400;500;700;800&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS CDN -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              emerald: '#00D68F',
+              emeraldDark: '#00B77A',
+              cardDark: '#0D1627',
+              modalDark: '#0B1323',
+              inputDark: '#121D32',
+              borderTeal: '#00d68f66',
+              borderGlow: '#00d68f',
+              muted: '#7E8B9F',
+            }
+          },
+          fontFamily: {
+            sans: ['Tajawal', 'Cairo', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+<!-- BEGIN: Custom CSS Styling -->
+<style data-purpose="custom-shadows-and-glows">
+    .neon-border-card {
+      border: 1px solid rgba(0, 214, 143, 0.45);
+      box-shadow: 0 0 16px -2px rgba(0, 214, 143, 0.2), inset 0 0 14px -5px rgba(0, 214, 143, 0.12);
+      transition: all 0.25s ease-in-out;
+    }
+    .neon-border-card:hover, .neon-border-card:active {
+      border-color: #00D68F;
+      box-shadow: 0 0 22px 0 rgba(0, 214, 143, 0.38), inset 0 0 18px -2px rgba(0, 214, 143, 0.22);
+    }
+    .neon-btn-glow {
+      box-shadow: 0 4px 24px 0 rgba(0, 214, 143, 0.42);
+    }
+    .neon-circle-glow {
+      box-shadow: 0 0 35px 2px rgba(0, 214, 143, 0.45);
+    }
+    /* Smooth transitions between mobile views */
+    .view-step {
+      display: none;
+      animation: fadeIn 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    .view-step.active {
+      display: flex;
+    }
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(14px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    /* Hide scrollbars on mobile simulator */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+<!-- END: Custom CSS Styling -->
+</head>
+<body class="bg-slate-900 text-white font-sans antialiased min-h-screen flex items-center justify-center p-0 sm:p-4 select-none">
+<!-- BEGIN: MobileDeviceFrame -->
+<div class="relative w-full max-w-[420px] h-[100dvh] max-h-[880px] bg-[#5a6575] overflow-hidden flex flex-col justify-end shadow-2xl sm:rounded-[36px] sm:border-[8px] sm:border-slate-800" data-purpose="mobile-viewport-container">
+<!-- Background Simulated App (Blurred/Dimmed like in reference images) -->
+<div class="absolute inset-0 z-0 bg-[#5b6678] overflow-hidden filter blur-sm opacity-90 pointer-events-none">
+<!-- Simulated Top Navigation / Header -->
+<div class="pt-6 px-5 flex items-center justify-between">
+<div class="w-11 h-11 rounded-2xl bg-emerald-400/40 border border-emerald-400/50 flex items-center justify-center">
+<div class="w-6 h-6 rounded-full border-2 border-white/70"></div>
+</div>
+<div class="flex flex-col items-center">
+<div class="w-24 h-4 bg-emerald-100/60 rounded-full mb-1.5"></div>
+<div class="w-16 h-2.5 bg-slate-300/40 rounded-full"></div>
+</div>
+<div class="w-11 h-11 rounded-2xl bg-emerald-400/40 border border-emerald-400/50 flex items-center justify-center">
+<div class="w-5 h-5 rounded-md border-2 border-white/70"></div>
+</div>
+</div>
+<!-- Gray backdrop body silhouette -->
+<div class="w-full h-full bg-gradient-to-b from-[#5c687a] via-[#515c6d] to-[#454f5e] opacity-80"></div>
+</div>
+<!-- Backdrop Dimmer Overlay -->
+<div class="absolute inset-0 z-10 bg-black/40 backdrop-blur-[2px]"></div>
+<!-- BEGIN: BottomSheetModal -->
+<main class="relative z-20 w-full bg-[#0B1323] rounded-t-[34px] border-t border-slate-700/40 pt-3 pb-8 px-5 flex flex-col max-h-[85vh] shadow-[0_-12px_40px_rgba(0,0,0,0.7)] overflow-y-auto no-scrollbar" data-purpose="slide-up-modal">
+<!-- Drag Handle Indicator -->
+<div class="w-12 h-1.5 bg-[#233149] rounded-full mx-auto mb-3 cursor-grab"></div>
+<!-- State Tab Switcher (Floating Quick-Demo Switcher) -->
+<div class="mb-4 flex items-center justify-center gap-1.5 bg-[#121c2e] p-1 rounded-xl text-[11px] font-medium text-slate-400 border border-slate-800">
+<button class="px-2.5 py-1 rounded-lg text-emerald-400 font-bold bg-[#1b2840] transition" id="tab-step-categories" onclick="switchView('step-categories')">١. اختيار المحتوى</button>
+<button class="px-2.5 py-1 rounded-lg text-slate-400 hover:text-white transition" id="tab-step-form" onclick="switchView('step-form')">٢. نموذج المحاضرة</button>
+<button class="px-2.5 py-1 rounded-lg text-slate-400 hover:text-white transition" id="tab-step-success" onclick="switchView('step-success')">٣. تم النشر</button>
+</div>
+<!-- ============================================== -->
+<!-- VIEW 1: Categories Selection (Image 17)        -->
+<!-- ============================================== -->
+<section class="view-step active flex-col w-full" data-purpose="content-type-selector" id="step-categories">
+<!-- Header Bar -->
+<header class="relative flex items-center justify-between mb-2">
+<!-- Close button -->
+<button aria-label="إغلاق" class="p-1.5 text-slate-400 hover:text-white transition rounded-full" type="button">
+<svg class="w-6 h-6 stroke-[2.2]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+<!-- Modal Main Title -->
+<h1 class="text-xl font-extrabold text-white tracking-wide text-center">انشر صدقتك العلمية</h1>
+<!-- Placeholder to balance flex header -->
+<div class="w-6"></div>
+</header>
+<!-- Subtitle -->
+<p class="text-right text-[#8896AB] text-sm font-medium mb-5 px-1">اختر نوع المحتوى الذي تريد نشره</p>
+<!-- Selection Cards List -->
+<div class="flex flex-col gap-3.5 mb-2">
+<!-- Card 1: محاضرة حضورية -->
+<article class="neon-border-card bg-[#0D1627] rounded-2xl p-4 flex items-center justify-between cursor-pointer active:scale-[0.99]" onclick="switchView('step-form')">
+<!-- Arrow indicator Left side (RTL left) -->
+<div class="text-slate-400 text-xl font-bold pr-1">
+<svg class="w-5 h-5 text-slate-400 rotate-180" fill="none" stroke="currentColor" stroke-width="2.5" viewbox="0 0 24 24">
+<path d="M9 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<!-- Content info and icon Right side -->
+<div class="flex items-center gap-3.5 text-right">
+<div>
+<h2 class="text-white text-base font-bold mb-0.5">محاضرة حضورية</h2>
+<p class="text-[#7E8B9F] text-xs">حدد المكان والحد الأدنى والأقصى للمقاعد</p>
+</div>
+<!-- Users Group Icon -->
+<div class="w-12 h-12 rounded-xl bg-[#0F262F] flex items-center justify-center shrink-0 border border-emerald-500/20 text-[#00D68F]">
+<svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24">
+<path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+</div>
+</article>
+<!-- Card 2: مقال -->
+<article class="neon-border-card bg-[#0D1627] rounded-2xl p-4 flex items-center justify-between cursor-pointer active:scale-[0.99]" onclick="switchView('step-form')">
+<!-- Arrow indicator Left side -->
+<div class="text-slate-400 text-xl font-bold pr-1">
+<svg class="w-5 h-5 text-slate-400 rotate-180" fill="none" stroke="currentColor" stroke-width="2.5" viewbox="0 0 24 24">
+<path d="M9 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<!-- Content info and icon Right side -->
+<div class="flex items-center gap-3.5 text-right">
+<div>
+<h2 class="text-white text-base font-bold mb-0.5">مقال</h2>
+<p class="text-[#7E8B9F] text-xs">شارك علمك كصدقة جارية</p>
+</div>
+<!-- Document Icon -->
+<div class="w-12 h-12 rounded-xl bg-[#0F262F] flex items-center justify-center shrink-0 border border-emerald-500/20 text-[#00D68F]">
+<svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24">
+<path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+</div>
+</article>
+<!-- Card 3: مادة دراسية -->
+<article class="neon-border-card bg-[#0D1627] rounded-2xl p-4 flex items-center justify-between cursor-pointer active:scale-[0.99]" onclick="switchView('step-form')">
+<!-- Arrow indicator Left side -->
+<div class="text-slate-400 text-xl font-bold pr-1">
+<svg class="w-5 h-5 text-slate-400 rotate-180" fill="none" stroke="currentColor" stroke-width="2.5" viewbox="0 0 24 24">
+<path d="M9 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<!-- Content info and icon Right side -->
+<div class="flex items-center gap-3.5 text-right">
+<div>
+<h2 class="text-white text-base font-bold mb-0.5">مادة دراسية</h2>
+<p class="text-[#7E8B9F] text-xs">أدوات وكتب مجانية للمستفيدين</p>
+</div>
+<!-- 3D Box Cube Icon -->
+<div class="w-12 h-12 rounded-xl bg-[#0F262F] flex items-center justify-center shrink-0 border border-emerald-500/20 text-[#00D68F]">
+<svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24">
+<path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+</div>
+</article>
+</div>
+</section>
+<!-- END: View 1 -->
+<!-- ============================================== -->
+<!-- VIEW 2: Lecture Form State (Image 15)          -->
+<!-- ============================================== -->
+<section class="view-step flex-col w-full" data-purpose="lecture-details-form" id="step-form">
+<!-- Form Header with Back Arrow and Close Button -->
+<header class="relative flex items-center justify-between mb-4">
+<!-- Close button (Left in RTL) -->
+<button aria-label="إغلاق" class="p-1 text-slate-400 hover:text-white transition" onclick="switchView('step-categories')" type="button">
+<svg class="w-6 h-6 stroke-[2.2]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+<!-- Modal Title -->
+<h1 class="text-lg font-extrabold text-white tracking-wide text-center">انشر صدقتك العلمية</h1>
+<!-- Back Arrow (Right in RTL) -->
+<button aria-label="رجوع" class="p-1 text-slate-400 hover:text-white transition" onclick="switchView('step-categories')" type="button">
+<svg class="w-6 h-6 rotate-180" fill="none" stroke="currentColor" stroke-width="2.5" viewbox="0 0 24 24">
+<path d="M9 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+</header>
+<!-- Form Elements -->
+<form class="flex flex-col gap-3.5" onsubmit="event.preventDefault(); switchView('step-success');">
+<!-- Field 1: Title / Lecture Type -->
+<div class="flex flex-col text-right">
+<label class="text-[#8B98AD] text-xs font-medium mb-1.5 px-0.5">محاضرة حضورية</label>
+<div class="relative">
+<input class="w-full bg-[#111A2B] text-white text-sm rounded-xl border border-slate-700/60 focus:border-[#00D68F] focus:ring-1 focus:ring-[#00D68F] py-3.5 px-3.5 placeholder:text-slate-600 outline-none transition" placeholder="عنوان المحاضرة" type="text"/>
+</div>
+</div>
+<!-- Field 2: Location -->
+<div class="flex flex-col text-right">
+<label class="text-[#8B98AD] text-xs font-medium mb-1.5 px-0.5">الموقع</label>
+<div class="relative">
+<input class="w-full bg-[#111A2B] text-white text-sm rounded-xl border border-slate-700/60 focus:border-[#00D68F] focus:ring-1 focus:ring-[#00D68F] py-3.5 pr-4 pl-10 placeholder:text-slate-600 outline-none transition" placeholder="اختر مكان إقامة المحاضرة" type="text"/>
+<!-- Map Pin Icon -->
+<div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24">
+<path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" stroke-linecap="round" stroke-linejoin="round"></path>
+<path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+</div>
+</div>
+<!-- Field 3: Time / Date -->
+<div class="flex flex-col text-right">
+<label class="text-[#8B98AD] text-xs font-medium mb-1.5 px-0.5">التوقيت</label>
+<div class="relative">
+<input class="w-full bg-[#111A2B] text-white text-sm rounded-xl border border-slate-700/60 focus:border-[#00D68F] focus:ring-1 focus:ring-[#00D68F] py-3.5 pr-4 pl-10 placeholder:text-slate-600 outline-none transition" placeholder="حدد تاريخ ووقت المحاضرة" type="text"/>
+<!-- Calendar Icon -->
+<div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24">
+<path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+</div>
+</div>
+<!-- Fields 4 & 5: Minimum & Maximum Seats -->
+<div class="grid grid-cols-2 gap-3 text-right">
+<div>
+<label class="text-[#8B98AD] text-xs font-medium mb-1.5 block px-0.5">الحد الأدنى للمقاعد</label>
+<input class="w-full bg-[#111A2B] text-white text-sm rounded-xl border border-slate-700/60 focus:border-[#00D68F] focus:ring-1 focus:ring-[#00D68F] py-3 px-3 placeholder:text-slate-600 outline-none transition text-center" placeholder="مثال: 10" type="number"/>
+</div>
+<div>
+<label class="text-[#8B98AD] text-xs font-medium mb-1.5 block px-0.5">الحد الأقصى للمقاعد</label>
+<input class="w-full bg-[#111A2B] text-white text-sm rounded-xl border border-slate-700/60 focus:border-[#00D68F] focus:ring-1 focus:ring-[#00D68F] py-3 px-3 placeholder:text-slate-600 outline-none transition text-center" placeholder="مثال: 50" type="number"/>
+</div>
+</div>
+<!-- Submit CTA Button -->
+<button class="mt-3.5 w-full bg-[#00D68F] hover:bg-[#00c583] text-[#0A1626] font-extrabold text-base py-3.5 rounded-2xl neon-btn-glow transition active:scale-[0.98] flex items-center justify-center" type="submit">
+            انشر الآن
+          </button>
+</form>
+</section>
+<!-- END: View 2 -->
+<!-- ============================================== -->
+<!-- VIEW 3: Success Published State (Image 14)     -->
+<!-- ============================================== -->
+<section class="view-step flex-col items-center justify-center text-center w-full py-4" data-purpose="success-confirmation" id="step-success">
+<!-- Top bar with Close button -->
+<header class="w-full flex items-center justify-between mb-8">
+<!-- Close button -->
+<button aria-label="إغلاق" class="p-1 text-slate-400 hover:text-white transition" onclick="switchView('step-categories')" type="button">
+<svg class="w-6 h-6 stroke-[2.2]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+<h1 class="text-lg font-extrabold text-white tracking-wide">انشر صدقتك العلمية</h1>
+<!-- Balance spacing -->
+<div class="w-6"></div>
+</header>
+<!-- Green Glowing Checkmark Circle -->
+<div class="my-6">
+<div class="w-24 h-24 rounded-full bg-[#00D68F] flex items-center justify-center neon-circle-glow mx-auto transition-transform hover:scale-105">
+<svg class="w-12 h-12 text-[#0A1626] stroke-[3]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+</div>
+<!-- Success Message -->
+<h2 class="text-white text-xl font-black mb-8 tracking-wide">صدقة جارية بعلمك</h2>
+<!-- Home CTA Button -->
+<button class="w-40 bg-[#00D68F] hover:bg-[#00c583] text-[#0A1626] font-bold text-sm py-3 rounded-2xl neon-btn-glow transition active:scale-[0.98]" onclick="switchView('step-categories')" type="button">
+          الرئيسية
+        </button>
+</section>
+<!-- END: View 3 -->
+</main>
+<!-- END: BottomSheetModal -->
+</div>
+<!-- END: MobileDeviceFrame -->
+<!-- BEGIN: Interactive Switching Script -->
+<script data-purpose="view-state-controller">
+    function switchView(viewId) {
+      // Hide all steps
+      const steps = ['step-categories', 'step-form', 'step-success'];
+      steps.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.remove('active');
+        
+        // Reset tab styling
+        const tab = document.getElementById('tab-' + id);
+        if (tab) {
+          tab.classList.remove('text-emerald-400', 'font-bold', 'bg-[#1b2840]');
+          tab.classList.add('text-slate-400');
+        }
+      });
+
+      // Activate selected step
+      const target = document.getElementById(viewId);
+      if (target) {
+        target.classList.add('active');
+      }
+
+      // Highlight active tab
+      const activeTab = document.getElementById('tab-' + viewId);
+      if (activeTab) {
+        activeTab.classList.remove('text-slate-400');
+        activeTab.classList.add('text-emerald-400', 'font-bold', 'bg-[#1b2840]');
+      }
+    }
+  </script>
+<!-- END: Interactive Switching Script -->
+</body></html>

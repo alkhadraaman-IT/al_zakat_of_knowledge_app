@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+
+<html dir="rtl" lang="ar"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>زكاة العلم - صدقة جارية بعلمك</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS CDN -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Config -->
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              emerald: '#00D68F',
+              emeraldHover: '#00bd7e',
+              emeraldDark: '#0b392b',
+              navyDark: '#080E1A',
+              cardBg: '#101B30',
+              secondaryBg: '#16233F',
+              borderGlow: 'rgba(0, 214, 143, 0.35)',
+              textMuted: '#94A3B8'
+            }
+          },
+          fontFamily: {
+            tajawal: ['Tajawal', 'sans-serif'],
+            mono: ['IBM Plex Mono', 'monospace']
+          },
+          boxShadow: {
+            'glow-emerald': '0 0 25px rgba(0, 214, 143, 0.45)',
+            'glow-emerald-sm': '0 0 14px rgba(0, 214, 143, 0.25)',
+            'card-border': '0 0 15px rgba(0, 214, 143, 0.12)'
+          }
+        }
+      }
+    }
+  </script>
+<!-- BEGIN: Custom Layout & Utilities Style -->
+<style data-purpose="custom-styling">
+    body {
+      font-family: 'Tajawal', sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      background-color: #070d18;
+    }
+    
+    /* Subtle grid map pattern representation */
+    .map-grid-pattern {
+      background-color: #17273d;
+      background-image: 
+        linear-gradient(to right, rgba(0, 214, 143, 0.08) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(0, 214, 143, 0.08) 1px, transparent 1px);
+      background-size: 32px 32px;
+    }
+
+    /* Glow ring outline */
+    .glow-border {
+      border: 1.5px solid rgba(0, 214, 143, 0.38);
+      box-shadow: 0 0 18px rgba(0, 214, 143, 0.12);
+    }
+    
+    /* Navigation Bar Backdrop blur */
+    .nav-dock-blur {
+      background: rgba(14, 23, 42, 0.92);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+
+    /* Hide scrollbars for clean mobile feel */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+<!-- END: Custom Layout & Utilities Style -->
+</head>
+<body class="text-white min-h-screen flex justify-center items-start antialiased selection:bg-brand-emerald selection:text-black">
+<!-- Mobile Viewport Wrapper: Simulated Mobile Device View (Max-w ~420px) -->
+<div class="w-full max-w-[420px] min-h-screen bg-[#080F1D] flex flex-col relative pb-32 overflow-x-hidden shadow-2xl">
+<!-- BEGIN: TopHeader -->
+<header class="px-5 pt-6 pb-4 flex items-center justify-between z-20">
+<!-- App Brand Logo & Title -->
+<div class="flex items-center gap-2.5">
+<!-- Logo Icon with Academic Cap -->
+<div class="w-10 h-10 rounded-2xl bg-brand-emerald flex items-center justify-center shadow-[0_0_15px_rgba(0,214,143,0.4)] text-black">
+<svg class="w-6 h-6 stroke-black fill-none stroke-[2.2]" stroke-linecap="round" stroke-linejoin="round" viewbox="0 0 24 24">
+<path d="M22 10v6M2 10l10-5 10 5-10 5z"></path>
+<path d="M6 12v5c3 3 9 3 12 0v-5"></path>
+</svg>
+</div>
+<!-- App Title Text -->
+<div class="flex flex-col">
+<h1 class="font-extrabold text-[19px] leading-tight tracking-tight text-white">زكاة العلم</h1>
+<span class="text-[11px] font-medium text-slate-400">صدقة جارية بعلمك</span>
+</div>
+</div>
+<!-- Action Buttons: Notification & User Avatar Profile -->
+<div class="flex items-center gap-3">
+<!-- Notification Bell with Notification Glow Dot -->
+<button aria-label="الإشعارات" class="w-10 h-10 rounded-2xl bg-brand-secondaryBg/80 border border-slate-700/60 flex items-center justify-center relative hover:bg-slate-700/50 transition-colors" type="button">
+<span class="absolute top-2 left-2 w-2.5 h-2.5 rounded-full bg-brand-emerald shadow-[0_0_8px_#00D68F] ring-2 ring-[#080F1D]"></span>
+<svg class="w-5 h-5 text-slate-300 stroke-[2]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+<!-- User Profile Avatar Badge (Arabic Character 'ع') -->
+<button aria-label="الملف الشخصي" class="w-10 h-10 rounded-2xl bg-brand-emerald flex items-center justify-center text-black font-black text-xl shadow-[0_0_12px_rgba(0,214,143,0.35)] active:scale-95 transition-transform" type="button">
+          ع
+        </button>
+</div>
+</header>
+<!-- END: TopHeader -->
+<!-- BEGIN: GreetingSection -->
+<section class="px-5 pt-3 pb-4">
+<p class="text-slate-400 text-sm font-medium">السلام عليك،</p>
+<div class="flex items-center gap-2 mt-0.5">
+<h2 class="text-2xl font-black tracking-tight text-white">أبا عبدالله</h2>
+<span class="text-2xl animate-pulse">👋</span>
+</div>
+</section>
+<!-- END: GreetingSection -->
+<!-- BEGIN: SegmentedCategoryBar -->
+<!-- Horizontal tabs toggle for feed content -->
+<div class="px-5 pb-5">
+<div class="flex items-center gap-2 p-1.5 rounded-2xl bg-[#0E1729] border border-slate-800/80">
+<!-- Tab: محاضرات (Active) -->
+<button class="flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-brand-emerald text-black font-bold text-sm shadow-[0_0_14px_rgba(0,214,143,0.35)] transition-all" type="button">
+<svg class="w-4 h-4 stroke-[2.4]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span>محاضرات</span>
+</button>
+<!-- Tab: مقالات -->
+<button class="flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-slate-400 hover:text-slate-200 font-bold text-sm transition-colors" type="button">
+<svg class="w-4 h-4 stroke-[2]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span>مقالات</span>
+</button>
+<!-- Tab: أدوات دراسية -->
+<button class="flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-slate-400 hover:text-slate-200 font-bold text-sm transition-colors" type="button">
+<svg class="w-4 h-4 stroke-[2]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" stroke-linecap="round" stroke-linejoin="round"></path>
+<path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="whitespace-nowrap">أدوات دراسية</span>
+</button>
+</div>
+</div>
+<!-- END: SegmentedCategoryBar -->
+<!-- BEGIN: MainContentCardsFeed -->
+<main class="px-5 space-y-5 flex-1">
+<!-- Primary Card: أصول الفقه العظيم (Interactive Lecture Card) -->
+<article class="rounded-3xl bg-brand-cardBg glow-border overflow-hidden flex flex-col transition-transform active:scale-[0.99]" data-purpose="lecture-card">
+<!-- Top Half: Map Preview Area with Pin -->
+<div class="relative h-36 w-full map-grid-pattern flex items-center justify-center overflow-hidden border-b border-emerald-500/20">
+<!-- Radial Ambient Map Glow -->
+<div class="absolute inset-0 bg-radial from-emerald-500/10 via-transparent to-transparent pointer-events-none"></div>
+<!-- Central Map Pin Marker with Radar Ring Effect -->
+<div class="relative flex items-center justify-center">
+<span class="absolute inline-flex h-14 w-14 rounded-full bg-brand-emerald opacity-25 animate-ping"></span>
+<div class="w-11 h-11 rounded-full bg-brand-emerald text-black flex items-center justify-center shadow-[0_0_18px_#00D68F] z-10">
+<svg class="w-5 h-5 fill-current" viewbox="0 0 24 24">
+<path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"></path>
+</svg>
+</div>
+</div>
+<!-- Floating Pill on Bottom Right of the Map -->
+<div class="absolute bottom-3 left-4 bg-brand-navyDark/90 backdrop-blur-md border border-slate-700/60 rounded-full px-3.5 py-1 text-xs font-semibold text-slate-200 flex items-center gap-1.5 shadow-md">
+<span>مسجد الراجحي — الرياض</span>
+</div>
+</div>
+<!-- Lower Half: Details, Lecturer, and Actions -->
+<div class="p-5 flex flex-col gap-4">
+<!-- Header of content: Title + Bookmark Icon -->
+<div class="flex items-start justify-between gap-3">
+<h3 class="text-[17px] font-black leading-snug text-white flex-1">
+              أصول الفقه العظيم — المجلس الثالث
+            </h3>
+<!-- Bookmark Button -->
+<button aria-label="حفظ في المفضلة" class="w-9 h-9 -mt-1 rounded-xl bg-brand-secondaryBg border border-emerald-500/20 flex items-center justify-center text-brand-emerald hover:bg-emerald-500/10 transition-colors shrink-0" type="button">
+<svg class="w-5 h-5 fill-current" viewbox="0 0 24 24">
+<path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"></path>
+</svg>
+</button>
+</div>
+<!-- Lecturer Profile Row -->
+<div class="flex items-center gap-2.5">
+<div class="w-7 h-7 rounded-full bg-brand-emerald/20 border border-brand-emerald/40 text-brand-emerald flex items-center justify-center text-xs font-bold">
+              د
+            </div>
+<span class="text-sm font-bold text-slate-200">د. سعد العتيبي</span>
+</div>
+<!-- Metadata info: Date, Time & Location -->
+<div class="space-y-1.5 text-xs text-slate-300">
+<!-- Date & Time -->
+<div class="flex items-center gap-2">
+<svg class="w-4 h-4 text-slate-400 stroke-[2]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span>السبت، ١٠ أكتوبر</span>
+<span class="text-slate-500">•</span>
+<svg class="w-4 h-4 text-slate-400 stroke-[2]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span>بعد المغرب</span>
+</div>
+<!-- Location -->
+<div class="flex items-center gap-2 text-slate-400">
+<svg class="w-4 h-4 text-slate-400 stroke-[2]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" stroke-linecap="round" stroke-linejoin="round"></path>
+<path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span>مسجد الراجحي — الرياض</span>
+</div>
+</div>
+<!-- Capacity Bar Section -->
+<div class="mt-1 space-y-1.5">
+<div class="flex justify-between items-center text-xs font-semibold">
+<span class="text-brand-emerald font-mono">60%</span>
+<span class="text-slate-300 font-mono">18/30</span>
+</div>
+<!-- Progress Bar Track -->
+<div class="w-full h-2 rounded-full bg-slate-800 overflow-hidden flex flex-row-reverse">
+<div class="h-full bg-brand-emerald rounded-full transition-all duration-500 shadow-[0_0_10px_#00D68F]" style="width: 60%"></div>
+</div>
+</div>
+<!-- Primary CTA Button -->
+<button class="w-full py-3.5 mt-2 rounded-2xl bg-brand-emerald hover:bg-brand-emeraldHover active:scale-[0.98] text-black font-extrabold text-base shadow-[0_0_18px_rgba(0,214,143,0.35)] transition-all flex items-center justify-center gap-2" type="button">
+<span>احجز مقعدك</span>
+</button>
+</div>
+</article>
+<!-- Secondary Feed Card Peek Preview (Next item in list) -->
+<article class="rounded-3xl bg-brand-cardBg glow-border overflow-hidden opacity-75" data-purpose="secondary-card-preview">
+<div class="h-20 w-full map-grid-pattern relative flex items-center justify-center">
+<div class="w-8 h-8 rounded-full bg-brand-emerald text-black flex items-center justify-center shadow-[0_0_12px_#00D68F]">
+<svg class="w-4 h-4 fill-current" viewbox="0 0 24 24">
+<path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"></path>
+</svg>
+</div>
+</div>
+</article>
+</main>
+<!-- END: MainContentCardsFeed -->
+<!-- BEGIN: FloatingGlowingBottomNavigationDock -->
+<!-- iOS / Floating Dynamic Bottom Dock with 3 Controls -->
+<nav aria-label="شريط التنقل السفلي" class="fixed bottom-6 left-1/2 -translate-x-1/2 w-[86%] max-w-[350px] z-50">
+<div class="relative nav-dock-blur border border-emerald-500/30 rounded-[30px] px-6 py-2.5 flex items-center justify-between shadow-[0_12px_35px_rgba(0,0,0,0.6),0_0_20px_rgba(0,214,143,0.15)]">
+<!-- Tab: الرئيسية (Active, on Right for RTL) -->
+<button class="flex flex-col items-center gap-1 group focus:outline-none" type="button">
+<div class="w-10 h-10 rounded-2xl border border-brand-emerald/60 bg-emerald-950/40 flex items-center justify-center text-brand-emerald shadow-[0_0_10px_rgba(0,214,143,0.3)] transition-transform group-hover:scale-105">
+<svg class="w-5 h-5 fill-none stroke-[2.2]" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<span class="text-[11px] font-bold text-brand-emerald">الرئيسية</span>
+</button>
+<!-- Center Action Button: Plus Floating Glowing Dome Button -->
+<div class="relative -top-5 flex flex-col items-center">
+<button aria-label="إضافة درس أو محتوى جديد" class="w-15 h-15 p-3.5 rounded-full bg-brand-emerald text-black shadow-glow-emerald active:scale-95 hover:bg-brand-emeraldHover transition-all flex items-center justify-center ring-4 ring-[#080F1D]" type="button">
+<svg class="w-8 h-8 stroke-black stroke-[3]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M12 4v16m8-8H4" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+</div>
+<!-- Tab: المفضلة (Saved items, on Left for RTL) -->
+<button class="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-200 transition-colors focus:outline-none group" type="button">
+<div class="w-10 h-10 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-105">
+<svg class="w-5 h-5 stroke-[2]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<span class="text-[11px] font-medium text-slate-400">المفضلة</span>
+</button>
+</div>
+</nav>
+<!-- END: FloatingGlowingBottomNavigationDock -->
+</div>
+</body></html>

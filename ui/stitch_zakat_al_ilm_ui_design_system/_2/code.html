@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+
+<html class="dark" dir="rtl" lang="ar"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_stack" name="shell-type"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&amp;family=Space+Mono&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{width:100vw;margin:0;padding:0;background-color:#0b1326;color:#dae2fd;}body{overscroll-behavior:none;font-family:'IBM Plex Sans Arabic',sans-serif;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{colors:{"tertiary-container":"#5cd09e","surface-bright":"#31394d","on-secondary-container":"#00311f","surface-dim":"#0b1326","inverse-surface":"#dae2fd","secondary":"#4edea3","error":"#ffb4ab","inverse-on-surface":"#283044","primary":"#44f3a9","on-background":"#dae2fd","surface-container-high":"#222a3d","secondary-fixed":"#6ffbbe","on-primary-fixed":"#002112","on-error":"#690005","inverse-primary":"#006c46","surface-container-low":"#131b2e","on-tertiary-container":"#00563b","on-secondary-fixed":"#002113","on-secondary-fixed-variant":"#005236","tertiary":"#79edb9","on-tertiary":"#003825","surface-container-highest":"#2d3449","tertiary-fixed":"#85f8c4","outline":"#859589","surface-variant":"#2d3449","surface-tint":"#27e199","primary-fixed-dim":"#27e199","tertiary-fixed-dim":"#68dba9","primary-fixed":"#54feb3","error-container":"#93000a","on-tertiary-fixed":"#002114","background":"#0b1326","on-primary-fixed-variant":"#005234","on-primary":"#003822","surface-container-lowest":"#060e20","on-surface":"#dae2fd","surface-container":"#171f33","surface":"#0b1326","on-secondary":"#003824","on-tertiary-fixed-variant":"#005137","on-primary-container":"#005737","on-surface-variant":"#bacbbe","on-error-container":"#ffdad6","secondary-container":"#00a572","secondary-fixed-dim":"#4edea3","primary-container":"#00d68f","outline-variant":"#3c4a41"},borderRadius:{DEFAULT:"0.25rem",lg:"0.5rem",xl:"0.75rem",full:"9999px"},spacing:{"space-md":"1rem","space-lg":"1.5rem",gutter:"1rem","space-sm":"0.5rem","space-xl":"2rem","space-xs":"0.25rem",margin:"1.25rem"},fontFamily:{"headline-md":["IBM Plex Sans Arabic","sans-serif"],"display-lg":["IBM Plex Sans Arabic","sans-serif"],"body-md":["IBM Plex Sans Arabic","sans-serif"],"body-lg":["IBM Plex Sans Arabic","sans-serif"],"mono-sm":["Space Mono","monospace"],"label-md":["IBM Plex Sans Arabic","sans-serif"],"title-sm":["IBM Plex Sans Arabic","sans-serif"],"headline-lg":["IBM Plex Sans Arabic","sans-serif"]},fontSize:{"headline-md":["20px",{lineHeight:"28px",fontWeight:"600"}],"display-lg":["34px",{lineHeight:"44px",fontWeight:"700"}],"body-md":["14px",{lineHeight:"22px",fontWeight:"400"}],"body-lg":["16px",{lineHeight:"26px",fontWeight:"400"}],"mono-sm":["12px",{lineHeight:"16px",fontWeight:"400"}],"label-md":["12px",{lineHeight:"18px",fontWeight:"500"}],"title-sm":["16px",{lineHeight:"24px",fontWeight:"600"}],"headline-lg":["26px",{lineHeight:"34px",fontWeight:"700"}]}}}};</script><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head><body class="bg-background font-body-md text-on-surface antialiased flex flex-col min-h-screen"><header class="fixed top-0 inset-x-0 z-50 bg-surface-container-low/80 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] pt-safe"><div class="h-16 px-margin flex items-center justify-between gap-space-sm"><div class="flex items-center gap-space-sm"><button class="w-11 h-11 -mr-2 flex items-center justify-center rounded-full text-on-surface-variant hover:text-on-surface transition-colors" onclick="history.back()"><span class="material-symbols-outlined text-[24px]">arrow_forward</span></button><h1 class="font-title-sm text-title-sm text-on-surface truncate">Quick Search</h1></div><div class="flex items-center gap-space-xs"><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="flex-1 flex flex-col relative w-full px-margin pt-16 pb-safe bg-background"><div class="flex flex-col w-full pb-32">
+<!-- Interactive Search Header Section (Container Type 1 Inspiration) -->
+<section class="flex flex-col gap-space-sm pt-space-xs mb-space-md">
+<div class="relative w-full rounded-xl bg-surface-container-low p-space-xs shadow-[0_0_15px_rgba(0,214,143,0.18),0_4px_20px_rgba(0,0,0,0.5)]">
+<div class="flex items-center w-full px-space-sm py-2 bg-surface-container-lowest/60 rounded-lg">
+<span class="material-symbols-outlined text-primary text-[22px] ml-space-sm shrink-0">search</span>
+<input aria-label="البحث الشامل" class="w-full bg-transparent text-on-surface placeholder:text-outline font-body-md text-body-md focus:outline-none text-right" id="search-input" placeholder="ابحث عن محاضرة، كتاب، مقال، أو شيخ..." type="search" value="أصول الفقه"/>
+<button aria-label="مسح نص البحث" class="w-7 h-7 flex items-center justify-center rounded-full bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-colors mr-space-xs shrink-0" id="clear-search-btn" type="button">
+<span class="material-symbols-outlined text-[16px]">close</span>
+</button>
+</div>
+</div>
+<!-- Filter Categories (Horizontal Scroll Pills) -->
+<div class="flex items-center gap-space-xs overflow-x-auto no-scrollbar py-space-xs -mx-margin px-margin">
+<!-- Active Chip: الكل -->
+<button class="filter-chip active shrink-0 flex items-center gap-space-xs px-space-md py-2 rounded-full bg-primary-container text-on-primary-container font-label-md text-label-md shadow-[0_0_12px_rgba(0,214,143,0.4)]" type="button">
+<span class="material-symbols-outlined text-[18px]">apps</span>
+<span>الكل</span>
+</button>
+<!-- Chip: المحاضرات الحضورية -->
+<button class="filter-chip shrink-0 flex items-center gap-space-xs px-space-md py-2 rounded-full bg-surface-container text-on-surface-variant hover:text-on-surface font-label-md text-label-md transition-all" type="button">
+<span class="material-symbols-outlined text-[18px]">mosque</span>
+<span>المحاضرات الحضورية</span>
+</button>
+<!-- Chip: المقالات النافعة -->
+<button class="filter-chip shrink-0 flex items-center gap-space-xs px-space-md py-2 rounded-full bg-surface-container text-on-surface-variant hover:text-on-surface font-label-md text-label-md transition-all" type="button">
+<span class="material-symbols-outlined text-[18px]">menu_book</span>
+<span>المقالات النافعة</span>
+</button>
+<!-- Chip: الأدوات الدراسية -->
+<button class="filter-chip shrink-0 flex items-center gap-space-xs px-space-md py-2 rounded-full bg-surface-container text-on-surface-variant hover:text-on-surface font-label-md text-label-md transition-all" type="button">
+<span class="material-symbols-outlined text-[18px]">inventory_2</span>
+<span>الأدوات الدراسية</span>
+</button>
+</div>
+</section>
+<!-- Recent Searches Section -->
+<section class="flex flex-col mb-space-lg">
+<div class="flex items-center justify-between py-space-xs mb-space-xs">
+<div class="flex items-center gap-space-xs text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px]">history</span>
+<span class="font-title-sm text-title-sm">عمليات البحث الأخيرة</span>
+</div>
+<button class="font-label-md text-label-md text-primary hover:underline transition-all" id="clear-history-btn" type="button">
+        مسح السجل
+      </button>
+</div>
+<!-- Keyword Tags Cloud -->
+<div class="flex flex-wrap gap-space-xs pt-space-xs" id="recent-tags-container">
+<button class="recent-tag flex items-center gap-1.5 px-space-sm py-1 rounded-lg bg-surface-container text-on-surface font-body-md text-body-md hover:bg-surface-container-high transition-colors" type="button">
+<span class="material-symbols-outlined text-outline text-[15px]">search</span>
+<span>أصول الفقه</span>
+</button>
+<button class="recent-tag flex items-center gap-1.5 px-space-sm py-1 rounded-lg bg-surface-container text-on-surface font-body-md text-body-md hover:bg-surface-container-high transition-colors" type="button">
+<span class="material-symbols-outlined text-outline text-[15px]">location_on</span>
+<span>مسجد الراجحي</span>
+</button>
+<button class="recent-tag flex items-center gap-1.5 px-space-sm py-1 rounded-lg bg-surface-container text-on-surface font-body-md text-body-md hover:bg-surface-container-high transition-colors" type="button">
+<span class="material-symbols-outlined text-outline text-[15px]">auto_stories</span>
+<span>حقيبة طالب العلم</span>
+</button>
+<button class="recent-tag flex items-center gap-1.5 px-space-sm py-1 rounded-lg bg-surface-container text-on-surface font-body-md text-body-md hover:bg-surface-container-high transition-colors" type="button">
+<span class="material-symbols-outlined text-outline text-[15px]">menu_book</span>
+<span>شرح كتاب التوحيد</span>
+</button>
+</div>
+</section>
+<!-- Search Results Meta -->
+<div class="flex items-center justify-between mb-space-sm">
+<h2 class="font-title-sm text-title-sm text-on-surface">نتائج البحث المصنفة</h2>
+<span class="font-mono-sm text-mono-sm text-secondary bg-surface-container-low px-2 py-0.5 rounded-full">3 نتائج مطابقة</span>
+</div>
+<!-- Cards List Container -->
+<div class="flex flex-col gap-space-md">
+<!-- CARD 1: Container Type 1 (Active / Featured Lecture with Glow & Map preview) -->
+<article class="flex flex-col rounded-xl bg-surface-container-low overflow-hidden shadow-[0_0_15px_rgba(0,214,143,0.22),0_8px_24px_rgba(0,0,0,0.5)]">
+<!-- Mini Map / Spatial visual banner -->
+<div class="relative w-full h-28 bg-surface-container-highest overflow-hidden">
+<div class="w-full h-full bg-cover bg-center" data-location="Al Rajhi Grand Mosque, Riyadh, Saudi Arabia" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCQFyF4e6I5k_m0dUeQDRmlnToT1AStFvFSId4gbh8Mdezn76u9mMXOq3PmGsEB_K6ovhw0NVWvA-5zBpCn7xfBpHu1HjmUR1SD1FLrmF_DZevcAekSOfBaFlaLdK0HWvRLzGRO7-Y45c2rZKfxzyN0GRce-Pu7B0TMVYSuaD5f7zJeeehu_q0Goiuz_G8i1WnDD-4sebz3Og0BS4p8Oj-PovKWn2FegVn4NJwXxdwS_xzZnz_S9OA_')"></div>
+<div class="absolute inset-0 bg-gradient-to-t from-surface-container-low via-surface-container-low/40 to-transparent"></div>
+<!-- Radar pinpoint tag on map -->
+<div class="absolute top-3 right-3 flex items-center gap-1.5 px-space-sm py-1 rounded-full bg-surface-container-lowest/80 backdrop-blur-md text-on-surface shadow-sm">
+<span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+<span class="font-label-md text-label-md">مسجد الراجحي — الرياض</span>
+</div>
+<button aria-label="حفظ في المفضلة" class="bookmark-btn absolute top-3 left-3 w-9 h-9 rounded-full bg-surface-container-low/80 backdrop-blur-md flex items-center justify-center text-primary hover:bg-primary hover:text-on-primary transition-all" type="button">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">bookmark</span>
+</button>
+</div>
+<!-- Card Body -->
+<div class="flex flex-col p-space-md gap-space-sm">
+<div class="flex items-start justify-between gap-space-sm">
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-secondary font-medium mb-0.5">محاضرة حضورية معتمدة</span>
+<h3 class="font-headline-md text-headline-md text-on-surface">أصول الفقه العظيم – المجلس الثالث</h3>
+</div>
+</div>
+<!-- Instructor Row -->
+<div class="flex items-center gap-space-xs mt-0.5">
+<div class="w-7 h-7 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container font-title-sm text-title-sm font-bold">
+            د
+          </div>
+<span class="font-title-sm text-title-sm text-on-surface">د. سعد العتيبي</span>
+</div>
+<!-- Schedule & Logistics -->
+<div class="grid grid-cols-2 gap-space-xs pt-space-xs text-on-surface-variant font-body-md text-body-md">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-outline text-[18px]">calendar_month</span>
+<span>السبت، ١٠ أكتوبر</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-outline text-[18px]">schedule</span>
+<span>بعد المغرب</span>
+</div>
+</div>
+<!-- Progress Indicator -->
+<div class="flex flex-col gap-1.5 pt-space-xs">
+<div class="flex items-center justify-between font-mono-sm text-mono-sm">
+<span class="text-primary font-bold">60% مكتمل</span>
+<span class="text-on-surface-variant">١٨ / ٣٠ مقعد</span>
+</div>
+<div class="w-full h-2 rounded-full bg-surface-container-highest overflow-hidden">
+<div class="h-full bg-primary-container rounded-full shadow-[0_0_8px_rgba(0,214,143,0.6)]" style="width: 60%;"></div>
+</div>
+</div>
+<!-- Call to Action -->
+<button class="w-full mt-space-xs py-3 px-space-md rounded-xl bg-primary-container hover:bg-primary text-on-primary-container font-title-sm text-title-sm text-center shadow-[0_0_16px_rgba(0,214,143,0.35)] active:scale-[0.99] transition-transform" type="button">
+          احجز مقعدك
+        </button>
+</div>
+</article>
+<!-- CARD 2: Container Type 2 (Standard Material / Waqf Study Gear) -->
+<article class="flex flex-col rounded-xl bg-surface-container p-space-md shadow-[0_4px_20px_-2px_rgba(0,0,0,0.45)]">
+<div class="flex items-start justify-between gap-space-sm mb-space-xs">
+<div class="flex items-center gap-space-sm">
+<div class="w-12 h-12 rounded-xl bg-surface-container-high flex items-center justify-center text-primary shrink-0">
+<span class="material-symbols-outlined text-[26px]">inventory_2</span>
+</div>
+<div class="flex flex-col min-w-0">
+<h3 class="font-headline-md text-headline-md text-on-surface truncate">حقيبة طالب العلم – ٥ كتب</h3>
+<p class="font-body-md text-body-md text-on-surface-variant truncate">مجموعة كتب مطبوعة للمبتدئ في أصول العلم</p>
+</div>
+</div>
+<button aria-label="حفظ في المفضلة" class="bookmark-btn w-9 h-9 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors shrink-0" type="button">
+<span class="material-symbols-outlined text-[20px]">bookmark</span>
+</button>
+</div>
+<!-- Metadata chips -->
+<div class="flex items-center gap-space-xs my-space-xs">
+<span class="inline-flex items-center gap-1 px-space-sm py-0.5 rounded-full bg-surface-container-low text-secondary font-label-md text-label-md">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+<span>متاح للاستلام</span>
+</span>
+<span class="inline-flex items-center gap-1 px-space-sm py-0.5 rounded-full bg-surface-container-low text-on-surface-variant font-label-md text-label-md">
+<span class="material-symbols-outlined text-[14px]">auto_stories</span>
+<span>نسخة وقفية</span>
+</span>
+</div>
+<!-- Action Button -->
+<button class="w-full mt-space-xs py-2.5 px-space-md rounded-xl bg-surface-container-high hover:bg-surface-bright text-on-surface font-title-sm text-title-sm flex items-center justify-center gap-2 transition-colors" type="button">
+<span class="material-symbols-outlined text-primary text-[20px]">check_circle</span>
+<span>ضع كـ مأخوذ</span>
+</button>
+</article>
+<!-- CARD 3: Container Type 3 (Highlight / Callout Knowledge Article) -->
+<article class="flex flex-col rounded-xl bg-surface-container-low p-space-md shadow-[0_0_12px_rgba(16,185,129,0.18)]">
+<div class="flex items-center justify-between mb-space-xs">
+<div class="inline-flex items-center gap-1.5 px-space-sm py-0.5 rounded-full bg-surface-container text-tertiary font-label-md text-label-md">
+<span class="material-symbols-outlined text-[15px]">menu_book</span>
+<span>صدقة جارية</span>
+</div>
+<button aria-label="حفظ في المفضلة" class="bookmark-btn w-8 h-8 rounded-full flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors" type="button">
+<span class="material-symbols-outlined text-[20px]">bookmark</span>
+</button>
+</div>
+<div class="flex flex-col gap-1 mb-space-sm">
+<h3 class="font-headline-md text-headline-md text-on-surface">كيف تجعل علمك صدقة جارية بعد موتك؟</h3>
+<p class="font-body-md text-body-md text-on-surface-variant line-clamp-2">
+          يبقى أثر العلم بعد صاحبه ما بقي من تعلّمه وعَلّمه، فكيف تؤبّد هذا الأثر المبارك في العصر الرقمي وما هي السبل المثلى لنشر المعرفة الشرعية؟
+        </p>
+</div>
+<div class="flex items-center justify-between pt-space-xs">
+<div class="flex items-center gap-1 text-on-surface-variant font-mono-sm text-mono-sm">
+<span class="material-symbols-outlined text-[16px]">schedule</span>
+<span>زمن القراءة: ٨ د</span>
+</div>
+<button class="inline-flex items-center gap-1 text-primary hover:text-primary-fixed font-title-sm text-title-sm font-semibold transition-colors" type="button">
+<span>اقرأ المقال</span>
+<span class="material-symbols-outlined text-[18px]">arrow_back</span>
+</button>
+</div>
+</article>
+</div>
+</div>
+<script>
+  // Simple interactive micro-behaviors for Search Screen
+  document.addEventListener('DOMContentLoaded', () => {
+    const searchInput = document.getElementById('search-input');
+    const clearBtn = document.getElementById('clear-search-btn');
+    const recentTagsContainer = document.getElementById('recent-tags-container');
+    const clearHistoryBtn = document.getElementById('clear-history-btn');
+    const filterChips = document.querySelectorAll('.filter-chip');
+    const bookmarkBtns = document.querySelectorAll('.bookmark-btn');
+
+    // Clear search bar
+    if (clearBtn && searchInput) {
+      clearBtn.addEventListener('click', () => {
+        searchInput.value = '';
+        searchInput.focus();
+      });
+    }
+
+    // Clear recent search tags
+    if (clearHistoryBtn && recentTagsContainer) {
+      clearHistoryBtn.addEventListener('click', () => {
+        recentTagsContainer.innerHTML = '<span class="font-body-md text-body-md text-outline py-1">لا توجد عمليات بحث سابقة</span>';
+        clearHistoryBtn.style.display = 'none';
+      });
+    }
+
+    // Filter Chips toggling
+    filterChips.forEach(chip => {
+      chip.addEventListener('click', () => {
+        filterChips.forEach(c => {
+          c.classList.remove('active', 'bg-primary-container', 'text-on-primary-container', 'shadow-[0_0_12px_rgba(0,214,143,0.4)]');
+          c.classList.add('bg-surface-container', 'text-on-surface-variant');
+        });
+        chip.classList.remove('bg-surface-container', 'text-on-surface-variant');
+        chip.classList.add('active', 'bg-primary-container', 'text-on-primary-container', 'shadow-[0_0_12px_rgba(0,214,143,0.4)]');
+      });
+    });
+
+    // Tag click sets search value
+    document.querySelectorAll('.recent-tag').forEach(tag => {
+      tag.addEventListener('click', () => {
+        const text = tag.querySelector('span:last-child').textContent.trim();
+        if (searchInput) {
+          searchInput.value = text;
+        }
+      });
+    });
+
+    // Bookmark icon toggles
+    bookmarkBtns.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const icon = btn.querySelector('.material-symbols-outlined');
+        if (icon) {
+          const isFilled = icon.style.fontVariationSettings?.includes("'FILL' 1");
+          if (isFilled) {
+            icon.style.fontVariationSettings = "'FILL' 0";
+            btn.classList.remove('text-primary');
+            btn.classList.add('text-on-surface-variant');
+          } else {
+            icon.style.fontVariationSettings = "'FILL' 1";
+            btn.classList.add('text-primary');
+            btn.classList.remove('text-on-surface-variant');
+          }
+        }
+      });
+    });
+  });
+</script></main></body></html>
