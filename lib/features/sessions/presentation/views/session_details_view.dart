@@ -856,7 +856,9 @@ class _SessionDetailsContentState extends State<_SessionDetailsContent> {
 
   void _openShareSheet() {
     final cs = Theme.of(context).colorScheme;
-    final shareUrl = 'https://zakat-al-ilm.app/session/${widget.sessionId}';
+    final shareUrl =
+        'https://alkhadraaman-it.github.io/zakat_landing/?id=${widget.sessionId}';
+
     final title =
         _session?['title']?.toString() ?? 'session.default_title'.tr();
     final startsAt = DateTime.tryParse(_session?['starts_at']?.toString() ?? '')

@@ -4,8 +4,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../core/di/injection_container.dart'; // 👈 تم إضافته لجلب sl
 import '../core/theme/theme_cubit.dart';
 import '../features/auth/presentation/bloc/auth_cubit.dart';
+import '../features/notifications/data/datasources/incoming_message_bus.dart'; // 👈 تم إضافته
+import '../features/notifications/presentation/widgets/in_app_notification_host.dart'; // 👈 تم إضافته
+import '../features/notifications/services/notification_navigator.dart'; // 👈 تم إضافته
 import 'router/app_router.dart';
 import 'theme/app_theme.dart';
 
@@ -57,6 +61,15 @@ class ZakatAlIlmApp extends StatelessWidget {
                   locale: context.locale,
                   // ── Routing (static — no reset on theme change) ─
                   routerConfig: router,
+                  
+                  // 👇 هذا هو السطر الذي يظهر الإشعارات كـ Banner 👇
+                  builder: (context, child) {
+                    return InAppNotificationHost(
+                      banners: sl<IncomingMessageBus>().banners,
+                      onOpen: NotificationNavigator.open,
+                      child: child ?? const SizedBox.shrink(),
+                    );
+                  },
                 );
               },
             );

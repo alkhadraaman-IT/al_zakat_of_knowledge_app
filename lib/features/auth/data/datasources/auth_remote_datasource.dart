@@ -4,8 +4,10 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:google_sign_in/google_sign_in.dart';
 
+import '../../../../core/di/injection_container.dart';
 import '../../../../core/errors/failures.dart';
 import '../../../../core/utils/either.dart';
+import '../../../notifications/services/notifications_session_coordinator.dart';
 import '/core/utils/supabase_timeout.dart';
 import '/core/constants/app_constants.dart';
 import '../models/profile_model.dart';
@@ -54,7 +56,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     GoogleSignIn? googleSignIn,
   }) : _firebaseAuth = firebaseAuth ?? fb.FirebaseAuth.instance,
        _googleSignIn = googleSignIn ?? GoogleSignIn.instance;
-       
+
   @override
   Future<UserModel> signInWithEmailAndPassword({
     required String email,
@@ -131,7 +133,9 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   Future<void> signOut() async {
     print('<<<<<<<<<<<[signOut]>>>>>>>>>>>>>');
     try {
-      await _googleSignIn.signOut();
+      // await _googleSignIn.signOut();
+      // تأكد من استيراد injection_container.dart و notifications_session_coordinator.dart
+      await sl<NotificationsSessionCoordinator>().logout();
     } catch (_) {}
     await supabaseClient.auth.signOut().withAuthTimeout(
       operationName: 'signOut',

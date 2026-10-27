@@ -39,6 +39,8 @@ import '../../features/favorites/domain/usecases/get_favorites_usecase.dart'
 import '../../features/favorites/domain/usecases/toggle_favorite_usecase.dart'
     show ToggleFavoriteUseCase;
 import '../../features/favorites/presentation/cubit/favorites_cubit.dart';
+
+// 👇 تم تصحيح أسماء الاستيرادات هنا (جمع بدلاً من مفرد)
 import '../../features/notifications/data/datasources/device_tokens_remote_data_source.dart';
 import '../../features/notifications/data/datasources/incoming_message_bus.dart';
 import '../../features/notifications/data/datasources/local_notifications_data_source.dart';
@@ -70,6 +72,7 @@ import '../../features/notifications/services/foreground_message_listener.dart';
 import '../../features/notifications/services/incoming_message_pipeline.dart';
 import '../../features/notifications/services/notifications_session_coordinator.dart';
 import '../../features/notifications/services/pending_messages_drainer.dart';
+
 import '../../features/sessions/data/datasources/session_remote_datasource.dart';
 import '../../features/sessions/data/repositories/session_repository_impl.dart'
     hide SessionRemoteDataSourceImpl;
@@ -134,15 +137,9 @@ Future<void> initDependencies() async {
   final supabase = await Supabase.initialize(
     url: AppConstants.supabaseUrl,
     anonKey: AppConstants.supabaseAnonKey,
-    // PKCE is required for custom-scheme OAuth callbacks on mobile:
-    // the authorization code travels in the URL query string, which
-    // survives the OS intent routing — unlike the implicit flow's
-    // URL fragment, which Android strips when routing the callback.
     authOptions: const FlutterAuthClientOptions(
       authFlowType: AuthFlowType.pkce,
     ),
-    // HTTP client with strict timeouts to prevent UI freezing
-    // when network is unavailable.
     httpClient: IOClient(
       HttpClient()
         ..connectionTimeout = AppTimeouts.connection
@@ -204,13 +201,11 @@ Future<void> initDependencies() async {
   sl.registerLazySingleton<ProfileMediaService>(
     () => ProfileMediaService(supabaseClient: sl<SupabaseClient>()),
   );
-  // ربط الـ FavoritesLocalDataSource مع الـ favoritesBox باستخدام الـ instanceName
   sl.registerLazySingleton<FavoritesLocalDataSource>(
     () => FavoritesLocalDataSourceImpl(
       favoritesBox: sl<Box<FavoriteItemModel>>(instanceName: 'favoritesBox'),
     ),
   );
-
   sl.registerLazySingleton<SessionRemoteDataSource>(
     () => SessionRemoteDataSourceImpl(supabaseClient: sl<SupabaseClient>()),
   );
@@ -260,16 +255,12 @@ Future<void> initDependencies() async {
   sl.registerLazySingleton<GetMyArticlesUseCase>(
     () => GetMyArticlesUseCase(sl<ArticleRepository>()),
   );
-
-  // Use Cases الخاصة بالمفضلة
   sl.registerLazySingleton<GetFavoritesUseCase>(
     () => GetFavoritesUseCase(sl<FavoritesRepository>()),
   );
-
   sl.registerLazySingleton<ToggleFavoriteUseCase>(
     () => ToggleFavoriteUseCase(sl<FavoritesRepository>()),
   );
-
   sl.registerLazySingleton<GetUserBookingsUseCase>(
     () => GetUserBookingsUseCase(sl<SessionRepository>()),
   );
@@ -331,12 +322,10 @@ Future<void> initDependencies() async {
     () => UpdateProfileUseCase(sl<AuthRepository>()),
   );
 
-  // Theme Cubit
+  // Cubits
   sl.registerLazySingleton<ThemeCubit>(
     () => ThemeCubit(prefs: sl<SharedPreferences>()),
   );
-
-  // Auth Cubit
   sl.registerLazySingleton<AuthCubit>(
     () => AuthCubit(
       signInUseCase: sl<SignInUseCase>(),
@@ -347,32 +336,24 @@ Future<void> initDependencies() async {
       getCurrentUserUseCase: sl<GetCurrentUserUseCase>(),
     ),
   );
-
-  // Study Tools Cubit
   sl.registerLazySingleton<StudyToolCubit>(
     () => StudyToolCubit(
       getStudyToolsUseCase: sl<GetStudyToolsUseCase>(),
       createStudyToolUseCase: sl<CreateStudyToolUseCase>(),
     ),
   );
-
-  // Articles Cubit
   sl.registerLazySingleton<ArticleCubit>(
     () => ArticleCubit(
       getArticlesUseCase: sl<GetArticlesUseCase>(),
       createArticleUseCase: sl<CreateArticleUseCase>(),
     ),
   );
-
-  // Booking Cubit
   sl.registerFactory<BookingCubit>(
     () => BookingCubit(
       bookSessionUseCase: sl<BookSessionUseCase>(),
       cancelBookingUseCase: sl<CancelBookingUseCase>(),
     ),
   );
-
-  // Search Cubit
   sl.registerFactory<SearchCubit>(
     () => SearchCubit(
       getSessionsUseCase: sl<GetSessionsUseCase>(),
@@ -381,8 +362,6 @@ Future<void> initDependencies() async {
       getCategoriesUseCase: sl<GetCategoriesUseCase>(),
     ),
   );
-  // Favorites Cubit — Singleton (ﻛﺎن registerFactory):
-
   sl.registerLazySingleton<FavoritesCubit>(() {
     final auth = sl<SupabaseClient>().auth;
     return FavoritesCubit(
@@ -392,8 +371,11 @@ Future<void> initDependencies() async {
       userIdChanges: auth.onAuthStateChange.map((e) => e.session?.user.id),
     );
   });
+  
+} // 👈 تم إغلاق دالة initDependencies هنا بنجاح
 
-  Future<void> initNotifications(GetIt sl) async {
+// 👇 تم فصل دالة initNotifications لتصبح دالة مستقلة (Top-level)
+Future<void> initNotifications(GetIt sl) async {
   final client = Supabase.instance.client;
   final box = await Hive.openBox<String>('notifications_local');
   final metaBox = await Hive.openBox<String>('notifications_meta');
@@ -461,6 +443,4 @@ Future<void> initDependencies() async {
           markAllRead: sl(),
           deleteNotification: sl(),
         ));
-}
-
 }

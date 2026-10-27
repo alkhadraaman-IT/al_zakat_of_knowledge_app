@@ -42,7 +42,9 @@ class NotificationsView extends StatelessWidget {
     } else if (n.materialId != null) {
       context.push('/material-details/${n.materialId}');
     } else if (n.articleId != null) {
-      context.push('/article-details/${n.articleId}'); // TODO: تأكد من اسم المسار
+      context.push(
+        '/article-details/${n.articleId}',
+      ); // TODO: تأكد من اسم المسار
     }
   }
 
@@ -83,24 +85,27 @@ class NotificationsView extends StatelessWidget {
                 listenWhen: (p, c) =>
                     c.status == NotificationsStatus.failure &&
                     c.notifications.isNotEmpty &&
-                    (p.status != NotificationsStatus.failure || p.failure != c.failure),
+                    (p.status != NotificationsStatus.failure ||
+                        p.failure != c.failure),
                 listener: (context, state) {
                   final kind = state.failure!;
                   ScaffoldMessenger.of(context)
                     ..hideCurrentSnackBar()
-                    ..showSnackBar(SnackBar(
-                      content: Text('فشلت العملية. ${kind.message}'),
-                      action: kind.isRetryable
-                          ? SnackBarAction(
-                              label: 'إعادة المحاولة',
-onPressed: () => context.read<NotificationsCubit>().retry(),
-                            )
-                          : null,
-                    ));
+                    ..showSnackBar(
+                      SnackBar(
+                        content: Text('فشلت العملية. ${kind.message}'),
+                        action: kind.isRetryable
+                            ? SnackBarAction(
+                                label: 'إعادة المحاولة',
+                                onPressed: () =>
+                                    context.read<NotificationsCubit>().retry(),
+                              )
+                            : null,
+                      ),
+                    );
                 },
                 builder: (context, state) {
                   final cubit = context.read<NotificationsCubit>();
-
                   if (state.notifications.isEmpty) {
                     if (state.status == NotificationsStatus.loading) {
                       return const Center(child: CircularProgressIndicator());
@@ -161,7 +166,10 @@ class _NotificationsList extends StatelessWidget {
         separatorBuilder: (_, __) => SizedBox(height: AppSpacing.sm),
         itemBuilder: (context, i) {
           if (hasBanner && i == 0) {
-            return NotificationsStaleBanner(kind: staleFailure!, onRetry: onRetry);
+            return NotificationsStaleBanner(
+              kind: staleFailure!,
+              onRetry: onRetry,
+            );
           }
           final n = items[hasBanner ? i - 1 : i];
           return Dismissible(
@@ -178,12 +186,12 @@ class _NotificationsList extends StatelessWidget {
   }
 
   Widget _deleteBg(ColorScheme cs, AlignmentGeometry alignment) => Container(
-        decoration: BoxDecoration(
-          color: cs.errorContainer,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        alignment: alignment,
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: Icon(Icons.delete_outline, color: cs.onErrorContainer),
-      );
+    decoration: BoxDecoration(
+      color: cs.errorContainer,
+      borderRadius: BorderRadius.circular(16),
+    ),
+    alignment: alignment,
+    padding: const EdgeInsets.symmetric(horizontal: 20),
+    child: Icon(Icons.delete_outline, color: cs.onErrorContainer),
+  );
 }
