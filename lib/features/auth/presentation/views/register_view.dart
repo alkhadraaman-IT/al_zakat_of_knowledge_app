@@ -8,8 +8,7 @@ import '../../../../app/router/app_router.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_typography.dart';
 import '../../../../core/constants/app_spacing.dart';
-import '../bloc/auth_bloc.dart';
-import '../bloc/auth_event.dart';
+import '../bloc/auth_cubit.dart';
 import '../bloc/auth_state.dart';
 
 /// Academic registration screen — modern card-based design.
@@ -58,13 +57,11 @@ class _RegisterViewState extends State<RegisterView> {
 
     if (_formKey.currentState?.validate() ?? false) {
       if (_acceptedTerms) {
-        context.read<AuthBloc>().add(
-              AuthSignUpRequested(
-                email: _emailController.text.trim(),
-                password: _passwordController.text,
-                fullName: _fullNameController.text.trim(),
-                university: _universityController.text.trim(),
-              ),
+        context.read<AuthCubit>().signUp(
+              email: _emailController.text.trim(),
+              password: _passwordController.text,
+              fullName: _fullNameController.text.trim(),
+              university: _universityController.text.trim(),
             );
       }
     }
@@ -73,7 +70,7 @@ class _RegisterViewState extends State<RegisterView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: BlocConsumer<AuthBloc, AuthState>(
+      body: BlocConsumer<AuthCubit, AuthState>(
         listener: (context, state) {
           if (state is AuthAuthenticated) {
             context.go(AppRoutes.home);
@@ -101,6 +98,7 @@ class _RegisterViewState extends State<RegisterView> {
               ),
               SafeArea(
                 child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
                   padding: EdgeInsets.symmetric(
                     horizontal: AppSpacing.screenHorizontal,
                     vertical: AppSpacing.screenVertical,

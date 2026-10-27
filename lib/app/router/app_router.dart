@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../core/di/injection_container.dart';
 import '../../features/auth/presentation/views/login_view.dart';
 import '../../features/auth/presentation/views/register_view.dart';
+import '../../features/articles/presentation/bloc/article_cubit.dart';
 import '../../features/content_creation/presentation/views/create_session_view.dart';
 import '../../features/notifications/presentation/views/notifications_view.dart';
 import '../../features/onboarding/presentation/views/onboarding_view.dart';
@@ -12,6 +15,8 @@ import '../../features/profile/presentation/views/profile_view.dart';
 import '../../features/search/presentation/views/search_view.dart';
 import '../../features/shell/presentation/views/main_shell.dart';
 import '../../features/splash/presentation/views/splash_view.dart';
+import '../../features/study_tools/presentation/bloc/study_tool_cubit.dart';
+import '../../features/study_tools/presentation/views/study_tools_view.dart';
 
 /// Application route names.
 class AppRoutes {
@@ -31,6 +36,7 @@ class AppRoutes {
   static const String createMaterial = '/create-material';
   static const String sessionDetails = '/session-details/:id';
   static const String notifications = '/notifications';
+  static const String studyTools = '/study-tools';
 }
 
 /// Tracks authentication state for GoRouter refresh.
@@ -107,7 +113,10 @@ class AppRouter {
         ),
         GoRoute(
           path: AppRoutes.home,
-          builder: (context, state) => const MainShell(),
+          builder: (context, state) => BlocProvider.value(
+            value: sl<ArticleCubit>(),
+            child: const MainShell(),
+          ),
         ),
         GoRoute(
           path: AppRoutes.search,
@@ -136,6 +145,13 @@ class AppRouter {
         GoRoute(
           path: AppRoutes.notifications,
           builder: (context, state) => const NotificationsView(),
+        ),
+        GoRoute(
+          path: AppRoutes.studyTools,
+          builder: (context, state) => BlocProvider.value(
+            value: sl<StudyToolCubit>(),
+            child: const StudyToolsView(),
+          ),
         ),
       ],
     );

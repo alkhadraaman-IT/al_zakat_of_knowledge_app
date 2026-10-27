@@ -1,46 +1,66 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../app/theme/app_typography.dart';
 import '../../../../core/constants/app_spacing.dart';
-import '../../../../shared/widgets/app_map_grid_painter.dart';
+import '../../../../core/di/injection_container.dart';
+import '../../../../core/utils/app_refresh.dart';
+import '../../../../features/reports/presentation/widgets/report_sheet.dart';
+import '../../../../features/sessions/presentation/booking_cubit/booking_cubit.dart';
+import '../../../../features/sessions/presentation/booking_cubit/booking_state.dart';
 import '../../../../shared/widgets/app_top_header.dart';
+import '../session_cubit/session_cubit.dart';
+import '../session_cubit/session_state.dart';
+import '../widgets/pick_location_view.dart';
 
-/// Session Details screen — strictly follows the Stitch design system:
-/// `ui/stitch_zakat_al_ilm_ui_design_system/session_details`.
-///
-/// Structure (top → bottom, single scroll view):
-/// 1. Shared AppTopHeader (logo + brand + back)
-/// 2. Session title + custom share button (QR bottom sheet)
-/// 3. Lecturer info card — taps navigate to `/profile/:id`
-/// 4. Description & details text
-/// 5. Date, time & location logistics card
-/// 6. Map preview widget
-/// 7. Live seat capacity bar
-/// Sticky floating bottom action bar — strictly role-based:
-/// • Publisher  → "تعديل الجلسة" + "حذف الجلسة" (confirm dialog)
-/// • Attendee   → "إبلاغ" report icon + "حجز مقعد" / "إلغاء الحجز"
-class SessionDetailsView extends StatefulWidget {
+class SessionDetailsView extends StatelessWidget {
   final String sessionId;
-
-  /// When true (e.g. opened from ProfileView 'محاضراتي' tab),
-  /// the session belongs to the logged-in user — the publisher
-  /// management bottom bar is shown unconditionally.
   final bool isPublisherView;
 
-  const SessionDetailsView({super.key, required this.sessionId, this.isPublisherView = false});
+  const SessionDetailsView({
+    super.key,
+    required this.sessionId,
+    this.isPublisherView = false,
+  });
 
   @override
-  State<SessionDetailsView> createState() => _SessionDetailsViewState();
+  Widget build(BuildContext context) {
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider.value(value: sl<SessionCubit>()),
+        BlocProvider(create: (_) => sl<BookingCubit>()),
+      ],
+      child: _SessionDetailsContent(
+        sessionId: sessionId,
+        isPublisherView: isPublisherView,
+      ),
+    );
+  }
 }
 
-class _SessionDetailsViewState extends State<SessionDetailsView> {
+class _SessionDetailsContent extends StatefulWidget {
+  final String sessionId;
+  final bool isPublisherView;
+
+  const _SessionDetailsContent({
+    required this.sessionId,
+    required this.isPublisherView,
+  });
+
+  @override
+  State<_SessionDetailsContent> createState() => _SessionDetailsContentState();
+}
+
+class _SessionDetailsContentState extends State<_SessionDetailsContent> {
   Map<String, dynamic>? _session;
   Map<String, dynamic>? _publisher;
   bool _isLoading = true;
@@ -48,11 +68,23 @@ class _SessionDetailsViewState extends State<SessionDetailsView> {
   bool _isBooked = false;
   bool _isPublisher = false;
 
-  /// Strict role check: explicit publisher view flag OR
-  /// the session's publisher id matches the logged-in user.
   bool get _isPublisherEffective => _isPublisher || widget.isPublisherView;
 
-  static final List<String> _weekdays = [
+  String get _categoryName {
+    final raw = _session?['category'];
+    if (raw is Map) {
+      final isEn = context.locale.languageCode == 'en';
+      final value = isEn ? raw['name_en'] : raw['name_ar'];
+      if (value != null && value.toString().isNotEmpty) return value.toString();
+    } else if (raw is String && raw.isNotEmpty) {
+      return raw;
+    }
+    return 'session.default_category'.tr();
+  }
+
+  bool get _isLight => Theme.of(context).brightness == Brightness.light;
+
+  List<String> get _weekdays => [
     'session.day_sunday'.tr(),
     'session.day_monday'.tr(),
     'session.day_tuesday'.tr(),
@@ -61,7 +93,7 @@ class _SessionDetailsViewState extends State<SessionDetailsView> {
     'session.day_friday'.tr(),
     'session.day_saturday'.tr(),
   ];
-  static final List<String> _months = [
+  List<String> get _months => [
     'session.month_january'.tr(),
     'session.month_february'.tr(),
     'session.month_march'.tr(),
@@ -87,13 +119,14 @@ class _SessionDetailsViewState extends State<SessionDetailsView> {
     try {
       final sessionResp = await supabase
           .from('sessions')
-          .select('*, publisher:profiles(*)')
+          .select(
+            '*, publisher:profiles!publisher_id(*), category:categories(name_ar, name_en)',
+          )
           .eq('id', widget.sessionId)
           .maybeSingle();
 
-      // No result (invalid id / missing backend item) → seamless mock preview.
       if (sessionResp == null) {
-        _applyMockFallback();
+        _showLoadError();
         return;
       }
 
@@ -102,10 +135,11 @@ class _SessionDetailsViewState extends State<SessionDetailsView> {
       if (user != null) {
         try {
           final bookingResp = await supabase
-              .from('session_bookings')
+              .from('bookings')
               .select('id')
               .eq('session_id', widget.sessionId)
-              .eq('user_id', user.id);
+              .eq('user_id', user.id)
+              .eq('status', 'confirmed');
           isBooked = bookingResp.isNotEmpty;
         } catch (_) {
           isBooked = false;
@@ -123,97 +157,83 @@ class _SessionDetailsViewState extends State<SessionDetailsView> {
         });
       }
     } catch (e) {
-      // Fetch error (e.g. invalid UUID / offline) → fallback to mock preview.
-      _applyMockFallback();
+      debugPrint('<<<<<<<<<<<[SessionDetails _loadSession Error]>>>>>>>>>>>>>');
+      debugPrint(e.toString());
+      _showLoadError();
     }
   }
 
-  /// Fallback to a complete mock session so the full UI layout,
-  /// publisher info, seat progress and CTA bar can be previewed.
-  void _applyMockFallback() {
-    if (!mounted || _session != null) return;
+  void _showLoadError() {
+    if (!mounted) return;
     setState(() {
-      _session = {
-        'id': widget.sessionId,
-        'title': 'أصول الفقه العظيم — المجلس الثالث: حُجية الأدلة الشرعية المتفق عليها',
-        'description':
-            'دراسة تحليلية تأصيلية تتناول مباحث الإجماع والقياس، والرد على الإشكالات المعاصرة في مناهج الاستدلال الفقهي مع التطبيقات العملية.',
-        'category': 'session.default_category'.tr(),
-        'city': 'الرياض',
-        'place_name': 'جامع الشيخ الراجحي الكبير',
-        'start_time': DateTime.now().add(const Duration(days: 2)).toIso8601String(),
-        'duration_minutes': 90,
-        'max_seats': 30,
-        'booked_count': 18,
-        'created_at': DateTime.now().subtract(const Duration(hours: 5)).toIso8601String(),
-        'publisher_id': 'mock-publisher',
-      };
-      _publisher = {
-        'full_name': 'د. سعد بن ناصر العتيبي',
-        'university': 'أستاذ الفقه المقارن المشارك بجامعة الإمام',
-      };
-      _isBooked = false;
-      _isPublisher = false;
       _isLoading = false;
-      _hasError = false;
+      _hasError = true;
     });
   }
 
+  String _bookingErrorMessage(String raw) {
+    const messages = {
+      'session_full': 'اكتملت مقاعد هذه الجلسة',
+      'already_booked': 'أنت حاجز لهذه الجلسة مسبقاً',
+      'session_started': 'بدأت هذه الجلسة أو انتهت',
+      'session_not_active': 'هذه الجلسة ملغاة',
+      'session_not_found': 'الجلسة غير موجودة',
+      'own_session': 'لا يمكنك حجز جلستك',
+      'not_allowed': 'غير مسموح لك بحجز هذه الجلسة',
+      'account_restricted': 'حسابك موقوف حالياً',
+      'not_authenticated': 'سجّل الدخول أولاً',
+      'cancel_window_passed': 'انتهت مهلة الإلغاء (قبل الموعد بـ 24 ساعة)',
+      'booking_not_found': 'لا يوجد حجز مؤكد لإلغائه',
+    };
+    for (final entry in messages.entries) {
+      if (raw.contains(entry.key)) return entry.value;
+    }
+    return raw;
+  }
+
   Future<void> _toggleBooking() async {
-    // Cancellation requires explicit confirmation first.
     if (_isBooked) {
       final confirmed = await _showCancelConfirmation();
       if (confirmed != true || !mounted) return;
     }
 
-    final supabase = Supabase.instance.client;
-    try {
-      if (_isBooked) {
-        await supabase.rpc('cancel_booking', params: {'p_session_id': widget.sessionId});
-      } else {
-        await supabase.rpc('book_session', params: {'p_session_id': widget.sessionId});
-      }
-      setState(() => _isBooked = !_isBooked);
-      _loadSession();
-    } catch (e) {
-      // Mock/preview session id or RPC failure — toggle locally
-      // and confirm success instead of showing an error.
-      setState(() => _isBooked = !_isBooked);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              _isBooked ? 'booking.booked_success'.tr() : 'booking.canceled_success'.tr(),
-            ),
-            backgroundColor: Theme.of(context).colorScheme.primary,
-          ),
-        );
-      }
+    final cubit = context.read<BookingCubit>();
+    if (_isBooked) {
+      await cubit.cancelBooking(widget.sessionId);
+    } else {
+      await cubit.bookSession(widget.sessionId);
     }
   }
 
-  /// Cancellation confirmation — clear statement phrasing.
   Future<bool?> _showCancelConfirmation() {
     final cs = Theme.of(context).colorScheme;
     return showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: cs.surfaceContainerHigh,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16.r),
+        ),
         title: Text(
           'booking.cancel_title'.tr(),
           style: AppTypography.arabicTitle(color: cs.onSurface, fontSize: 17),
         ),
         content: Text(
           'booking.cancel_message'.tr(),
-          style: AppTypography.arabicBody(color: cs.onSurfaceVariant, fontSize: 14),
+          style: AppTypography.arabicBody(
+            color: cs.onSurfaceVariant,
+            fontSize: 14,
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
             child: Text(
               'booking.keep'.tr(),
-              style: AppTypography.arabicLabel(color: cs.onSurfaceVariant, fontSize: 14),
+              style: AppTypography.arabicLabel(
+                color: cs.onSurfaceVariant,
+                fontSize: 14,
+              ),
             ),
           ),
           TextButton(
@@ -228,156 +248,11 @@ class _SessionDetailsViewState extends State<SessionDetailsView> {
     );
   }
 
-  static final List<String> _reportReasons = [
-    'report.reason_content'.tr(),
-    'report.reason_schedule'.tr(),
-    'report.reason_inaccurate'.tr(),
-    'report.reason_other'.tr(),
-  ];
-
-  /// Structured report sheet — reason selection + optional details.
-  void _openReportSheet() {
-    final cs = Theme.of(context).colorScheme;
-    String? reason;
-    final detailsController = TextEditingController();
-
-    showModalBottomSheet<void>(
+  Future<void> _openReportSheet() async {
+    await showReportSheet(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: cs.surfaceContainerLow,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
-      ),
-      builder: (sheetCtx) {
-        final sheetCs = Theme.of(sheetCtx).colorScheme;
-        return StatefulBuilder(
-          builder: (sheetCtx, setSheetState) {
-            return Padding(
-              padding: EdgeInsets.fromLTRB(
-                AppSpacing.screenHorizontal,
-                AppSpacing.sm,
-                AppSpacing.screenHorizontal,
-                AppSpacing.xl + MediaQuery.of(sheetCtx).viewPadding.bottom,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Drag handle
-                  Center(
-                    child: Container(
-                      width: 40.w,
-                      height: 4.h,
-                      decoration: BoxDecoration(
-                        color: sheetCs.outline.withValues(alpha: 0.5),
-                        borderRadius: BorderRadius.circular(999.r),
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: AppSpacing.md),
-                  Text(
-                    'report.title'.tr(),
-                    style: AppTypography.arabicTitle(color: sheetCs.onSurface, fontSize: 17),
-                    textAlign: TextAlign.center,
-                  ),
-                  SizedBox(height: AppSpacing.xs),
-                  Text(
-                    'report.choose_reason'.tr(),
-                    style: AppTypography.arabicCaption(color: sheetCs.onSurfaceVariant, fontSize: 12),
-                  ),
-                  SizedBox(height: AppSpacing.sm),
-                  // Reason radio options — managed via RadioGroup
-                  RadioGroup<String>(
-                    groupValue: reason,
-                    onChanged: (value) => setSheetState(() => reason = value),
-                    child: Column(
-                      children: _reportReasons.map(
-                        (option) => RadioListTile<String>(
-                          value: option,
-                          activeColor: sheetCs.primary,
-                          dense: true,
-                          contentPadding: EdgeInsets.zero,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12.r),
-                          ),
-                          title: Text(
-                            option,
-                            style: AppTypography.arabicBody(
-                              color: sheetCs.onSurfaceVariant,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ),
-                      ).toList(),
-                    ),
-                  ),
-                  // Additional details when "سبب آخر" is selected
-                  if (reason == 'report.reason_other'.tr())
-                    Padding(
-                      padding: EdgeInsets.only(top: AppSpacing.sm),
-                      child: TextField(
-                        controller: detailsController,
-                        maxLines: 3,
-                        minLines: 2,
-                        style: AppTypography.arabicBody(
-                          color: sheetCs.onSurface,
-                          fontSize: 14,
-                        ),
-                        decoration: InputDecoration(
-                          hintText: 'report.details_hint'.tr(),
-                          hintStyle: AppTypography.arabicCaption(
-                            color: sheetCs.onSurfaceVariant,
-                            fontSize: 13,
-                          ),
-                          filled: true,
-                          fillColor: sheetCs.surfaceContainerHigh,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12.r),
-                            borderSide: BorderSide.none,
-                          ),
-                        ),
-                      ),
-                    ),
-                  SizedBox(height: AppSpacing.md),
-                  // Submit button
-                  SizedBox(
-                    width: double.infinity,
-                    height: 52.h,
-                    child: ElevatedButton(
-                      onPressed: reason == null
-                          ? null
-                          : () {
-                              Navigator.pop(sheetCtx);
-                              detailsController.dispose();
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('report.sent'.tr()),
-                                  backgroundColor: cs.primary,
-                                ),
-                              );
-                            },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: sheetCs.primary,
-                        foregroundColor: sheetCs.onPrimary,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12.r),
-                        ),
-                      ),
-                      child: Text(
-                        'report.submit'.tr(),
-                        style: AppTypography.arabicTitle(
-                          color: sheetCs.onPrimary,
-                          fontSize: 15,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
+      targetType: 'session',
+      targetId: widget.sessionId,
     );
   }
 
@@ -392,7 +267,7 @@ class _SessionDetailsViewState extends State<SessionDetailsView> {
       );
     }
 
-    if (_hasError) {
+    if (_hasError || _session == null) {
       return Scaffold(
         backgroundColor: cs.surface,
         body: Center(
@@ -405,7 +280,10 @@ class _SessionDetailsViewState extends State<SessionDetailsView> {
                 SizedBox(height: 16.h),
                 Text(
                   'errors.load_failed'.tr(),
-                  style: AppTypography.arabicTitle(color: cs.onSurface, fontSize: 18),
+                  style: AppTypography.arabicTitle(
+                    color: cs.onSurface,
+                    fontSize: 18,
+                  ),
                   textAlign: TextAlign.center,
                 ),
                 SizedBox(height: 24.h),
@@ -417,11 +295,16 @@ class _SessionDetailsViewState extends State<SessionDetailsView> {
                       backgroundColor: cs.primary,
                       foregroundColor: cs.onPrimary,
                       padding: EdgeInsets.symmetric(vertical: 14.h),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12.r),
+                      ),
                     ),
                     child: Text(
                       'errors.back_home'.tr(),
-                      style: AppTypography.arabicLabel(color: cs.onPrimary, fontSize: 16),
+                      style: AppTypography.arabicLabel(
+                        color: cs.onPrimary,
+                        fontSize: 16,
+                      ),
                     ),
                   ),
                 ),
@@ -432,37 +315,84 @@ class _SessionDetailsViewState extends State<SessionDetailsView> {
       );
     }
 
-    // Safety net: never render an empty screen — apply mock preview if still null.
-    if (_session == null) {
-      _session = {
-        'id': widget.sessionId,
-        'title': 'أصول الفقه العظيم — المجلس الثالث: حُجية الأدلة الشرعية المتفق عليها',
-        'description':
-            'دراسة تحليلية تأصيلية تتناول مباحث الإجماع والقياس، والرد على الإشكالات المعاصرة في مناهج الاستدلال الفقهي مع التطبيقات العملية.',
-        'category': 'session.default_category'.tr(),
-        'city': 'الرياض',
-        'place_name': 'جامع الشيخ الراجحي الكبير',
-        'start_time': DateTime.now().add(const Duration(days: 2)).toIso8601String(),
-        'duration_minutes': 90,
-        'max_seats': 30,
-        'booked_count': 18,
-        'created_at': DateTime.now().subtract(const Duration(hours: 5)).toIso8601String(),
-        'publisher_id': 'mock-publisher',
-      };
-      _publisher = {
-        'full_name': 'د. سعد بن ناصر العتيبي',
-        'university': 'أستاذ الفقه المقارن المشارك بجامعة الإمام',
-      };
-    }
-
     final bookedCount = _session!['booked_count'] as int? ?? 0;
     final maxSeats = _session!['max_seats'] as int? ?? 0;
-    final int remainingSeats = maxSeats > bookedCount ? maxSeats - bookedCount : 0;
+    final int remainingSeats = maxSeats > bookedCount
+        ? maxSeats - bookedCount
+        : 0;
     final isFull = remainingSeats <= 0;
-    final createdAt = DateTime.tryParse(_session!['created_at']?.toString() ?? '');
-    final isNew = createdAt != null && DateTime.now().difference(createdAt).inHours < 24;
+    final createdAt = DateTime.tryParse(
+      _session!['created_at']?.toString() ?? '',
+    );
+    final isNew =
+        createdAt != null && DateTime.now().difference(createdAt).inHours < 24;
     final percent = maxSeats > 0 ? (bookedCount / maxSeats) : 0.0;
 
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<BookingCubit, BookingState>(
+          listener: (context, state) {
+            if (state is BookingSuccess) {
+              setState(() {
+                _isBooked = state.isBooked;
+                final session = Map<String, dynamic>.from(_session!);
+                session['booked_count'] =
+                    (session['booked_count'] as int? ?? 0) +
+                    (state.isBooked ? 1 : -1);
+                _session = session;
+              });
+              AppRefresh.refreshSessions();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    state.isBooked
+                        ? 'booking.booked_success'.tr()
+                        : 'booking.canceled_success'.tr(),
+                  ),
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                ),
+              );
+            } else if (state is BookingError) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(_bookingErrorMessage(state.message)),
+                  backgroundColor: Theme.of(context).colorScheme.error,
+                ),
+              );
+            }
+          },
+        ),
+        // الاستماع لحالات SessionCubit الخاصة بك التي أرفقتها في الملفات
+        BlocListener<SessionCubit, SessionState>(
+          listener: (context, state) {
+            if (state is SessionSuccess &&
+                state.session.id == widget.sessionId) {
+              _loadSession();
+            }
+          },
+        ),
+      ],
+      child: _buildContent(
+        cs,
+        isFull,
+        isNew,
+        bookedCount,
+        maxSeats,
+        remainingSeats,
+        percent,
+      ),
+    );
+  }
+
+  Widget _buildContent(
+    ColorScheme cs,
+    bool isFull,
+    bool isNew,
+    int bookedCount,
+    int maxSeats,
+    int remainingSeats,
+    double percent,
+  ) {
     return Scaffold(
       backgroundColor: cs.surface,
       body: SafeArea(
@@ -474,155 +404,245 @@ class _SessionDetailsViewState extends State<SessionDetailsView> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // ── 1. Shared Top Header ──────────────────────────────────
               AppTopHeader(
                 context: context,
                 onBack: () => Navigator.maybePop(context),
               ),
               SizedBox(height: AppSpacing.sm),
-
-              // ── 2. Session Title & Custom Share Button ────────────────
               _buildTitleSection(cs, isNew),
               SizedBox(height: AppSpacing.md),
-
-              // ── 3. Lecturer Info (hidden for the publisher) ──────
               if (!_isPublisherEffective) ...[
                 _buildLecturerCard(cs),
                 SizedBox(height: AppSpacing.md),
               ],
-
-              // ── 4. Description & Details Text ────────────────────────
               _buildDescriptionSection(cs),
               SizedBox(height: AppSpacing.md),
-
-              // ── 5. Date, Time & Location Card ────────────────────────
               _buildLogisticsGrid(cs),
               SizedBox(height: AppSpacing.sm),
-
-              // ── 6. Map Preview Widget ────────────────────────────────
               _buildMapCard(cs),
               SizedBox(height: AppSpacing.md),
-
-              // ── 7. Seat Capacity Bar ─────────────────────────────────
-              _buildSeatCapacityCard(cs, bookedCount, maxSeats, remainingSeats, isFull, percent),
+              _buildSeatCapacityCard(
+                cs,
+                bookedCount,
+                maxSeats,
+                remainingSeats,
+                isFull,
+                percent,
+              ),
               SizedBox(height: 140.h),
             ],
           ),
         ),
       ),
-      // ── 10. Sticky Bottom Floating Action Bar ─────────────────────────
       bottomNavigationBar: _buildBottomBar(cs, isFull),
     );
   }
 
-  // ── Venue & map preview card ──────────────────────────────────────────
+  Widget _buildRealMap(ColorScheme cs, double lat, double lng) {
+    final point = LatLng(lat, lng);
+    return SizedBox(
+      height: 176.h,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          FlutterMap(
+            options: MapOptions(
+              initialCenter: point,
+              initialZoom: 15,
+              interactionOptions: const InteractionOptions(
+                flags: InteractiveFlag.none,
+              ),
+              onTap: (_, __) => _openInMaps(lat, lng),
+            ),
+            children: [
+              TileLayer(
+                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                userAgentPackageName: 'com.example.al_zakat_of_knowledge_app',
+                maxNativeZoom: 19,
+              ),
+              MarkerLayer(
+                markers: [
+                  Marker(
+                    point: point,
+                    width: 48.w,
+                    height: 48.w,
+                    alignment: Alignment.topCenter,
+                    child: Icon(
+                      Icons.location_on,
+                      color: cs.primary,
+                      size: 40.w,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          Positioned(
+            right: 8.w,
+            bottom: 6.h,
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
+              decoration: BoxDecoration(
+                color: cs.surface.withValues(alpha: 0.8),
+                borderRadius: BorderRadius.circular(6.r),
+              ),
+              child: Text(
+                '© OpenStreetMap contributors',
+                style: TextStyle(fontSize: 10.sp, color: cs.onSurfaceVariant),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _openInMaps(double? lat, double? lng) async {
+    String url;
+    if (lat != null && lng != null) {
+      url = 'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng';
+    } else {
+      final placeName = _session?['place_name']?.toString() ?? '';
+      final city = _session?['city']?.toString() ?? '';
+      final query = [placeName, city].where((e) => e.isNotEmpty).join(' ');
+      if (query.isEmpty) return;
+      url =
+          'https://www.google.com/maps/dir/?api=1&destination=${Uri.encodeComponent(query)}';
+    }
+    try {
+      await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+    } catch (e) {
+      debugPrint('<<<<<<<<<<<[OpenInMaps Error]>>>>>>>>>>>>>');
+      debugPrint(e.toString());
+    }
+  }
+
+  Future<void> _copyLocation() async {
+    final lat = (_session?['lat'] as num?)?.toDouble();
+    final lng = (_session?['lng'] as num?)?.toDouble();
+    final placeName = _session?['place_name']?.toString() ?? '';
+    final city = _session?['city']?.toString() ?? '';
+    final label = [placeName, city].where((e) => e.isNotEmpty).join('، ');
+
+    String? url;
+    if (lat != null && lng != null) {
+      url = 'https://www.google.com/maps/search/?api=1&query=$lat,$lng';
+    } else if (label.isNotEmpty) {
+      url =
+          'https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(label)}';
+    }
+    if (url == null) return;
+
+    final text = label.isEmpty ? url : '📍 $label\n$url';
+    await Clipboard.setData(ClipboardData(text: text));
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('session.location_copied'.tr()),
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
   Widget _buildMapCard(ColorScheme cs) {
-    final placeName = _session!['place_name']?.toString() ?? _session!['city']?.toString() ?? '';
+    final placeName =
+        _session!['place_name']?.toString() ??
+        _session!['city']?.toString() ??
+        '';
     final city = _session!['city']?.toString() ?? '';
+    final lat = (_session!['lat'] as num?)?.toDouble();
+    final lng = (_session!['lng'] as num?)?.toDouble();
+    final hasLocation = lat != null && lng != null;
+    final hasAnyLocationInfo =
+        hasLocation || placeName.isNotEmpty || city.isNotEmpty;
 
     return Container(
       decoration: BoxDecoration(
         color: cs.surfaceContainerLow,
         borderRadius: BorderRadius.circular(16.r),
+        border: _isLight
+            ? Border.all(color: cs.outline.withValues(alpha: 0.3))
+            : null,
         boxShadow: [
-          BoxShadow(color: cs.shadow.withValues(alpha: 0.35), blurRadius: 24.r),
+          BoxShadow(
+            color: cs.shadow.withValues(alpha: _isLight ? 0.06 : 0.35),
+            blurRadius: 24.r,
+          ),
         ],
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
         children: [
-          // Neon blueprint map area
-          Container(
-            height: 176.h,
-            color: cs.surfaceContainerLowest,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                CustomPaint(painter: _MapGridPainter(cs: cs)),
-                // Radial vignette
-                DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        cs.surfaceContainerLowest.withValues(alpha: 0.6),
-                        Colors.transparent,
-                        cs.surfaceContainerLow,
-                      ],
+          if (hasLocation)
+            _buildRealMap(cs, lat, lng)
+          else
+            Container(
+              height: 176.h,
+              color: cs.surfaceContainerLowest,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  CustomPaint(painter: _MapGridPainter(cs: cs)),
+                  DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          cs.surfaceContainerLowest.withValues(alpha: 0.6),
+                          Colors.transparent,
+                          cs.surfaceContainerLow,
+                        ],
+                      ),
                     ),
                   ),
-                ),
-                // GPS micro pill (visual top-left as in design)
-                Positioned(
-                  top: 12.h,
-                  left: 12.w,
-                  child: Container(
-                    padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
-                    decoration: BoxDecoration(
-                      color: cs.surfaceContainerHigh.withValues(alpha: 0.9),
-                      borderRadius: BorderRadius.circular(999.r),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
+                  Center(
+                    child: Stack(
+                      alignment: Alignment.center,
                       children: [
                         Container(
-                          width: 8.w,
-                          height: 8.w,
-                          decoration: BoxDecoration(color: cs.primary, shape: BoxShape.circle),
+                          width: 64.w,
+                          height: 64.w,
+                          decoration: BoxDecoration(
+                            color: cs.primary.withValues(alpha: 0.2),
+                            shape: BoxShape.circle,
+                          ),
                         ),
-                        SizedBox(width: 6.w),
-                        Text(
-                          'GPS: 24.6937° N',
-                          style: AppTypography.monoCaption(
-                            color: cs.onSurface,
-                            fontSize: 11,
+                        Container(
+                          width: 48.w,
+                          height: 48.w,
+                          decoration: BoxDecoration(
+                            color: cs.primary.withValues(alpha: 0.3),
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        Container(
+                          width: 32.w,
+                          height: 32.w,
+                          decoration: BoxDecoration(
+                            color: cs.primary,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: cs.primary.withValues(alpha: 0.5),
+                                blurRadius: 12.r,
+                              ),
+                            ],
+                          ),
+                          child: Icon(
+                            Icons.location_on,
+                            color: cs.onPrimary,
+                            size: 18.w,
                           ),
                         ),
                       ],
                     ),
                   ),
-                ),
-                // Live pulsing location beacon
-                Center(
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      Container(
-                        width: 64.w,
-                        height: 64.w,
-                        decoration: BoxDecoration(
-                          color: cs.primary.withValues(alpha: 0.2),
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      Container(
-                        width: 48.w,
-                        height: 48.w,
-                        decoration: BoxDecoration(
-                          color: cs.primary.withValues(alpha: 0.3),
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      Container(
-                        width: 32.w,
-                        height: 32.w,
-                        decoration: BoxDecoration(
-                          color: cs.primary,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(color: cs.primary.withValues(alpha: 0.5), blurRadius: 12.r),
-                          ],
-                        ),
-                        child: Icon(Icons.location_on, color: cs.onPrimary, size: 18.w),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          // Venue meta info footer
           Padding(
             padding: EdgeInsets.all(AppSpacing.md),
             child: Row(
@@ -635,7 +655,11 @@ class _SessionDetailsViewState extends State<SessionDetailsView> {
                     color: cs.surfaceContainerHigh,
                     borderRadius: BorderRadius.circular(12.r),
                   ),
-                  child: Icon(Icons.mosque_outlined, color: cs.primary, size: 20.w),
+                  child: Icon(
+                    Icons.place_outlined,
+                    color: cs.primary,
+                    size: 20.w,
+                  ),
                 ),
                 SizedBox(width: 10.w),
                 Expanded(
@@ -644,7 +668,10 @@ class _SessionDetailsViewState extends State<SessionDetailsView> {
                     children: [
                       Text(
                         placeName,
-                        style: AppTypography.arabicTitle(color: cs.onSurface, fontSize: 14),
+                        style: AppTypography.arabicTitle(
+                          color: cs.onSurface,
+                          fontSize: 14,
+                        ),
                         overflow: TextOverflow.ellipsis,
                       ),
                       SizedBox(height: 2.h),
@@ -660,28 +687,65 @@ class _SessionDetailsViewState extends State<SessionDetailsView> {
                   ),
                 ),
                 SizedBox(width: AppSpacing.sm),
-                Material(
-                  color: cs.surfaceContainerHigh,
-                  borderRadius: BorderRadius.circular(10.r),
-                  child: InkWell(
-                    onTap: () {},
-                    borderRadius: BorderRadius.circular(10.r),
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 7.h),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            'session.directions'.tr(),
-                            style: AppTypography.arabicLabel(color: cs.primary, fontSize: 12),
+                if (hasAnyLocationInfo)
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Tooltip(
+                        message: 'session.copy_location'.tr(),
+                        child: Material(
+                          color: cs.surfaceContainerHigh,
+                          borderRadius: BorderRadius.circular(10.r),
+                          child: InkWell(
+                            onTap: _copyLocation,
+                            borderRadius: BorderRadius.circular(10.r),
+                            child: SizedBox(
+                              width: 36.w,
+                              height: 36.w,
+                              child: Icon(
+                                Icons.copy_rounded,
+                                color: cs.primary,
+                                size: 17.w,
+                              ),
+                            ),
                           ),
-                          SizedBox(width: 4.w),
-                          Icon(Icons.directions, color: cs.primary, size: 15.w),
-                        ],
+                        ),
                       ),
-                    ),
+                      SizedBox(width: 6.w),
+                      Material(
+                        color: cs.surfaceContainerHigh,
+                        borderRadius: BorderRadius.circular(10.r),
+                        child: InkWell(
+                          onTap: () => _openInMaps(lat, lng),
+                          borderRadius: BorderRadius.circular(10.r),
+                          child: SizedBox(
+                            height: 36.w,
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 12.w),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    'session.directions'.tr(),
+                                    style: AppTypography.arabicLabel(
+                                      color: cs.primary,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                  SizedBox(width: 4.w),
+                                  Icon(
+                                    Icons.directions,
+                                    color: cs.primary,
+                                    size: 15.w,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ),
               ],
             ),
           ),
@@ -690,9 +754,8 @@ class _SessionDetailsViewState extends State<SessionDetailsView> {
     );
   }
 
-  // ── Status badges + title + description ───────────────────────────────
   Widget _buildTitleSection(ColorScheme cs, bool isNew) {
-    final category = _session!['category']?.toString() ?? 'session.default_category'.tr();
+    final category = _categoryName;
     final title = _session!['title']?.toString() ?? '';
 
     return Column(
@@ -711,7 +774,13 @@ class _SessionDetailsViewState extends State<SessionDetailsView> {
                 children: [
                   Icon(Icons.verified, size: 14.w, color: cs.primary),
                   SizedBox(width: 4.w),
-                  Text(category, style: AppTypography.arabicLabel(color: cs.primary, fontSize: 12)),
+                  Text(
+                    category,
+                    style: AppTypography.arabicLabel(
+                      color: cs.primary,
+                      fontSize: 12,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -720,19 +789,27 @@ class _SessionDetailsViewState extends State<SessionDetailsView> {
                 cs: cs,
                 background: cs.surfaceContainerHigh,
                 foreground: cs.secondary,
-                child: Text('session.new_badge'.tr(), style: AppTypography.arabicLabel(color: cs.secondary, fontSize: 12)),
+                child: Text(
+                  'session.new_badge'.tr(),
+                  style: AppTypography.arabicLabel(
+                    color: cs.secondary,
+                    fontSize: 12,
+                  ),
+                ),
               ),
           ],
         ),
         SizedBox(height: AppSpacing.sm),
-        // Title (right in RTL) + custom share button (left in RTL)
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
               child: Text(
                 title,
-                style: AppTypography.arabicHeadline(color: cs.onSurface, fontSize: 24),
+                style: AppTypography.arabicHeadline(
+                  color: cs.onSurface,
+                  fontSize: 24,
+                ),
               ),
             ),
             SizedBox(width: AppSpacing.sm),
@@ -755,26 +832,61 @@ class _SessionDetailsViewState extends State<SessionDetailsView> {
     );
   }
 
-  // ── Description & details text ─────────────────────────────────────────
   Widget _buildDescriptionSection(ColorScheme cs) {
     final description = _session!['description']?.toString() ?? '';
     return Text(
       description,
-      style: AppTypography.arabicBody(color: cs.onSurfaceVariant, fontSize: 14),
+      style: AppTypography.arabicBody(
+        color: cs.onSurface.withValues(alpha: 0.85),
+        fontSize: 14,
+      ),
     );
   }
 
-  // ── Share bottom sheet (QR + direct shortcuts) ─────────────────────────
+  Future<void> _shareFallback(String message) async {
+    await Clipboard.setData(ClipboardData(text: message));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('تعذّر فتح التطبيق، نُسخ نص المشاركة بدلاً من ذلك'),
+        backgroundColor: Theme.of(context).colorScheme.primary,
+      ),
+    );
+  }
+
   void _openShareSheet() {
     final cs = Theme.of(context).colorScheme;
     final shareUrl = 'https://zakat-al-ilm.app/session/${widget.sessionId}';
-    final title = _session?['title']?.toString() ?? 'session.default_title'.tr();
-    final message = '$title — ${'app.name'.tr()}\n$shareUrl';
+    final title =
+        _session?['title']?.toString() ?? 'session.default_title'.tr();
+    final startsAt = DateTime.tryParse(_session?['starts_at']?.toString() ?? '')
+        ?.toLocal();
+    final when = startsAt == null
+        ? ''
+        : '${startsAt.day}/${startsAt.month}/${startsAt.year}  '
+              '${startsAt.hour.toString().padLeft(2, '0')}:'
+              '${startsAt.minute.toString().padLeft(2, '0')}';
+    final placeName = _session?['place_name']?.toString() ?? '';
+    final cityName = _session?['city']?.toString() ?? '';
+    final where = [placeName, cityName].where((e) => e.isNotEmpty).join('، ');
+    final message = [
+      '$title — ${'app.name'.tr()}',
+      if (when.isNotEmpty) '📅 $when',
+      if (where.isNotEmpty) '📍 $where',
+      shareUrl,
+    ].join('\n');
 
     Future<void> launchExternal(String url) async {
-      final uri = Uri.parse(url);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      try {
+        final ok = await launchUrl(
+          Uri.parse(url),
+          mode: LaunchMode.externalApplication,
+        );
+        if (!ok) await _shareFallback(message);
+      } catch (e) {
+        debugPrint('<<<<<<<<<<<[Share launchUrl Error]>>>>>>>>>>>>>');
+        debugPrint(e.toString());
+        await _shareFallback(message);
       }
     }
 
@@ -798,7 +910,6 @@ class _SessionDetailsViewState extends State<SessionDetailsView> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Drag handle
               Center(
                 child: Container(
                   width: 40.w,
@@ -812,11 +923,13 @@ class _SessionDetailsViewState extends State<SessionDetailsView> {
               SizedBox(height: AppSpacing.md),
               Text(
                 'share.title'.tr(),
-                style: AppTypography.arabicTitle(color: sheetCs.onSurface, fontSize: 17),
+                style: AppTypography.arabicTitle(
+                  color: sheetCs.onSurface,
+                  fontSize: 17,
+                ),
                 textAlign: TextAlign.center,
               ),
               SizedBox(height: AppSpacing.md),
-              // Generated QR code for quick scanning
               Center(
                 child: Container(
                   padding: EdgeInsets.all(12.w),
@@ -826,14 +939,11 @@ class _SessionDetailsViewState extends State<SessionDetailsView> {
                     border: Border.all(color: sheetCs.primary, width: 2),
                     boxShadow: [
                       BoxShadow(
-                        color: sheetCs.primary.withValues(alpha: 0.5),
+                        color: sheetCs.primary.withValues(
+                          alpha: _isLight ? 0.12 : 0.5,
+                        ),
                         blurRadius: 30.r,
                         spreadRadius: 2,
-                      ),
-                      BoxShadow(
-                        color: sheetCs.primary.withValues(alpha: 0.25),
-                        blurRadius: 60.r,
-                        spreadRadius: 4,
                       ),
                     ],
                   ),
@@ -844,9 +954,7 @@ class _SessionDetailsViewState extends State<SessionDetailsView> {
                     dataModuleStyle: QrDataModuleStyle(
                       color: const Color(0xFF0B1120),
                     ),
-                    eyeStyle: QrEyeStyle(
-                      color: const Color(0xFF0B1120),
-                    ),
+                    eyeStyle: QrEyeStyle(color: const Color(0xFF0B1120)),
                   ),
                 ),
               ),
@@ -860,7 +968,6 @@ class _SessionDetailsViewState extends State<SessionDetailsView> {
                 textAlign: TextAlign.center,
               ),
               SizedBox(height: AppSpacing.md),
-              // Direct share shortcuts
               Row(
                 children: [
                   Expanded(
@@ -886,8 +993,10 @@ class _SessionDetailsViewState extends State<SessionDetailsView> {
                       color: const Color(0xFF229ED9),
                       onTap: () {
                         Navigator.pop(sheetCtx);
+                        final telegramText =
+                            '${'share.telegram_prefix'.tr()}$title\n$shareUrl';
                         launchExternal(
-                          'https://t.me/share/url?url=${Uri.encodeComponent(shareUrl)}&text=${Uri.encodeComponent('${'share.telegram_prefix'.tr()}$title')}',
+                          'https://t.me/share/url?url=${Uri.encodeComponent(shareUrl)}&text=${Uri.encodeComponent(telegramText)}',
                         );
                       },
                     ),
@@ -957,7 +1066,10 @@ class _SessionDetailsViewState extends State<SessionDetailsView> {
               SizedBox(height: 6.h),
               Text(
                 label,
-                style: AppTypography.arabicLabel(color: cs.onSurfaceVariant, fontSize: 11),
+                style: AppTypography.arabicLabel(
+                  color: cs.onSurfaceVariant,
+                  fontSize: 11,
+                ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -984,12 +1096,12 @@ class _SessionDetailsViewState extends State<SessionDetailsView> {
     );
   }
 
-  // ── Lecturer (publisher) card — taps navigate to publisher profile ────
   Widget _buildLecturerCard(ColorScheme cs) {
-    final name = _publisher?['full_name']?.toString() ?? 'session.unknown'.tr();
+    final name = _publisher?['name']?.toString() ?? 'session.unknown'.tr();
     final role = _publisher?['university']?.toString() ?? '';
     final initial = name.trim().isNotEmpty ? name.trim()[0] : 'د';
-    final publisherId = _publisher?['id']?.toString() ??
+    final publisherId =
+        _publisher?['id']?.toString() ??
         _session!['publisher_id']?.toString() ??
         '';
 
@@ -1005,13 +1117,18 @@ class _SessionDetailsViewState extends State<SessionDetailsView> {
           padding: EdgeInsets.all(AppSpacing.md),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16.r),
+            border: _isLight
+                ? Border.all(color: cs.outline.withValues(alpha: 0.3))
+                : null,
             boxShadow: [
-              BoxShadow(color: cs.shadow.withValues(alpha: 0.25), blurRadius: 16.r),
+              BoxShadow(
+                color: cs.shadow.withValues(alpha: _isLight ? 0.06 : 0.25),
+                blurRadius: 16.r,
+              ),
             ],
           ),
           child: Row(
             children: [
-              // Avatar with verified badge
               Stack(
                 clipBehavior: Clip.none,
                 children: [
@@ -1025,7 +1142,10 @@ class _SessionDetailsViewState extends State<SessionDetailsView> {
                     child: Center(
                       child: Text(
                         initial,
-                        style: AppTypography.arabicDisplay(color: cs.onPrimary, fontSize: 20),
+                        style: AppTypography.arabicDisplay(
+                          color: cs.onPrimary,
+                          fontSize: 20,
+                        ),
                       ),
                     ),
                   ),
@@ -1039,7 +1159,11 @@ class _SessionDetailsViewState extends State<SessionDetailsView> {
                         color: cs.surfaceContainer,
                         shape: BoxShape.circle,
                       ),
-                      child: Icon(Icons.check_circle, color: cs.primary, size: 14.w),
+                      child: Icon(
+                        Icons.check_circle,
+                        color: cs.primary,
+                        size: 14.w,
+                      ),
                     ),
                   ),
                 ],
@@ -1054,7 +1178,10 @@ class _SessionDetailsViewState extends State<SessionDetailsView> {
                         Flexible(
                           child: Text(
                             name,
-                            style: AppTypography.arabicTitle(color: cs.onSurface, fontSize: 14),
+                            style: AppTypography.arabicTitle(
+                              color: cs.onSurface,
+                              fontSize: 14,
+                            ),
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
@@ -1062,14 +1189,20 @@ class _SessionDetailsViewState extends State<SessionDetailsView> {
                         Container(
                           width: 6.w,
                           height: 6.w,
-                          decoration: BoxDecoration(color: cs.primary, shape: BoxShape.circle),
+                          decoration: BoxDecoration(
+                            color: cs.primary,
+                            shape: BoxShape.circle,
+                          ),
                         ),
                       ],
                     ),
                     SizedBox(height: 2.h),
                     Text(
                       role,
-                      style: AppTypography.arabicBody(color: cs.onSurfaceVariant, fontSize: 12),
+                      style: AppTypography.arabicBody(
+                        color: cs.onSurfaceVariant,
+                        fontSize: 12,
+                      ),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ],
@@ -1084,9 +1217,10 @@ class _SessionDetailsViewState extends State<SessionDetailsView> {
     );
   }
 
-  // ── Date, schedule & logistics 3-column grid ──────────────────────────
   Widget _buildLogisticsGrid(ColorScheme cs) {
-    final startTime = DateTime.tryParse(_session!['start_time']?.toString() ?? '');
+    final startTime = DateTime.tryParse(
+      _session!['starts_at']?.toString() ?? '',
+    )?.toLocal();
     final duration = _session!['duration_minutes'] as int? ?? 90;
     final placeName = _session!['place_name']?.toString() ?? '';
     final city = _session!['city']?.toString() ?? '';
@@ -1094,7 +1228,8 @@ class _SessionDetailsViewState extends State<SessionDetailsView> {
     String dateValue = 'session.unspecified'.tr();
     String dateSub = '—';
     if (startTime != null) {
-      dateValue = '${_weekdays[startTime.weekday % 7]} ${startTime.day} ${_months[startTime.month - 1]}';
+      dateValue =
+          '${_weekdays[startTime.weekday % 7]} ${startTime.day} ${_months[startTime.month - 1]}';
       dateSub = '${startTime.year}/${startTime.month}/${startTime.day}';
     }
 
@@ -1155,8 +1290,14 @@ class _SessionDetailsViewState extends State<SessionDetailsView> {
       decoration: BoxDecoration(
         color: cs.surfaceContainerLow,
         borderRadius: BorderRadius.circular(12.r),
+        border: _isLight
+            ? Border.all(color: cs.outline.withValues(alpha: 0.3))
+            : null,
         boxShadow: [
-          BoxShadow(color: cs.shadow.withValues(alpha: 0.2), blurRadius: 10.r),
+          BoxShadow(
+            color: cs.shadow.withValues(alpha: _isLight ? 0.06 : 0.2),
+            blurRadius: 10.r,
+          ),
         ],
       ),
       child: Column(
@@ -1173,7 +1314,10 @@ class _SessionDetailsViewState extends State<SessionDetailsView> {
           SizedBox(height: AppSpacing.sm),
           Text(
             label,
-            style: AppTypography.arabicLabel(color: cs.onSurfaceVariant, fontSize: 11),
+            style: AppTypography.arabicLabel(
+              color: cs.onSurfaceVariant,
+              fontSize: 11,
+            ),
           ),
           SizedBox(height: 2.h),
           Text(
@@ -1196,7 +1340,6 @@ class _SessionDetailsViewState extends State<SessionDetailsView> {
     );
   }
 
-  // ── Live seat capacity & glowing progress meter ───────────────────────
   Widget _buildSeatCapacityCard(
     ColorScheme cs,
     int booked,
@@ -1212,8 +1355,14 @@ class _SessionDetailsViewState extends State<SessionDetailsView> {
       decoration: BoxDecoration(
         color: cs.surfaceContainer,
         borderRadius: BorderRadius.circular(16.r),
+        border: _isLight
+            ? Border.all(color: cs.outline.withValues(alpha: 0.3))
+            : null,
         boxShadow: [
-          BoxShadow(color: cs.shadow.withValues(alpha: 0.3), blurRadius: 20.r),
+          BoxShadow(
+            color: cs.shadow.withValues(alpha: _isLight ? 0.06 : 0.3),
+            blurRadius: 20.r,
+          ),
         ],
       ),
       child: Column(
@@ -1223,12 +1372,18 @@ class _SessionDetailsViewState extends State<SessionDetailsView> {
               Container(
                 width: 10.w,
                 height: 10.w,
-                decoration: BoxDecoration(color: cs.primary, shape: BoxShape.circle),
+                decoration: BoxDecoration(
+                  color: cs.primary,
+                  shape: BoxShape.circle,
+                ),
               ),
               SizedBox(width: 8.w),
               Text(
                 'session.seats_status'.tr(),
-                style: AppTypography.arabicTitle(color: cs.onSurface, fontSize: 15),
+                style: AppTypography.arabicTitle(
+                  color: cs.onSurface,
+                  fontSize: 15,
+                ),
               ),
               const Spacer(),
               Text(
@@ -1237,11 +1392,17 @@ class _SessionDetailsViewState extends State<SessionDetailsView> {
               ),
               Text(
                 ' / ',
-                style: AppTypography.monoCaption(color: cs.onSurfaceVariant, fontSize: 13),
+                style: AppTypography.monoCaption(
+                  color: cs.onSurfaceVariant,
+                  fontSize: 13,
+                ),
               ),
               Text(
                 '$max ${'session.seats'.tr()}',
-                style: AppTypography.monoCaption(color: cs.onSurfaceVariant, fontSize: 13),
+                style: AppTypography.monoCaption(
+                  color: cs.onSurfaceVariant,
+                  fontSize: 13,
+                ),
               ),
               SizedBox(width: 6.w),
               Text(
@@ -1251,7 +1412,6 @@ class _SessionDetailsViewState extends State<SessionDetailsView> {
             ],
           ),
           SizedBox(height: AppSpacing.sm),
-          // Glowing progress track
           Container(
             height: 12.h,
             padding: EdgeInsets.all(2.w),
@@ -1271,14 +1431,18 @@ class _SessionDetailsViewState extends State<SessionDetailsView> {
                   ),
                   borderRadius: BorderRadius.circular(999.r),
                   boxShadow: [
-                    BoxShadow(color: (isFull ? cs.error : cs.primary).withValues(alpha: 0.4), blurRadius: 8.r),
+                    BoxShadow(
+                      color: (isFull ? cs.error : cs.primary).withValues(
+                        alpha: 0.4,
+                      ),
+                      blurRadius: 8.r,
+                    ),
                   ],
                 ),
               ),
             ),
           ),
           SizedBox(height: AppSpacing.sm),
-          // Min quorum confirmation row
           Row(
             children: [
               Icon(Icons.verified_user, color: cs.primary, size: 17.w),
@@ -1286,7 +1450,10 @@ class _SessionDetailsViewState extends State<SessionDetailsView> {
               Expanded(
                 child: Text(
                   'session.min_quorum'.tr(),
-                  style: AppTypography.arabicLabel(color: cs.onSurfaceVariant, fontSize: 11),
+                  style: AppTypography.arabicLabel(
+                    color: cs.onSurfaceVariant,
+                    fontSize: 11,
+                  ),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
@@ -1294,11 +1461,15 @@ class _SessionDetailsViewState extends State<SessionDetailsView> {
               Container(
                 padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
                 decoration: BoxDecoration(
-                  color: isFull ? cs.error.withValues(alpha: 0.1) : cs.primary.withValues(alpha: 0.1),
+                  color: isFull
+                      ? cs.error.withValues(alpha: 0.1)
+                      : cs.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8.r),
                 ),
                 child: Text(
-                  isFull ? 'session.full'.tr() : 'session.confirmed_quorum'.tr(),
+                  isFull
+                      ? 'session.full'.tr()
+                      : 'session.confirmed_quorum'.tr(),
                   style: AppTypography.monoCaption(
                     color: isFull ? cs.error : cs.primary,
                     fontSize: 11,
@@ -1312,7 +1483,6 @@ class _SessionDetailsViewState extends State<SessionDetailsView> {
     );
   }
 
-  // ── Sticky bottom floating action bar (role-based) ────────────────────
   Widget _buildBottomBar(ColorScheme cs, bool isFull) {
     return SafeArea(
       top: false,
@@ -1326,7 +1496,7 @@ class _SessionDetailsViewState extends State<SessionDetailsView> {
             border: Border.all(color: cs.outline.withValues(alpha: 0.3)),
             boxShadow: [
               BoxShadow(
-                color: cs.shadow.withValues(alpha: 0.4),
+                color: cs.shadow.withValues(alpha: _isLight ? 0.06 : 0.4),
                 blurRadius: 24.r,
                 offset: Offset(0, 8.h),
               ),
@@ -1340,8 +1510,6 @@ class _SessionDetailsViewState extends State<SessionDetailsView> {
     );
   }
 
-  /// Publisher (session owner) → management actions only.
-  /// Booking / cancellation / report are hidden entirely.
   Widget _buildPublisherActions(ColorScheme cs) {
     return Row(
       children: [
@@ -1370,32 +1538,60 @@ class _SessionDetailsViewState extends State<SessionDetailsView> {
     );
   }
 
-  /// Publisher edit form — bottom sheet pre-filled with current data.
   Future<void> _openEditSheet() async {
     final cs = Theme.of(context).colorScheme;
 
-    final titleController =
-        TextEditingController(text: _session?['title']?.toString() ?? '');
-    final descriptionController =
-        TextEditingController(text: _session?['description']?.toString() ?? '');
-    final categoryController =
-        TextEditingController(text: _session?['category']?.toString() ?? '');
-    final cityController =
-        TextEditingController(text: _session?['city']?.toString() ?? '');
-    final placeController =
-        TextEditingController(text: _session?['place_name']?.toString() ?? '');
+    final titleController = TextEditingController(
+      text: _session?['title']?.toString() ?? '',
+    );
+    final descriptionController = TextEditingController(
+      text: _session?['description']?.toString() ?? '',
+    );
+    final cityController = TextEditingController(
+      text: _session?['city']?.toString() ?? '',
+    );
+    final placeController = TextEditingController(
+      text: _session?['place_name']?.toString() ?? '',
+    );
     final seatsController = TextEditingController(
       text: (_session?['max_seats'] ?? 30).toString(),
     );
 
     DateTime selectedDate =
-        DateTime.tryParse(_session?['start_time']?.toString() ?? '') ??
+        DateTime.tryParse(_session?['starts_at']?.toString() ?? '')
+            ?.toLocal() ??
         DateTime.now().add(const Duration(days: 2));
-    TimeOfDay selectedTime = TimeOfDay(hour: selectedDate.hour, minute: selectedDate.minute);
+    TimeOfDay selectedTime = TimeOfDay(
+      hour: selectedDate.hour,
+      minute: selectedDate.minute,
+    );
     final dateController = TextEditingController(
       text: '${selectedDate.day}/${selectedDate.month}/${selectedDate.year}',
     );
-    final timeController = TextEditingController(text: selectedTime.format(context));
+    final timeController = TextEditingController(
+      text: selectedTime.format(context),
+    );
+
+    final supabase = Supabase.instance.client;
+    List<Map<String, dynamic>> categories = [];
+    try {
+      final rows = await supabase
+          .from('categories')
+          .select('id, name_ar, name_en')
+          .order('sort_order');
+      categories = (rows as List)
+          .map((e) => Map<String, dynamic>.from(e as Map))
+          .toList();
+    } catch (e) {
+      debugPrint('<<<<<<<<<<<[EditSession load categories Error]>>>>>>>>>>>>>');
+      debugPrint(e.toString());
+    }
+    if (!mounted) return;
+
+    int? selectedCategoryId = _session?['category_id'] as int?;
+    double? editLat = (_session?['lat'] as num?)?.toDouble();
+    double? editLng = (_session?['lng'] as num?)?.toDouble();
+    String? editError;
 
     await showModalBottomSheet<void>(
       context: context,
@@ -1419,7 +1615,6 @@ class _SessionDetailsViewState extends State<SessionDetailsView> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Drag handle
                   Center(
                     child: Container(
                       width: 40.w,
@@ -1454,22 +1649,124 @@ class _SessionDetailsViewState extends State<SessionDetailsView> {
                   Row(
                     children: [
                       Expanded(
-                        child: _editField(
-                          cs: sheetCs,
-                          controller: categoryController,
-                          label: 'edit.category_label'.tr(),
+                        child: Padding(
+                          padding: EdgeInsets.only(bottom: AppSpacing.md),
+                          child: DropdownButtonFormField<int>(
+                            value:
+                                categories.any(
+                                  (c) => c['id'] == selectedCategoryId,
+                                )
+                                ? selectedCategoryId
+                                : null,
+                            isExpanded: true,
+                            decoration: InputDecoration(
+                              labelText: 'edit.category_label'.tr(),
+                              labelStyle: AppTypography.arabicLabel(
+                                color: sheetCs.onSurfaceVariant,
+                                fontSize: 13,
+                              ),
+                              filled: true,
+                              fillColor: sheetCs.surfaceContainerHigh,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12.r),
+                                borderSide: BorderSide.none,
+                              ),
+                              contentPadding: EdgeInsets.symmetric(
+                                horizontal: 16.w,
+                                vertical: 14.h,
+                              ),
+                            ),
+                            items: [
+                              for (final c in categories)
+                                DropdownMenuItem<int>(
+                                  value: c['id'] as int,
+                                  child: Text(
+                                    ((sheetCtx.locale.languageCode == 'en'
+                                                ? c['name_en']
+                                                : c['name_ar']) ??
+                                            '')
+                                        .toString(),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                            ],
+                            onChanged: (v) =>
+                                setSheetState(() => selectedCategoryId = v),
+                          ),
                         ),
                       ),
                       SizedBox(width: AppSpacing.sm),
                       Expanded(
                         child: _editField(
                           cs: sheetCs,
-                          controller: seatsController,
-                          label: 'edit.seats_label'.tr(),
-                          keyboardType: TextInputType.number,
+                          controller: cityController,
+                          label: 'edit.city_label'.tr(),
                         ),
                       ),
                     ],
+                  ),
+                  _editField(
+                    cs: sheetCs,
+                    controller: placeController,
+                    label: 'edit.place_label'.tr(),
+                  ),
+                  Padding(
+                    padding: EdgeInsets.only(bottom: AppSpacing.md),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(12.r),
+                      onTap: () async {
+                        final picked = await Navigator.of(sheetCtx)
+                            .push<LatLng>(
+                              MaterialPageRoute(
+                                builder: (_) => PickLocationPage(
+                                  initial: (editLat != null && editLng != null)
+                                      ? LatLng(editLat!, editLng!)
+                                      : null,
+                                ),
+                              ),
+                            );
+                        if (picked != null) {
+                          setSheetState(() {
+                            editLat = picked.latitude;
+                            editLng = picked.longitude;
+                          });
+                        }
+                      },
+                      child: Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 16.w,
+                          vertical: 14.h,
+                        ),
+                        decoration: BoxDecoration(
+                          color: sheetCs.surfaceContainerHigh,
+                          borderRadius: BorderRadius.circular(12.r),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              editLat == null
+                                  ? Icons.add_location_alt_outlined
+                                  : Icons.check_circle,
+                              color: editLat == null
+                                  ? sheetCs.onSurfaceVariant
+                                  : sheetCs.primary,
+                            ),
+                            SizedBox(width: 12.w),
+                            Expanded(
+                              child: Text(
+                                editLat == null
+                                    ? 'حدّد الموقع على الخريطة'
+                                    : 'تغيير الموقع على الخريطة',
+                                style: AppTypography.arabicBody(
+                                  color: sheetCs.onSurface,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
                   Row(
                     children: [
@@ -1478,16 +1775,21 @@ class _SessionDetailsViewState extends State<SessionDetailsView> {
                           cs: sheetCs,
                           controller: dateController,
                           label: 'edit.date_label'.tr(),
+                          readOnly: true,
                           onTap: () async {
                             final picked = await showDatePicker(
                               context: sheetCtx,
-                              initialDate: selectedDate,
+                              initialDate: selectedDate.isBefore(DateTime.now())
+                                  ? DateTime.now()
+                                  : selectedDate,
                               firstDate: DateTime.now(),
-                              lastDate: DateTime.now().add(const Duration(days: 365)),
+                              lastDate: DateTime.now().add(
+                                const Duration(days: 365),
+                              ),
                             );
                             if (picked != null) {
+                              selectedDate = picked;
                               setSheetState(() {
-                                selectedDate = picked;
                                 dateController.text =
                                     '${picked.day}/${picked.month}/${picked.year}';
                               });
@@ -1501,14 +1803,15 @@ class _SessionDetailsViewState extends State<SessionDetailsView> {
                           cs: sheetCs,
                           controller: timeController,
                           label: 'edit.time_label'.tr(),
+                          readOnly: true,
                           onTap: () async {
                             final picked = await showTimePicker(
                               context: sheetCtx,
                               initialTime: selectedTime,
                             );
                             if (picked != null) {
+                              selectedTime = picked;
                               setSheetState(() {
-                                selectedTime = picked;
                                 timeController.text = picked.format(sheetCtx);
                               });
                             }
@@ -1519,82 +1822,106 @@ class _SessionDetailsViewState extends State<SessionDetailsView> {
                   ),
                   _editField(
                     cs: sheetCs,
-                    controller: cityController,
-                    label: 'edit.city_label'.tr(),
+                    controller: seatsController,
+                    label: 'edit.seats_label'.tr(),
+                    keyboardType: TextInputType.number,
                   ),
-                  _editField(
-                    cs: sheetCs,
-                    controller: placeController,
-                    label: 'edit.place_label'.tr(),
-                  ),
-                  SizedBox(height: AppSpacing.xs),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 52.h,
-                    child: ElevatedButton(
-                      onPressed: () async {
-                        final newSeats = int.tryParse(seatsController.text) ?? 30;
-                        final start = DateTime(
-                          selectedDate.year,
-                          selectedDate.month,
-                          selectedDate.day,
-                          selectedTime.hour,
-                          selectedTime.minute,
-                        );
-
-                        // Update local state immediately.
-                        setState(() {
-                          _session?['title'] = titleController.text.trim();
-                          _session?['description'] = descriptionController.text.trim();
-                          _session?['category'] = categoryController.text.trim();
-                          _session?['city'] = cityController.text.trim();
-                          _session?['place_name'] = placeController.text.trim();
-                          _session?['max_seats'] = newSeats;
-                          _session?['start_time'] = start.toIso8601String();
-                        });
-
-                        Navigator.pop(sheetCtx);
-
-                        // Persist remotely when possible; graceful fallback.
-                        try {
-                          await Supabase.instance.client
-                              .from('sessions')
-                              .update({
-                            'title': titleController.text.trim(),
-                            'description': descriptionController.text.trim(),
-                            'category': categoryController.text.trim(),
-                            'city': cityController.text.trim(),
-                            'place_name': placeController.text.trim(),
-                            'max_seats': newSeats,
-                            'start_time': start.toIso8601String(),
-                          }).eq('id', widget.sessionId);
-                        } catch (_) {
-                          // Mock/preview session — local update only.
-                        }
-
-                        if (!mounted) return;
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('edit.updated'.tr()),
-                            backgroundColor: cs.primary,
-                          ),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: sheetCs.primary,
-                        foregroundColor: sheetCs.onPrimary,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12.r),
-                        ),
-                      ),
+                  if (editError != null)
+                    Padding(
+                      padding: EdgeInsets.only(bottom: AppSpacing.md),
                       child: Text(
-                        'edit.save'.tr(),
-                        style: AppTypography.arabicTitle(
-                          color: sheetCs.onPrimary,
-                          fontSize: 15,
+                        editError!,
+                        style: AppTypography.arabicBody(
+                          color: sheetCs.error,
+                          fontSize: 13,
                         ),
                       ),
                     ),
+                  SizedBox(height: AppSpacing.lg),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _barButton(
+                          cs: sheetCs,
+                          label: 'common.cancel'.tr(),
+                          icon: Icons.close,
+                          background: sheetCs.surfaceContainerHighest,
+                          foreground: sheetCs.onSurfaceVariant,
+                          onTap: () => Navigator.pop(sheetCtx),
+                        ),
+                      ),
+                      SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: _barButton(
+                          cs: sheetCs,
+                          label: 'common.save'.tr(),
+                          icon: Icons.check,
+                          background: sheetCs.primary,
+                          foreground: sheetCs.onPrimary,
+                          onTap: () async {
+                            final title = titleController.text.trim();
+                            final description = descriptionController.text
+                                .trim();
+                            final city = cityController.text.trim();
+                            final place = placeController.text.trim();
+                            final seats = int.tryParse(
+                              seatsController.text.trim(),
+                            );
+                            final bookedNow =
+                                _session?['booked_count'] as int? ?? 0;
+                            final startsAt = DateTime(
+                              selectedDate.year,
+                              selectedDate.month,
+                              selectedDate.day,
+                              selectedTime.hour,
+                              selectedTime.minute,
+                            );
+
+                            String? error;
+                            if (title.length < 3) {
+                              error = 'العنوان قصير (3 أحرف على الأقل)';
+                            } else if (description.isEmpty) {
+                              error = 'الوصف مطلوب';
+                            } else if (selectedCategoryId == null) {
+                              error = 'اختر التصنيف';
+                            } else if (city.isEmpty || place.isEmpty) {
+                              error = 'المدينة والمكان مطلوبان';
+                            } else if (seats == null || seats <= 0) {
+                              error = 'عدد المقاعد غير صالح';
+                            } else if (seats < bookedNow) {
+                              error =
+                                  'لا يمكن أن يقل عدد المقاعد عن الحجوزات الحالية ($bookedNow)';
+                            } else if (startsAt.isBefore(DateTime.now())) {
+                              error = 'يجب أن يكون الموعد في المستقبل';
+                            }
+                            if (error != null) {
+                              setSheetState(() => editError = error);
+                              return;
+                            }
+
+                            if (sheetCtx.mounted) Navigator.pop(sheetCtx);
+
+                            // استخدام SessionCubit الحقيقي الموجود في ملفاتك لتحديث الجلسة
+                            if (sheetCtx.mounted) {
+                              sheetCtx.read<SessionCubit>().createSession(
+                                publisherId: _session?['publisher_id'] ?? '',
+                                title: title,
+                                description: description,
+                                categoryId: selectedCategoryId!,
+                                city: city,
+                                placeName: place,
+                                startsAt: startsAt.toUtc().toIso8601String(),
+                                durationMinutes:
+                                    _session?['duration_minutes'] ?? 90,
+                                maxSeats: seats ?? 30, // 30 هي القيمة الافتراضية إذا لم يتم إدخال شيء
+                                lat: editLat ?? 33.5138,
+                                lng: editLng ?? 36.2765,
+                              );
+                            }
+                          },
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -1603,140 +1930,231 @@ class _SessionDetailsViewState extends State<SessionDetailsView> {
         );
       },
     );
-
-    // Dispose controllers after the sheet closes.
-    titleController.dispose();
-    descriptionController.dispose();
-    categoryController.dispose();
-    cityController.dispose();
-    placeController.dispose();
-    seatsController.dispose();
-    dateController.dispose();
-    timeController.dispose();
   }
 
-  /// Labeled form field for the publisher edit sheet.
   Widget _editField({
     required ColorScheme cs,
     required TextEditingController controller,
     required String label,
     int maxLines = 1,
+    bool readOnly = false,
     TextInputType? keyboardType,
     VoidCallback? onTap,
   }) {
     return Padding(
       padding: EdgeInsets.only(bottom: AppSpacing.md),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: AppTypography.arabicLabel(color: cs.onSurfaceVariant, fontSize: 12),
+      child: TextFormField(
+        controller: controller,
+        maxLines: maxLines,
+        readOnly: readOnly,
+        keyboardType: keyboardType,
+        onTap: onTap,
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: AppTypography.arabicLabel(
+            color: cs.onSurfaceVariant,
+            fontSize: 13,
           ),
-          SizedBox(height: 6.h),
-          TextField(
-            controller: controller,
-            maxLines: maxLines,
-            minLines: 1,
-            keyboardType: keyboardType,
-            readOnly: onTap != null,
-            onTap: onTap,
-            style: AppTypography.arabicBody(color: cs.onSurface, fontSize: 14),
-            decoration: InputDecoration(
-              filled: true,
-              fillColor: cs.surfaceContainerHigh,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12.r),
-                borderSide: BorderSide.none,
+          filled: true,
+          fillColor: cs.surfaceContainerHigh,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12.r),
+            borderSide: BorderSide.none,
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12.r),
+            borderSide: BorderSide(color: cs.primary, width: 2),
+          ),
+          contentPadding: EdgeInsets.symmetric(
+            horizontal: 16.w,
+            vertical: 14.h,
+          ),
+        ),
+        style: AppTypography.arabicBody(color: cs.onSurface, fontSize: 14),
+      ),
+    );
+  }
+
+  Future<void> _confirmDeleteSession() async {
+    final cs = Theme.of(context).colorScheme;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: cs.surfaceContainerHigh,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16.r),
+        ),
+        title: Text(
+          'session.delete_confirm_title'.tr(),
+          style: AppTypography.arabicTitle(color: cs.onSurface, fontSize: 17),
+        ),
+        content: Text(
+          'session.delete_confirm_message'.tr(),
+          style: AppTypography.arabicBody(
+            color: cs.onSurfaceVariant,
+            fontSize: 14,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(
+              'common.cancel'.tr(),
+              style: AppTypography.arabicLabel(
+                color: cs.onSurfaceVariant,
+                fontSize: 14,
               ),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(
+              'common.delete'.tr(),
+              style: AppTypography.arabicLabel(color: cs.error, fontSize: 14),
             ),
           ),
         ],
       ),
     );
+    if (confirmed == true && mounted) {
+      try {
+        await Supabase.instance.client
+            .from('sessions')
+            .update({'status': 'cancelled'})
+            .eq('id', widget.sessionId)
+            .select()
+            .single();
+        AppRefresh.refreshSessions();
+        if (mounted) context.go('/home');
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('تعذّر إلغاء الجلسة، حاول مرة أخرى'),
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+          );
+        }
+      }
+    }
   }
 
-  /// Attendee / student → standard booking flow + report button.
   Widget _buildAttendeeActions(ColorScheme cs, bool isFull) {
-    final bool seatsDisabled = isFull && !_isBooked;
+    final status = _session?['status']?.toString() ?? 'active';
+    final startsAtTime = DateTime.tryParse(
+      _session?['starts_at']?.toString() ?? '',
+    )?.toLocal();
+    final bool isCancelled = status == 'cancelled';
+    final bool hasStarted =
+        startsAtTime != null && !startsAtTime.isAfter(DateTime.now());
+    final bool unavailable = !_isBooked && (isCancelled || hasStarted);
+    final bool seatsDisabled = (isFull && !_isBooked) || unavailable;
 
-    final Color ctaBg = _isBooked
-        ? cs.surfaceContainerLowest
-        : seatsDisabled
+    return BlocBuilder<BookingCubit, BookingState>(
+      builder: (context, state) {
+        final bool isBooking = state is BookingLoading;
+        final Color ctaBg = isBooking
+            ? cs.surfaceContainerHighest
+            : _isBooked
+            ? cs.surfaceContainerLowest
+            : seatsDisabled
             ? cs.surfaceContainerHighest
             : cs.primary;
-    final Color ctaFg = _isBooked
-        ? cs.primary
-        : seatsDisabled
+        final Color ctaFg = isBooking
+            ? cs.onSurfaceVariant
+            : _isBooked
+            ? cs.primary
+            : seatsDisabled
             ? cs.onSurfaceVariant
             : cs.onPrimary;
 
-    final String ctaLabel = _isBooked
-        ? 'booking.cancel'.tr()
-        : seatsDisabled
+        final String ctaLabel = isBooking
+            ? 'booking.booking'.tr()
+            : _isBooked
+            ? 'booking.cancel'.tr()
+            : unavailable
+            ? (isCancelled ? 'الجلسة ملغاة' : 'انتهى موعد الجلسة')
+            : seatsDisabled
             ? 'session.full'.tr()
             : 'booking.book_seat'.tr();
-    final IconData ctaIcon = _isBooked
-        ? Icons.cancel_outlined
-        : seatsDisabled
+        final IconData ctaIcon = isBooking
+            ? Icons.hourglass_empty
+            : _isBooked
+            ? Icons.cancel_outlined
+            : seatsDisabled
             ? Icons.event_busy
             : Icons.how_to_reg;
 
-    return Row(
-      children: [
-        // Report button — "إبلاغ" quick square action beside the CTA
-        Tooltip(
-          message: 'report.title'.tr(),
-          child: Material(
-            color: cs.surfaceContainer,
-            borderRadius: BorderRadius.circular(12.r),
-            child: InkWell(
-              onTap: _openReportSheet,
-              borderRadius: BorderRadius.circular(12.r),
-              child: SizedBox(
-                width: 48.w,
-                height: 48.w,
-                child: Icon(Icons.flag_outlined, color: cs.onSurfaceVariant, size: 24.w),
-              ),
-            ),
-          ),
-        ),
-        SizedBox(width: AppSpacing.sm),
-        // Primary CTA — fixed height, rounded, fills remaining width
-        Expanded(
-          child: Material(
-            color: ctaBg,
-            borderRadius: BorderRadius.circular(12.r),
-            child: InkWell(
-              onTap: seatsDisabled ? null : _toggleBooking,
-              borderRadius: BorderRadius.circular(12.r),
-              child: SizedBox(
-                height: 56.h,
-                child: Center(
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(ctaIcon, color: ctaFg, size: 20.w),
-                      SizedBox(width: 8.w),
-                      Flexible(
-                        child: Text(
-                          ctaLabel,
-                          style: AppTypography.arabicTitle(color: ctaFg, fontSize: 15),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
+        return Row(
+          children: [
+            Tooltip(
+              message: 'report.title'.tr(),
+              child: Material(
+                color: cs.surfaceContainer,
+                borderRadius: BorderRadius.circular(12.r),
+                child: InkWell(
+                  onTap: isBooking ? null : _openReportSheet,
+                  borderRadius: BorderRadius.circular(12.r),
+                  child: SizedBox(
+                    width: 48.w,
+                    height: 48.w,
+                    child: Icon(
+                      Icons.flag_outlined,
+                      color: cs.onSurfaceVariant,
+                      size: 24.w,
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-        ),
-      ],
+            SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: Material(
+                color: ctaBg,
+                borderRadius: BorderRadius.circular(12.r),
+                child: InkWell(
+                  onTap: seatsDisabled || isBooking ? null : _toggleBooking,
+                  borderRadius: BorderRadius.circular(12.r),
+                  child: SizedBox(
+                    height: 56.h,
+                    child: Center(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          isBooking
+                              ? SizedBox(
+                                  width: 20.w,
+                                  height: 20.w,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2.w,
+                                    color: ctaFg,
+                                  ),
+                                )
+                              : Icon(ctaIcon, color: ctaFg, size: 20.w),
+                          SizedBox(width: 8.w),
+                          Flexible(
+                            child: Text(
+                              ctaLabel,
+                              style: AppTypography.arabicTitle(
+                                color: ctaFg,
+                                fontSize: 15,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
-  /// Shared fixed-height bar button (56.h, rounded 12.r).
   Widget _barButton({
     required ColorScheme cs,
     required String label,
@@ -1762,7 +2180,10 @@ class _SessionDetailsViewState extends State<SessionDetailsView> {
                 Flexible(
                   child: Text(
                     label,
-                    style: AppTypography.arabicTitle(color: foreground, fontSize: 15),
+                    style: AppTypography.arabicTitle(
+                      color: foreground,
+                      fontSize: 15,
+                    ),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
@@ -1773,94 +2194,27 @@ class _SessionDetailsViewState extends State<SessionDetailsView> {
       ),
     );
   }
-
-  /// Confirm dialog → delete session row → back to home.
-  Future<void> _confirmDeleteSession() async {
-    final cs = Theme.of(context).colorScheme;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: cs.surfaceContainerHigh,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
-        title: Text(
-          'session.delete'.tr(),
-          style: AppTypography.arabicTitle(color: cs.onSurface, fontSize: 17),
-        ),
-        content: Text(
-          'delete.message'.tr(),
-          style: AppTypography.arabicBody(color: cs.onSurfaceVariant, fontSize: 14),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text(
-              'delete.dismiss'.tr(),
-              style: AppTypography.arabicLabel(color: cs.onSurfaceVariant, fontSize: 14),
-            ),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text(
-              'delete.confirm'.tr(),
-              style: AppTypography.arabicLabel(color: cs.error, fontSize: 14),
-            ),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed != true || !mounted) return;
-    try {
-      await Supabase.instance.client
-          .from('sessions')
-          .delete()
-          .eq('id', widget.sessionId);
-    } catch (_) {
-      // Preview/mock session — nothing to delete remotely.
-    }
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('delete.deleted'.tr()), backgroundColor: cs.error),
-    );
-    // Return to the previous screen (e.g. ProfileView 'محاضراتي' tab).
-    Navigator.pop(context);
-  }
 }
 
-/// Neon blueprint map grid painter — matches the design system night-map.
 class _MapGridPainter extends CustomPainter {
   final ColorScheme cs;
 
-  _MapGridPainter({required this.cs});
+  const _MapGridPainter({required this.cs});
 
   @override
   void paint(Canvas canvas, Size size) {
-    // Base grid — delegated to the shared painter (no duplication).
-    AppMapGridPainter(
-      lineColor: cs.surfaceContainerHigh,
-      strokeWidth: 1.2,
-    ).paint(canvas, size);
-
-    // Abstract road arteries
-    final roadPaint = Paint()
-      ..color = cs.surfaceContainerHighest
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 4;
-    final path = Path()
-      ..moveTo(-20, 60)
-      ..quadraticBezierTo(140, 80, 220, 30)
-      ..quadraticBezierTo(320, -20, 420, 120);
-    canvas.drawPath(path, roadPaint);
-
-    // Dashed accent artery
-    final accentPaint = Paint()
-      ..color = cs.primary.withValues(alpha: 0.6)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5;
-    canvas.drawLine(const Offset(220, 30), Offset(220, size.height), accentPaint);
+    final paint = Paint()
+      ..color = cs.primary.withValues(alpha: 0.12)
+      ..strokeWidth = 0.8.w;
+    const spacing = 16.0;
+    for (double x = 0; x <= size.width; x += spacing) {
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
+    }
+    for (double y = 0; y <= size.height; y += spacing) {
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
+    }
   }
 
   @override
-  bool shouldRepaint(covariant _MapGridPainter oldDelegate) =>
-      oldDelegate.cs != cs;
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

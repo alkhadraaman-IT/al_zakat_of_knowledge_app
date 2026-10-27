@@ -4,8 +4,9 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/theme/app_typography.dart';
+import '../../../articles/presentation/bloc/article_cubit.dart';
 import '../../../../shared/widgets/app_top_header.dart';
-import '../../../auth/presentation/bloc/auth_bloc.dart';
+import '../../../auth/presentation/bloc/auth_cubit.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
 import '../../../content_creation/presentation/widgets/content_type_selector.dart';
 import '../../../favorites/presentation/views/favorites_view.dart';
@@ -33,10 +34,10 @@ class _MainShellState extends State<MainShell> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<AuthBloc, AuthState>(
+    return BlocListener<AuthCubit, AuthState>(
       listener: (context, state) {
         if (state is AuthUnauthenticated) {
-          // AuthBloc handles navigation via GoRouter refresh
+          // AuthCubit handles navigation via GoRouter refresh
         }
       },
       child: Scaffold(
@@ -186,7 +187,17 @@ class _MainShellState extends State<MainShell> {
             child: Transform.translate(
               offset: Offset(0, -20.h),
               child: GestureDetector(
-                onTap: () => showContentTypeSelector(context),
+                onTap: () => showContentTypeSelector(
+                  context,
+                  // Refresh the feed through the cubit once an
+                  // article is published — the BlocConsumer in
+                  // HomeView rebuilds with the new list.
+                  onArticleCreated: () {
+                    if (mounted) {
+                      context.read<ArticleCubit>().getArticles();
+                    }
+                  },
+                ),
                 child: Container(
                   width: 56.w,
                   height: 56.w,

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -10,7 +12,7 @@ import '../../../../core/services/profile_media_service.dart';
 import '../../../auth/data/models/profile_model.dart';
 import '../../../auth/domain/usecases/get_current_profile_usecase.dart';
 import '../../../auth/domain/usecases/update_profile_usecase.dart';
-import '../../../auth/presentation/bloc/auth_bloc.dart';
+import '../../../auth/presentation/bloc/auth_cubit.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
 
 /// Shows the Edit Profile sheet with all seven
@@ -58,6 +60,20 @@ class _EditProfileSheetContentState extends State<_EditProfileSheetContent> {
   ProfileModel? _profile;
   String? _photoUrl;
   String? _cvPdfUrl;
+
+  /// Local avatar path — set the moment a photo is
+  /// picked so the circle shows an immediate preview
+  /// before the upload runs on Save.
+  String? _localPhotoPath;
+
+  /// Local CV path — set the moment a PDF is picked
+  /// so its upload can run on Save.
+  String? _localCvPath;
+
+  /// Name of the selected CV file (e.g. `my_cv.pdf`)
+  /// — displayed in the CV row as soon as the
+  /// file is picked.
+  String? _cvFileName;
   bool _isLoading = true;
   bool _isSaving = false;
 
@@ -122,62 +138,116 @@ class _EditProfileSheetContentState extends State<_EditProfileSheetContent> {
   /// Fallback user id when the profile row could
   /// not be loaded — taken from the auth state.
   String _resolveUserId() {
-    final state = context.read<AuthBloc>().state;
+    final state = context.read<AuthCubit>().state;
     if (state is AuthAuthenticated) return state.user.id;
     return '';
   }
 
   Future<void> _save() async {
-    if (!(_formKey.currentState?.validate() ?? false)) return;
+    print('<<<<<<<<<<<[_save Profile Started]>>>>>>>>>>>>>');
+    if (!(_formKey.currentState?.validate() ?? false)) {
+      // Trace why Save may not execute — an
+      // invalid form returns silently.
+      print('<<<<<<<<<<<[_save Profile Invalid Form]>>>>>>>>>>>>>');
+      return;
+    }
     setState(() => _isSaving = true);
+    try {
+      // Upload the freshly picked avatar to the
+      // `avatars` bucket — its public URL joins
+      // the profiles update payload.
+      if (_localPhotoPath != null) {
+        final avatarUpload =
+            await sl<ProfileMediaService>().uploadAvatar(_localPhotoPath!);
+        if (!mounted) return;
+        if (avatarUpload.status != MediaUploadStatus.success) {
+          setState(() => _isSaving = false);
+          _showError(avatarUpload.status == MediaUploadStatus.tooLarge
+              ? 'profile.image_too_large'.tr()
+              : (avatarUpload.errorMessage ?? 'profile.upload_failed'.tr()));
+          return;
+        }
+        setState(() {
+          _photoUrl = avatarUpload.url;
+          _localPhotoPath = null;
+        });
+      }
 
-    final result = await sl<UpdateProfileUseCase>()(_buildProfile());
-    if (!mounted) return;
-    setState(() => _isSaving = false);
+      // Upload the freshly picked CV to the `cvs`
+      // bucket — its public URL joins the profiles
+      // update payload.
+      if (_localCvPath != null) {
+        final cvUpload =
+            await sl<ProfileMediaService>().uploadCv(_localCvPath!);
+        if (!mounted) return;
+        if (cvUpload.status != MediaUploadStatus.success) {
+          setState(() => _isSaving = false);
+          _showError(cvUpload.status == MediaUploadStatus.tooLarge
+              ? 'profile.cv_too_large'.tr()
+              : (cvUpload.errorMessage ?? 'profile.upload_failed'.tr()));
+          return;
+        }
+        setState(() {
+          _cvPdfUrl = cvUpload.url;
+          _localCvPath = null;
+        });
+      }
 
-    result.fold(
-      (failure) => _showMessage(failure.message),
-      (updated) {
-        widget.onNameSaved?.call(updated.name);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('profile.profile_updated'.tr()),
-            backgroundColor: Theme.of(context).colorScheme.primary,
-          ),
-        );
-        Navigator.pop(context);
-      },
-    );
+      final result = await sl<UpdateProfileUseCase>()(_buildProfile());
+      if (!mounted) return;
+      setState(() => _isSaving = false);
+
+      result.fold(
+        (failure) => _showError(failure.message),
+        (updated) {
+          widget.onNameSaved?.call(updated.name);
+          // Re-check the auth status so the updated
+          // user / profile syncs globally across screens.
+          context.read<AuthCubit>().checkAuthStatus();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('profile.update_success'.tr()),
+              backgroundColor: Theme.of(context).colorScheme.primary,
+            ),
+          );
+          Navigator.pop(context);
+        },
+      );
+    } catch (e) {
+      // Silent-exception guard — any unexpected
+      // error (network / storage / file system)
+      // is logged and the saving state is reset
+      // so the Save button stays responsive.
+      print('<<<<<<<<<<<[_save Profile Error]>>>>>>>>>>>>>');
+      print('Exception: $e');
+      if (!mounted) return;
+      setState(() => _isSaving = false);
+      // The dialog shows the exact exception so
+      // the failure cause stays readable.
+      _showError('$e');
+    }
   }
 
   Future<void> _pickPhoto() async {
-    final result = await sl<ProfileMediaService>().pickAndUploadAvatar();
+    final localPath = await sl<ProfileMediaService>().pickAvatar();
     if (!mounted) return;
-    switch (result.status) {
-      case MediaUploadStatus.success:
-        setState(() => _photoUrl = result.url);
-      case MediaUploadStatus.tooLarge:
-        _showMessage('profile.image_too_large'.tr());
-      case MediaUploadStatus.failed:
-        _showMessage('profile.upload_failed'.tr());
-      case MediaUploadStatus.cancelled:
-        break;
-    }
+    if (localPath == null) return; // the picker was dismissed
+    // Immediate local preview — the state is set
+    // before any upload (which runs on Save).
+    setState(() => _localPhotoPath = localPath);
   }
 
   Future<void> _pickCv() async {
-    final result = await sl<ProfileMediaService>().pickAndUploadCv();
+    final picked = await sl<ProfileMediaService>().pickCv();
     if (!mounted) return;
-    switch (result.status) {
-      case MediaUploadStatus.success:
-        setState(() => _cvPdfUrl = result.url);
-      case MediaUploadStatus.tooLarge:
-        _showMessage('profile.cv_too_large'.tr());
-      case MediaUploadStatus.failed:
-        _showMessage('profile.upload_failed'.tr());
-      case MediaUploadStatus.cancelled:
-        break;
-    }
+    if (picked == null) return; // the picker was dismissed
+    // Immediate file feedback — the selected file
+    // name and the pending upload state are set
+    // before any upload (which runs on Save).
+    setState(() {
+      _localCvPath = picked.path;
+      _cvFileName = picked.fileName;
+    });
   }
 
   /// Spec validation: name is 1–80 characters.
@@ -195,11 +265,30 @@ class _EditProfileSheetContentState extends State<_EditProfileSheetContent> {
     return null;
   }
 
-  void _showMessage(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Theme.of(context).colorScheme.error,
+  /// Explicit error dialog — shown when the profile
+  /// save or a media upload fails, so the exact
+  /// failure message (e.g. the Supabase storage
+  /// error or the RLS denial) stays readable
+  /// instead of vanishing with a SnackBar.
+  /// The caller resets `_isSaving` first so
+  /// Save can be retried.
+  void _showError(String message) {
+    print('<<<<<<<<<<<[_save Profile Error Dialog]>>>>>>>>>>>>>');
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor:
+            Theme.of(dialogContext).colorScheme.surfaceContainerLow,
+        title: Text('profile.error'.tr()),
+        content: SingleChildScrollView(
+          child: Text(message),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text('profile.ok'.tr()),
+          ),
+        ],
       ),
     );
   }
@@ -323,6 +412,8 @@ class _EditProfileSheetContentState extends State<_EditProfileSheetContent> {
   /// Avatar row — preview, status, pick and remove.
   Widget _buildPhotoRow(ColorScheme cs) {
     final hasPhoto = _photoUrl != null && _photoUrl!.isNotEmpty;
+    final hasLocalPhoto =
+        _localPhotoPath != null && _localPhotoPath!.isNotEmpty;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -333,22 +424,63 @@ class _EditProfileSheetContentState extends State<_EditProfileSheetContent> {
         SizedBox(height: AppSpacing.sm),
         Row(
           children: [
-            CircleAvatar(
-              radius: 30.r,
-              backgroundColor: cs.surfaceContainerHigh,
-              backgroundImage: hasPhoto ? NetworkImage(_photoUrl!) : null,
-              child: hasPhoto
-                  ? null
-                  : Icon(
-                      Icons.person_outline,
-                      color: cs.onSurfaceVariant,
-                      size: 28.w,
+            // Tappable avatar — opens the gallery picker
+            // to upload a new photo. Shows the picked
+            // image immediately (local preview), then the
+            // uploaded URL once it lands.
+            GestureDetector(
+              onTap: _pickPhoto,
+              child: Stack(
+                children: [
+                  ClipOval(
+                    child: Container(
+                      width: 60.r,
+                      height: 60.r,
+                      color: cs.surfaceContainerHigh,
+                      child: hasLocalPhoto
+                          ? Image.file(
+                              File(_localPhotoPath!),
+                              fit: BoxFit.cover,
+                            )
+                          : hasPhoto
+                              ? Image.network(
+                                  _photoUrl!,
+                                  fit: BoxFit.cover,
+                                )
+                              : Icon(
+                                  Icons.person_outline,
+                                  color: cs.onSurfaceVariant,
+                                  size: 28.w,
+                                ),
                     ),
+                  ),
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: Container(
+                      padding: EdgeInsets.all(3.w),
+                      decoration: BoxDecoration(
+                        color: cs.primary,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: cs.surfaceContainerLow,
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Icon(
+                        Icons.camera_alt_outlined,
+                        color: cs.onPrimary,
+                        size: 12.w,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
             SizedBox(width: AppSpacing.md),
             Expanded(
               child: Text(
-                hasPhoto
+                hasPhoto || hasLocalPhoto
                     ? 'profile.photo_set'.tr()
                     : 'profile.photo_not_set'.tr(),
                 style: AppTypography.arabicCaption(
@@ -361,9 +493,12 @@ class _EditProfileSheetContentState extends State<_EditProfileSheetContent> {
               onPressed: _pickPhoto,
               child: Text('profile.choose_photo'.tr()),
             ),
-            if (hasPhoto)
+            if (hasPhoto || hasLocalPhoto)
               IconButton(
-                onPressed: () => setState(() => _photoUrl = null),
+                onPressed: () => setState(() {
+                  _photoUrl = null;
+                  _localPhotoPath = null;
+                }),
                 icon: Icon(Icons.delete_outline, color: cs.error, size: 20.w),
               ),
           ],
@@ -395,9 +530,13 @@ class _EditProfileSheetContentState extends State<_EditProfileSheetContent> {
               SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: Text(
-                  hasCv
-                      ? 'profile.cv_set'.tr()
-                      : 'profile.cv_not_set'.tr(),
+                  // The selected file name (e.g.
+                  // `my_cv.pdf`) once a PDF is chosen.
+                  _cvFileName != null && _cvFileName!.isNotEmpty
+                      ? _cvFileName!
+                      : hasCv
+                          ? 'profile.cv_set'.tr()
+                          : 'profile.cv_not_set'.tr(),
                   style: AppTypography.arabicCaption(
                     color: cs.onSurfaceVariant,
                     fontSize: 12,
@@ -408,9 +547,13 @@ class _EditProfileSheetContentState extends State<_EditProfileSheetContent> {
                 onPressed: _pickCv,
                 child: Text('profile.choose_cv'.tr()),
               ),
-              if (hasCv)
+              if (hasCv || _cvFileName != null)
                 IconButton(
-                  onPressed: () => setState(() => _cvPdfUrl = null),
+                  onPressed: () => setState(() {
+                    _cvPdfUrl = null;
+                    _cvFileName = null;
+                    _localCvPath = null;
+                  }),
                   icon: Icon(Icons.delete_outline, color: cs.error, size: 20.w),
                 ),
             ],

@@ -66,5 +66,18 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<!-- Deep-link callback for Google OAuth:
+			     io.supabase.zakatalilm://login-callback -->
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>io.supabase.zakatalilm</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

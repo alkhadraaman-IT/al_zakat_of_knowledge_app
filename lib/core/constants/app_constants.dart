@@ -17,17 +17,28 @@ class AppConstants {
     defaultValue: 'sb_publishable_KwCyi03am395kLe1yAUNbA_1yH9_e7Z',
   );
 
-  /// OAuth redirect URL — must match the callback URL configured in Supabase Dashboard.
-  /// Uses a custom scheme for deep linking back into the app after OAuth.
+  /// Custom deep-link scheme for OAuth callbacks.
+  /// Must be declared in android/app/src/main/AndroidManifest.xml
+  /// (intent-filter) and ios/Runner/Info.plist (CFBundleURLSchemes),
+  /// and allow-listed in the Supabase Dashboard
+  /// (Authentication → URL Configuration → Redirect URLs).
+  static const String supabaseDeepLinkScheme = 'io.supabase.zakatalilm';
+
+  /// OAuth redirect URL — must match the callback URL configured
+  /// in the Supabase Dashboard. Uses the custom deep-link scheme
+  /// to bring the user back into the app after OAuth.
   static const String supabaseRedirectUrl = String.fromEnvironment(
     'SUPABASE_REDIRECT_URL',
-    defaultValue: 'com.zakatalilm.app://auth/callback',
+    defaultValue: 'io.supabase.zakatalilm://login-callback',
   );
 
   // Hive Box Names
   static const String authBoxName = 'auth_box';
   static const String userBoxName = 'user_box';
   static const String onboardingBoxName = 'onboarding_box';
+  static const String favoritesBoxName = 'favorites_box';
+  static const String favoriteSessionsBoxName = 'favorite_sessions_box';
+  static const String favoriteToolsBoxName = 'favorite_tools_box';
 
   // Shared Preferences Keys
   static const String keyOnboardingCompleted = 'onboarding_completed';

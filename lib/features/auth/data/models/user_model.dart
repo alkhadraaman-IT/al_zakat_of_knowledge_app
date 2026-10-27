@@ -91,6 +91,18 @@ class UserModel extends UserEntity {
     };
   }
 
+  /// إنشاء UserModel من مستخدم Firebase
+  factory UserModel.fromFirebaseUser(dynamic user) {
+    return UserModel(
+      id: user.uid,
+      email: user.email ?? '',
+      fullName: user.displayName ?? '',
+      avatarUrl: user.photoURL,
+      createdAt: user.metadata.creationTime ?? DateTime.now(),
+      isEmailVerified: user.emailVerified,
+    );
+  }
+
   @override
   List<Object?> get props => [
         id,

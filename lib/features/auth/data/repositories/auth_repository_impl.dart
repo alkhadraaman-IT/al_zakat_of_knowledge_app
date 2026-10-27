@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/errors/failures.dart';
 import '../../../../core/network/network_info.dart';
 import '../../../../core/utils/either.dart';
+import '../../../../core/utils/supabase_timeout.dart';
 import '../../domain/entities/profile_entity.dart';
 import '../../domain/entities/user_entity.dart';
 import '../../domain/repositories/auth_repository.dart';
@@ -43,8 +44,14 @@ class AuthRepositoryImpl implements AuthRepository {
       return Right(user);
     } on AuthException catch (e) {
       return Left(AuthFailure(message: e.message, code: e.statusCode));
-    } catch (e) {
-      return Left(ServerFailure(message: e.toString()));
+    } on SupabaseTimeoutException catch (_) {
+      print('<<<<<<<<<<<[signInWithEmailAndPassword Timeout]>>>>>>>>>>>>>');
+      return Left(NetworkFailure(message: 'Network request timed out. Please check your connection.'));
+    } on SupabaseSocketException catch (_) {
+      print('<<<<<<<<<<<[signInWithEmailAndPassword SocketException]>>>>>>>>>>>>>');
+      return Left(NetworkFailure(message: 'Network error'));
+    } catch (_) {
+      return Left(ServerFailure(message: 'Server error'));
     }
   }
 
@@ -72,8 +79,14 @@ class AuthRepositoryImpl implements AuthRepository {
       return Right(user);
     } on AuthException catch (e) {
       return Left(AuthFailure(message: e.message, code: e.statusCode));
-    } catch (e) {
-      return Left(ServerFailure(message: e.toString()));
+    } on SupabaseTimeoutException catch (_) {
+      print('<<<<<<<<<<<[signUpWithEmailAndPassword Timeout]>>>>>>>>>>>>>');
+      return Left(NetworkFailure(message: 'Network request timed out. Please check your connection.'));
+    } on SupabaseSocketException catch (_) {
+      print('<<<<<<<<<<<[signUpWithEmailAndPassword SocketException]>>>>>>>>>>>>>');
+      return Left(NetworkFailure(message: 'Network error'));
+    } catch (_) {
+      return Left(ServerFailure(message: 'Server error'));
     }
   }
 
@@ -91,8 +104,14 @@ class AuthRepositoryImpl implements AuthRepository {
       return Right(user);
     } on AuthException catch (e) {
       return Left(AuthFailure(message: e.message, code: e.statusCode));
-    } catch (e) {
-      return Left(ServerFailure(message: e.toString()));
+    } on SupabaseTimeoutException catch (_) {
+      print('<<<<<<<<<<<[signInWithGoogle Timeout]>>>>>>>>>>>>>');
+      return Left(NetworkFailure(message: 'Network request timed out. Please check your connection.'));
+    } on SupabaseSocketException catch (_) {
+      print('<<<<<<<<<<<[signInWithGoogle SocketException]>>>>>>>>>>>>>');
+      return Left(NetworkFailure(message: 'Network error'));
+    } catch (_) {
+      return Left(ServerFailure(message: 'Server error'));
     }
   }
 
@@ -107,8 +126,14 @@ class AuthRepositoryImpl implements AuthRepository {
       await localDataSource.clearCachedUser();
       await localDataSource.clearCachedProfile();
       return const Right(null);
-    } catch (e) {
-      return Left(ServerFailure(message: e.toString()));
+    } on SupabaseTimeoutException catch (_) {
+      print('<<<<<<<<<<<[signOut Timeout]>>>>>>>>>>>>>');
+      return Left(NetworkFailure(message: 'Network request timed out. Please check your connection.'));
+    } on SupabaseSocketException catch (_) {
+      print('<<<<<<<<<<<[signOut SocketException]>>>>>>>>>>>>>');
+      return Left(NetworkFailure(message: 'Network error'));
+    } catch (_) {
+      return Left(ServerFailure(message: 'Server error'));
     }
   }
 
@@ -129,8 +154,14 @@ class AuthRepositoryImpl implements AuthRepository {
       return Right(updated);
     } on AuthException catch (e) {
       return Left(AuthFailure(message: e.message, code: e.statusCode));
-    } catch (e) {
-      return Left(ServerFailure(message: e.toString()));
+    } on SupabaseTimeoutException catch (_) {
+      print('<<<<<<<<<<<[updateProfile Timeout]>>>>>>>>>>>>>');
+      return Left(NetworkFailure(message: 'Network request timed out. Please check your connection.'));
+    } on SupabaseSocketException catch (_) {
+      print('<<<<<<<<<<<[updateProfile SocketException]>>>>>>>>>>>>>');
+      return Left(NetworkFailure(message: 'Network error'));
+    } catch (_) {
+      return Left(ServerFailure(message: 'Server error'));
     }
   }
 
@@ -167,7 +198,13 @@ class AuthRepositoryImpl implements AuthRepository {
     try {
       final profile = await remoteDataSource.fetchProfile(userId);
       await localDataSource.cacheProfile(profile);
-    } catch (e) {
+    } on SupabaseTimeoutException catch (_) {
+      print('<<<<<<<<<<<[_syncProfile Timeout]>>>>>>>>>>>>>');
+      // Non-fatal: the profile row may not exist yet or network timed out.
+    } on SupabaseSocketException catch (_) {
+      print('<<<<<<<<<<<[_syncProfile SocketException]>>>>>>>>>>>>>');
+      // Non-fatal: network error.
+    } catch (_) {
       // Non-fatal: the profile row may not exist yet.
     }
   }
@@ -179,14 +216,19 @@ class AuthRepositoryImpl implements AuthRepository {
       // Try remote first
       final remoteUser = remoteDataSource.getCurrentSupabaseUser();
       if (remoteUser != null) {
+        // Keep the Hive cache in sync with the live session: a
+        // cold-start deep link restores the session without
+        // running a sign-in use case, so the cache would
+        // otherwise stay empty until the next sign-in.
+        await localDataSource.cacheUser(remoteUser);
         return Right(remoteUser);
       }
 
       // Fallback to local cache
       final localUser = await localDataSource.getCachedUser();
       return Right(localUser);
-    } catch (e) {
-      return Left(CacheFailure(message: e.toString()));
+    } catch (_) {
+      return Left(CacheFailure(message: 'Cache error'));
     }
   }
 
@@ -201,8 +243,8 @@ class AuthRepositoryImpl implements AuthRepository {
 
       final isLoggedIn = await localDataSource.isLoggedIn();
       return Right(isLoggedIn);
-    } catch (e) {
-      return Left(CacheFailure(message: e.toString()));
+    } catch (_) {
+      return Left(CacheFailure(message: 'Cache error'));
     }
   }
 
@@ -216,8 +258,14 @@ class AuthRepositoryImpl implements AuthRepository {
     try {
       await remoteDataSource.resetPassword(email: email);
       return const Right(null);
-    } catch (e) {
-      return Left(ServerFailure(message: e.toString()));
+    } on SupabaseTimeoutException catch (_) {
+      print('<<<<<<<<<<<[resetPassword Timeout]>>>>>>>>>>>>>');
+      return Left(NetworkFailure(message: 'Network request timed out. Please check your connection.'));
+    } on SupabaseSocketException catch (_) {
+      print('<<<<<<<<<<<[resetPassword SocketException]>>>>>>>>>>>>>');
+      return Left(NetworkFailure(message: 'Network error'));
+    } catch (_) {
+      return Left(ServerFailure(message: 'Server error'));
     }
   }
 

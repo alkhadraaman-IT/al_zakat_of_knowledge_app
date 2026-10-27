@@ -13,7 +13,7 @@ abstract class Failure extends Equatable {
 
 /// Server-side failure (Supabase errors, 500s, etc.)
 class ServerFailure extends Failure {
-  const ServerFailure({required super.message, super.code});
+  const ServerFailure( {required super.message, super.code});
 }
 
 /// Cache/local storage failure (Hive, SharedPreferences)

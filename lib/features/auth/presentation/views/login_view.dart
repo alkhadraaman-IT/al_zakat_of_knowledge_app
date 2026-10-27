@@ -8,8 +8,7 @@ import '../../../../app/router/app_router.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_typography.dart';
 import '../../../../core/constants/app_spacing.dart';
-import '../bloc/auth_bloc.dart';
-import '../bloc/auth_event.dart';
+import '../bloc/auth_cubit.dart';
 import '../bloc/auth_state.dart';
 
 /// Login screen — modern card-based design with RTL optimization.
@@ -38,23 +37,19 @@ class _LoginViewState extends State<LoginView> {
 
   void _onLogin() {
     if (_formKey.currentState?.validate() ?? false) {
-      context.read<AuthBloc>().add(
-            AuthSignInRequested(
-              email: _emailController.text.trim(),
-              password: _passwordController.text,
-            ),
+      context.read<AuthCubit>().signInWithEmail(
+            email: _emailController.text.trim(),
+            password: _passwordController.text,
           );
     }
   }
 
-  void _onGoogleSignIn() {
-    context.read<AuthBloc>().add(const AuthSignInWithGoogleRequested());
-  }
+  
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: BlocConsumer<AuthBloc, AuthState>(
+      body: BlocConsumer<AuthCubit, AuthState>(
         listener: (context, state) {
           if (state is AuthAuthenticated) {
             context.go(AppRoutes.home);
@@ -82,6 +77,7 @@ class _LoginViewState extends State<LoginView> {
               ),
               SafeArea(
                 child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
                   padding: EdgeInsets.symmetric(
                     horizontal: AppSpacing.screenHorizontal,
                     vertical: AppSpacing.screenVertical,
@@ -98,7 +94,6 @@ class _LoginViewState extends State<LoginView> {
                         SizedBox(height: AppSpacing.lg),
                         _buildDivider(),
                         SizedBox(height: AppSpacing.lg),
-                        _buildGoogleButton(isLoading),
                         SizedBox(height: AppSpacing.xl),
                         _buildSignUpLink(),
                       ],
@@ -178,7 +173,7 @@ class _LoginViewState extends State<LoginView> {
           SizedBox(height: AppSpacing.md),
           _buildPasswordField(),
           SizedBox(height: AppSpacing.sm),
-          _buildForgotPassword(),
+          // _buildForgotPassword(),
           SizedBox(height: AppSpacing.lg),
           _buildLoginButton(isLoading),
         ],
@@ -228,26 +223,26 @@ class _LoginViewState extends State<LoginView> {
     );
   }
 
-  Widget _buildForgotPassword() {
-    return Align(
-      alignment: AlignmentDirectional.centerEnd,
-      child: TextButton(
-        onPressed: () {},
-        style: TextButton.styleFrom(
-          padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
-          minimumSize: Size.zero,
-          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        ),
-        child: Text(
-          'auth.forgot_password'.tr(),
-          style: AppTypography.arabicLabel(
-            color: AppColors.primary,
-            fontSize: 14,
-          ),
-        ),
-      ),
-    );
-  }
+  // Widget _buildForgotPassword() {
+  //   return Align(
+  //     alignment: AlignmentDirectional.centerEnd,
+  //     child: TextButton(
+  //       onPressed: () {},
+  //       style: TextButton.styleFrom(
+  //         padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+  //         minimumSize: Size.zero,
+  //         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+  //       ),
+  //       child: Text(
+  //         'auth.forgot_password'.tr(),
+  //         style: AppTypography.arabicLabel(
+  //           color: AppColors.primary,
+  //           fontSize: 14,
+  //         ),
+  //       ),
+  //     ),
+  //   );
+  // }
 
   Widget _buildLoginButton(bool isLoading) {
     return _ModernButton(
@@ -294,15 +289,6 @@ class _LoginViewState extends State<LoginView> {
     );
   }
 
-  Widget _buildGoogleButton(bool isLoading) {
-    return _ModernButton(
-      text: 'auth.google_sign_in'.tr(),
-      onPressed: _onGoogleSignIn,
-      isLoading: isLoading,
-      isPrimary: false,
-      icon: Icons.g_mobiledata,
-    );
-  }
 
   Widget _buildSignUpLink() {
     return Row(

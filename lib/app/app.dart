@@ -5,7 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../core/theme/theme_cubit.dart';
-import '../features/auth/presentation/bloc/auth_bloc.dart';
+import '../features/auth/presentation/bloc/auth_cubit.dart';
 import 'router/app_router.dart';
 import 'theme/app_theme.dart';
 
@@ -13,14 +13,14 @@ import 'theme/app_theme.dart';
 /// Theme is managed via ThemeCubit for dynamic light/dark toggling.
 /// GoRouter instance is created ONCE outside BlocBuilder to prevent navigation resets.
 class ZakatAlIlmApp extends StatelessWidget {
-  final AuthBloc authBloc;
+  final AuthCubit authCubit;
   final Stream<AuthState> authStateStream;
   final AuthStateTracker authStateTracker;
   final ThemeCubit themeCubit;
 
   const ZakatAlIlmApp({
     super.key,
-    required this.authBloc,
+    required this.authCubit,
     required this.authStateStream,
     required this.authStateTracker,
     required this.themeCubit,
@@ -32,7 +32,7 @@ class ZakatAlIlmApp extends StatelessWidget {
     final router = AppRouter.createRouter(authStateStream, authStateTracker);
 
     return BlocProvider.value(
-      value: authBloc,
+      value: authCubit,
       child: BlocProvider.value(
         value: themeCubit,
         child: ScreenUtilInit(

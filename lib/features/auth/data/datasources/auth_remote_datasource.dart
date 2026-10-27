@@ -1,18 +1,23 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'dart:async';
 
-import '../../../../core/constants/app_constants.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:firebase_auth/firebase_auth.dart' as fb;
+import 'package:google_sign_in/google_sign_in.dart';
+
+import '../../../../core/errors/failures.dart';
+import '../../../../core/utils/either.dart';
+import '/core/utils/supabase_timeout.dart';
+import '/core/constants/app_constants.dart';
 import '../models/profile_model.dart';
 import '../models/user_model.dart';
 
 /// Abstract remote data source for authentication.
 abstract class AuthRemoteDataSource {
-  /// Signs in with email and password.
   Future<UserModel> signInWithEmailAndPassword({
     required String email,
     required String password,
   });
 
-  /// Signs up with email, password, and academic info.
   Future<UserModel> signUpWithEmailAndPassword({
     required String email,
     required String password,
@@ -20,48 +25,45 @@ abstract class AuthRemoteDataSource {
     required String university,
   });
 
-  /// Signs in with Google SSO.
   Future<UserModel> signInWithGoogle();
 
-  /// Signs out the current user.
   Future<void> signOut();
 
-  /// Fetches the logged-in user's profile row from the `profiles` table.
   Future<ProfileModel> fetchProfile(String userId);
 
-  /// Updates the user's `profiles` row with the
-  /// client-writable fields from `toUpdateJson()`.
   Future<ProfileModel> updateProfile(ProfileModel profile);
 
-  /// Deletes the device row from `user_devices` before sign-out.
   Future<void> deleteDeviceRow();
 
-  /// Gets the current Supabase user.
   UserModel? getCurrentSupabaseUser();
 
-  /// Sends password reset email.
   Future<void> resetPassword({required String email});
 
-  /// Stream of authentication state changes.
   Stream<AuthState> get authStateChanges;
 }
 
-/// Supabase implementation of [AuthRemoteDataSource].
+/// Supabase & Firebase implementation of [AuthRemoteDataSource].
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   final SupabaseClient supabaseClient;
+  final fb.FirebaseAuth _firebaseAuth;
+  final GoogleSignIn _googleSignIn;
 
-  AuthRemoteDataSourceImpl({required this.supabaseClient});
-
+  AuthRemoteDataSourceImpl({
+    required this.supabaseClient,
+    fb.FirebaseAuth? firebaseAuth,
+    GoogleSignIn? googleSignIn,
+  }) : _firebaseAuth = firebaseAuth ?? fb.FirebaseAuth.instance,
+       _googleSignIn = googleSignIn ?? GoogleSignIn.instance;
+       
   @override
   Future<UserModel> signInWithEmailAndPassword({
     required String email,
     required String password,
   }) async {
     print('<<<<<<<<<<<[signInWithEmailAndPassword]>>>>>>>>>>>>>');
-    final response = await supabaseClient.auth.signInWithPassword(
-      email: email,
-      password: password,
-    );
+    final response = await supabaseClient.auth
+        .signInWithPassword(email: email, password: password)
+        .withAuthTimeout(operationName: 'signInWithEmailAndPassword');
 
     if (response.user == null) {
       throw Exception('Sign in failed: No user returned');
@@ -78,14 +80,13 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     required String university,
   }) async {
     print('<<<<<<<<<<<[signUpWithEmailAndPassword]>>>>>>>>>>>>>');
-    final response = await supabaseClient.auth.signUp(
-      email: email,
-      password: password,
-      data: {
-        'full_name': fullName,
-        'university': university,
-      },
-    );
+    final response = await supabaseClient.auth
+        .signUp(
+          email: email,
+          password: password,
+          data: {'full_name': fullName, 'university': university},
+        )
+        .withAuthTimeout(operationName: 'signUpWithEmailAndPassword');
 
     if (response.user == null) {
       throw Exception('Sign up failed: No user returned');
@@ -97,39 +98,56 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   @override
   Future<UserModel> signInWithGoogle() async {
     print('<<<<<<<<<<<[signInWithGoogle]>>>>>>>>>>>>>');
-    final response = await supabaseClient.auth.signInWithOAuth(
-      OAuthProvider.google,
-      redirectTo: AppConstants.supabaseRedirectUrl,
-    );
-
-    if (!response) {
-      throw Exception('Google sign in failed');
-    }
-
-    // Wait for the session to be established via auth state changes
-    await for (final state in supabaseClient.auth.onAuthStateChange) {
-      if (state.session?.user != null) {
-        return UserModel.fromSupabase(state.session!.user.toJson());
+    try {
+      final GoogleSignInAccount? googleUser = await _googleSignIn
+          .authenticate();
+      if (googleUser == null) {
+        throw Exception('تم إلغاء تسجيل الدخول عبر Google');
       }
-    }
 
-    throw Exception('Google sign in failed: No session established');
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
+      final credential = fb.GoogleAuthProvider.credential(
+        idToken: googleAuth.idToken,
+      );
+
+      final userCredential = await _firebaseAuth.signInWithCredential(
+        credential,
+      );
+      if (userCredential.user == null) {
+        throw Exception('فشل تسجيل الدخول عبر Google');
+      }
+
+      return UserModel.fromFirebaseUser(userCredential.user!);
+    } catch (e, stackTrace) {
+      print('<<<<<<<<<<<[Google Sign-In Error Details]>>>>>>>>>>>>>');
+      print('Error: $e');
+      print('StackTrace: $stackTrace');
+      throw Exception(e.toString());
+    }
   }
 
   @override
   Future<void> signOut() async {
     print('<<<<<<<<<<<[signOut]>>>>>>>>>>>>>');
-    await supabaseClient.auth.signOut();
+    try {
+      await _googleSignIn.signOut();
+    } catch (_) {}
+    await supabaseClient.auth.signOut().withAuthTimeout(
+      operationName: 'signOut',
+    );
   }
 
   @override
   Future<ProfileModel> fetchProfile(String userId) async {
     print('<<<<<<<<<<<[fetchProfile]>>>>>>>>>>>>>');
-    final response = await supabaseClient
-        .from('profiles')
-        .select()
-        .eq('id', userId)
-        .maybeSingle();
+    final response =
+        await (supabaseClient
+                .from('profiles')
+                .select()
+                .eq('id', userId)
+                .maybeSingle())
+            .withTimeout(operationName: 'fetchProfile');
     if (response == null) {
       throw Exception('Profile not found for user: $userId');
     }
@@ -141,17 +159,24 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     print('<<<<<<<<<<<[deleteDeviceRow]>>>>>>>>>>>>>');
     final user = supabaseClient.auth.currentUser;
     if (user == null) return;
-    await supabaseClient.from('user_devices').delete().eq('user_id', user.id);
+    await supabaseClient
+        .from('user_devices')
+        .delete()
+        .eq('user_id', user.id)
+        .withTimeout(operationName: 'deleteDeviceRow');
   }
 
   @override
   Future<ProfileModel> updateProfile(ProfileModel profile) async {
     print('<<<<<<<<<<<[updateProfile]>>>>>>>>>>>>>');
-    final response = await supabaseClient
-        .from('profiles')
-        .update(profile.toUpdateJson())
-        .eq('id', profile.id)
-        .maybeSingle();
+    final response =
+        await (supabaseClient
+                .from('profiles')
+                .update(profile.toUpdateJson())
+                .eq('id', profile.id)
+                .select()
+                .maybeSingle())
+            .withTimeout(operationName: 'updateProfile');
     if (response == null) {
       throw Exception('Profile not found for user: ${profile.id}');
     }
@@ -169,12 +194,15 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   @override
   Future<void> resetPassword({required String email}) async {
     print('<<<<<<<<<<<[resetPassword]>>>>>>>>>>>>>');
-    await supabaseClient.auth.resetPasswordForEmail(
-      email,
-      redirectTo: AppConstants.supabaseRedirectUrl,
-    );
+    await supabaseClient.auth
+        .resetPasswordForEmail(
+          email,
+          redirectTo: AppConstants.supabaseRedirectUrl,
+        )
+        .withAuthTimeout(operationName: 'resetPassword');
   }
 
   @override
-  Stream<AuthState> get authStateChanges => supabaseClient.auth.onAuthStateChange;
+  Stream<AuthState> get authStateChanges =>
+      supabaseClient.auth.onAuthStateChange;
 }

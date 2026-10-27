@@ -1,163 +1,125 @@
 import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../../app/theme/app_typography.dart';
 import '../../../../core/constants/app_spacing.dart';
-import '../../../../shared/widgets/app_article_card.dart';
+import '../../../../core/di/injection_container.dart';
 import '../../../../shared/widgets/app_segmented_bar.dart';
-import '../../../../shared/widgets/app_session_card.dart';
+import '../../../../shared/widgets/app_state_views.dart';
+import '../../../sessions/presentation/session_cubit/session_cubit.dart';
+import '../../../study_tools/presentation/bloc/study_tool_cubit.dart';
+import '../../domain/entities/favorite_item_entity.dart';
+import '../cubit/favorites_cubit.dart';
+import '../cubit/favorites_state.dart';
+import '../widgets/favorite_card.dart';
 
-/// Favorites screen — Stitch Design System.
-/// Primary tab accessed from bottom nav dock.
-/// No local top header — MainShell provides the persistent AppTopHeader.
-/// No back button — this is a primary tab, not a pushed screen.
-/// Session + article cards use the centralized shared widgets
-/// (AppSessionCard / AppArticleCard) with favorite-toggle support.
-class FavoritesView extends StatefulWidget {
+/// شاشة المفضلة (جسم الصفحة فقط — الـ AppBar والـ bottom nav من الـ shell).
+///
+/// - بدون setState: التاب المختار والقائمة من [FavoritesCubit].
+/// - القائمة بتتحدّث لحالها: الـ Cubit مشترك على Stream من صندوق Hive.
+/// - يحتاج [FavoritesCubit] مزوّد من أعلى التطبيق (main.dart).
+class FavoritesView extends StatelessWidget {
   const FavoritesView({super.key});
 
   @override
-  State<FavoritesView> createState() => _FavoritesViewState();
+  Widget build(BuildContext context) {
+    // SessionCubit و StudyToolCubit: لعرض النسخة الحية للمحاضرة/الأداة.
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider.value(value: sl<SessionCubit>()),
+        BlocProvider.value(value: sl<StudyToolCubit>()),
+      ],
+      child: const _FavoritesBody(),
+    );
+  }
 }
 
-class _FavoritesViewState extends State<FavoritesView> {
-  int _selectedTab = 0;
-  final Set<int> _favoriteLectures = {0, 2};
-  final Set<int> _favoriteArticles = {1};
+class _FavoritesBody extends StatelessWidget {
+  const _FavoritesBody();
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: Theme.of(context).colorScheme.surface,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          SizedBox(height: AppSpacing.md),
-          _buildScreenTitle(context),
-          SizedBox(height: AppSpacing.md),
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: AppSpacing.screenHorizontal),
-            child: AppSegmentedBar(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SizedBox(height: AppSpacing.md),
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: AppSpacing.screenHorizontal),
+          child: BlocSelector<FavoritesCubit, FavoritesState, FavoriteType>(
+            selector: (state) => state.selectedType,
+            builder: (context, type) => AppSegmentedBar(
+              // نفس ترتيب enum FavoriteType: lecture, article, tool
               labels: [
                 'favorites.tab_lectures'.tr(),
                 'favorites.tab_articles'.tr(),
                 'favorites.tab_tools'.tr(),
               ],
-              selectedIndex: _selectedTab,
-              onTabChanged: (index) => setState(() => _selectedTab = index),
+              icons: const [
+                Icons.groups_3,
+                Icons.article_outlined,
+                Icons.settings_outlined,
+              ],
+              selectedIndex: type.index,
+              onTabChanged: (index) => context
+                  .read<FavoritesCubit>()
+                  .selectType(FavoriteType.values[index]),
             ),
           ),
-          SizedBox(height: AppSpacing.md),
-          Expanded(
-            child: _selectedTab == 0
-                ? _buildLecturesTab()
-                : _selectedTab == 1
-                    ? _buildArticlesTab()
-                    : _buildToolsTab(),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildScreenTitle(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: AppSpacing.screenHorizontal),
-      child: Row(
-        children: [
-          Container(
-            width: 40.w,
-            height: 40.w,
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceContainer,
-              borderRadius: BorderRadius.circular(12.r),
-              border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3)),
-            ),
-            child: Icon(
-              Icons.bookmark,
-              color: Theme.of(context).colorScheme.primary,
-              size: 20.w,
-            ),
-          ),
-          SizedBox(width: 12.w),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'favorites.title'.tr(),
-                style: AppTypography.arabicHeadline(
-                  color: Theme.of(context).colorScheme.onSurface,
-                  fontSize: 24,
-                ),
-              ),
-              Text(
-                'favorites.subtitle'.tr(),
-                style: AppTypography.arabicCaption(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  fontSize: 12,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLecturesTab() {
-    return ListView.separated(
-      padding: EdgeInsets.symmetric(
-        horizontal: AppSpacing.screenHorizontal,
-        vertical: AppSpacing.md,
-      ),
-      itemCount: 3,
-      separatorBuilder: (_, __) => SizedBox(height: AppSpacing.md),
-      itemBuilder: (context, index) => AppSessionCard(
-        sessionId: 'mock-favorite-${index + 1}',
-        isFavorite: _favoriteLectures.contains(index),
-        onFavoriteToggle: () => setState(() {
-          if (_favoriteLectures.contains(index)) {
-            _favoriteLectures.remove(index);
-          } else {
-            _favoriteLectures.add(index);
-          }
-        }),
-      ),
-    );
-  }
-
-  Widget _buildArticlesTab() {
-    return ListView.separated(
-      padding: EdgeInsets.symmetric(
-        horizontal: AppSpacing.screenHorizontal,
-        vertical: AppSpacing.md,
-      ),
-      itemCount: 2,
-      separatorBuilder: (_, __) => SizedBox(height: AppSpacing.md),
-      itemBuilder: (context, index) => AppArticleCard(
-        index: index,
-        isFavorite: _favoriteArticles.contains(index),
-        onFavoriteToggle: () => setState(() {
-          if (_favoriteArticles.contains(index)) {
-            _favoriteArticles.remove(index);
-          } else {
-            _favoriteArticles.add(index);
-          }
-        }),
-      ),
-    );
-  }
-
-  Widget _buildToolsTab() {
-    return Center(
-      child: Text(
-        'favorites.empty_tools'.tr(),
-        style: AppTypography.arabicBody(
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
-          fontSize: 14,
         ),
-      ),
+        SizedBox(height: AppSpacing.md),
+        const Expanded(child: _FavoritesList()),
+      ],
+    );
+  }
+}
+
+class _FavoritesList extends StatelessWidget {
+  const _FavoritesList();
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<FavoritesCubit, FavoritesState>(
+      buildWhen: (previous, current) =>
+          previous.status != current.status ||
+          previous.selectedType != current.selectedType ||
+          !listEquals(previous.visible, current.visible),
+      builder: (context, state) {
+        if (state.status == FavoritesStatus.loading) {
+          return const AppLoadingState();
+        }
+
+        if (state.status == FavoritesStatus.failure) {
+          return AppEmptyState(
+            icon: Icons.error_outline,
+            title: state.error ?? '',
+          );
+        }
+
+        final items = state.visible;
+        if (items.isEmpty) {
+          return AppEmptyState(
+            icon: Icons.bookmark_border,
+            title: 'favorites.empty'.tr(),
+            hint: 'favorites.empty_hint'.tr(),
+          );
+        }
+
+        return ListView.separated(
+          padding: EdgeInsets.only(
+            left: AppSpacing.screenHorizontal,
+right: AppSpacing.screenHorizontal,
+            bottom: AppSpacing.xl,
+          ),
+          itemCount: items.length,
+          separatorBuilder: (_, _) => SizedBox(height: AppSpacing.md),
+          itemBuilder: (context, index) => FavoriteCard(
+            key: ValueKey(items[index].key),
+            item: items[index],
+            index: index,
+          ),
+        );
+      },
     );
   }
 }
