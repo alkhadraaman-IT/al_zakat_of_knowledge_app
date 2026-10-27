@@ -86,6 +86,8 @@ class SessionEntityCard extends StatelessWidget {
         seatsLabel: '$booked/$maxSeats',
         isFavorite: isFavorite,
         onFavoriteToggle: onToggle,
+          lat: session.lat,
+        lng: session.lng,
       ),
     );
   }

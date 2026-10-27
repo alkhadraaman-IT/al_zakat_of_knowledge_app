@@ -101,6 +101,6 @@ class LocalNotificationsDataSource {
     );
   }
 
-  Future<void> cancel(int id) => _plugin.cancel(id);
+  Future<void> cancel(int id) => _plugin.cancel(id: id);
   Future<void> cancelAll() => _plugin.cancelAll();
 }

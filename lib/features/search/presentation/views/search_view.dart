@@ -306,6 +306,8 @@ class _SearchViewState extends State<SearchView> {
       capacityFactor: factor,
       percentLabel: '$percent%',
       seatsLabel: '$bookedCount/$maxSeats',
+      lat: session.lat,
+      lng: session.lng,
     );
   }
 
@@ -348,10 +350,7 @@ class _SearchViewState extends State<SearchView> {
       separatorBuilder: (_, _) => SizedBox(height: AppSpacing.md),
       itemBuilder: (context, index) {
         final article = articles[index];
-        return AppArticleCard(
-          title: article.title,
-          body: article.body,
-        );
+        return AppArticleCard(title: article.title, body: article.body);
       },
     );
   }

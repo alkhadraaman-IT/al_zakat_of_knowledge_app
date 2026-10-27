@@ -1,4 +1,5 @@
 import '../../domain/entities/app_notification.dart';
+import '../../domain/entities/notification_failure.dart';
 
 enum NotificationsStatus { loading, success, failure }
 
@@ -6,26 +7,32 @@ class NotificationsState {
   final NotificationsStatus status;
   final List<AppNotification> notifications;
 
-  /// رمز الخطأ القادم من الخادم (مثل network_error). يُترجم في الواجهة.
-  final String? errorMessage;
+  /// فشل كامل أو فشل عملية (status == failure).
+  final NotificationsFailureKind? failure;
+
+  /// نجح التحميل المحلي لكن فشل الخادم (status == success): نعرض شريط "فشل التحديث".
+  final NotificationsFailureKind? partialFailure;
 
   const NotificationsState({
     this.status = NotificationsStatus.loading,
     this.notifications = const [],
-    this.errorMessage,
+    this.failure,
+    this.partialFailure,
   });
 
   int get unreadCount => notifications.where((n) => !n.isRead).length;
 
-  /// ملاحظة: errorMessage يُمسح في كل copyWith ما لم يُمرَّر.
+  /// ملاحظة: failure وpartialFailure يُمسحان في كل copyWith ما لم يُمرَّرا.
   NotificationsState copyWith({
     NotificationsStatus? status,
     List<AppNotification>? notifications,
-    String? errorMessage,
+    NotificationsFailureKind? failure,
+    NotificationsFailureKind? partialFailure,
   }) =>
       NotificationsState(
         status: status ?? this.status,
         notifications: notifications ?? this.notifications,
-        errorMessage: errorMessage,
+        failure: failure,
+        partialFailure: partialFailure,
       );
 }

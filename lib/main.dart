@@ -16,29 +16,33 @@ import 'features/auth/presentation/bloc/auth_cubit.dart';
 import 'features/favorites/data/models/favorite_item_model.dart';
 import 'features/favorites/presentation/cubit/favorites_cubit.dart';
 import 'features/notifications/data/datasources/local_notifications_data_source.dart';
+import 'features/notifications/domain/entities/notification_target.dart';
+import 'features/notifications/services/fcm_background_handler.dart';
 import 'firebase_options.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
+await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
 await Hive.initFlutter();
 Hive.registerAdapter(FavoriteItemModelAdapter()); // قبل أي openBox
 final favoritesBox = await Hive.openBox<FavoriteItemModel>('favorites_v2');
 
   // تهيئة الـ Firebase باستخدام الإعدادات الخاصة بالمنصة الحالية
- FirebaseMessaging.onBackgroundMessage(fcmBackgroundHandler); // قبل runApp
-await sl<LocalNotificationsDataSource>().init(
-  onTap: (payload) {
-    final t = NotificationTarget.parse(payload);
-    if (t == null) return;
-    router.push(switch (t.kind) {
-      NotificationTargetKind.session => '/session-details/${t.id}',
-      NotificationTargetKind.material => '/material-details/${t.id}',
-      NotificationTargetKind.article => '/article-details/${t.id}',
-    });
-  },
-);
-);
+//  FirebaseMessaging.onBackgroundMessage(fcmBackgroundHandler); // قبل runApp
+// await sl<LocalNotificationsDataSource>().init(
+//   onTap: (payload) {
+//     final t = NotificationTarget.parse(payload);
+//     if (t == null) return;
+//     router.push(switch (t.kind) {
+//       NotificationTargetKind.session => '/session-details/${t.id}',
+//       NotificationTargetKind.material => '/material-details/${t.id}',
+//       NotificationTargetKind.article => '/article-details/${t.id}',
+//     });
+//   },
+// );
+
 
   // Initialize localization
   await EasyLocalization.ensureInitialized();

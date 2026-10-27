@@ -145,6 +145,8 @@ class _ProfileActivityTabsState extends State<ProfileActivityTabs> {
     }
   }
 
+  // داخل كلاس _ProfileActivityTabsState:
+
   Widget _buildLecturesTab(BuildContext context) {
     if (widget.isLoadingLectures) {
       return const SizedBox(
@@ -180,24 +182,58 @@ class _ProfileActivityTabsState extends State<ProfileActivityTabs> {
     return Column(
       children: [
         for (var i = 0; i < widget.lectures.length; i++) ...[
-          GestureDetector(
-            onTap: () => context.push(
-              '/session-details/${widget.lectures[i].id}?isPublisher=true',
-            ),
-            child: _ActivityCard(
-              status: widget.lectures[i].bookedCount >= 10
-                  ? 'profile.confirmed'.tr()
-                  : 'profile.pending'.tr(),
-              title: widget.lectures[i].title,
-              description: widget.lectures[i].description,
-              seats:
-                  '${widget.lectures[i].bookedCount}/${widget.lectures[i].maxSeats > 0 ? widget.lectures[i].maxSeats : 1}',
-              minSeats: 'profile.min_seats'.tr(namedArgs: {'value': '10'}),
-            ),
-          ),
+          // 👈 استبدلنا _ActivityCard هنا بهذا الاستدعاء
+          _buildPublisherSessionCard(context, widget.lectures[i]),
           if (i < widget.lectures.length - 1) SizedBox(height: 12.h),
         ],
       ],
+    );
+  }
+
+  // 👈 دالة جديدة خاصة بمحاضراتي (تحتوي على الملاحظة والزر المخصص)
+  Widget _buildPublisherSessionCard(BuildContext context, SessionEntity session) {
+    final startTime = DateTime.tryParse(session.startsAt)?.toLocal();
+    final bookedCount = session.bookedCount;
+    final maxSeats = session.maxSeats > 0 ? session.maxSeats : 1;
+    final factor = (bookedCount / maxSeats).clamp(0.0, 1.0).toDouble();
+    final percent = (bookedCount / maxSeats * 100).round();
+    final lecturer = session.lecturerName;
+    final location = [
+      session.placeName,
+      session.city,
+    ].where((part) => part.isNotEmpty).join(' — ');
+
+    String dateLabel = 'session.unspecified'.tr();
+    String timeLabel = 'session.unspecified'.tr();
+    if (startTime != null) {
+      dateLabel =
+          '${_weekdays[startTime.weekday % 7]} ${startTime.day} ${_months[startTime.month - 1]}';
+      final hour = startTime.hour;
+      final minute = startTime.minute;
+      timeLabel =
+          '${hour > 12 ? hour - 12 : (hour == 0 ? 12 : hour)}:${minute.toString().padLeft(2, '0')} ${hour >= 12 ? 'session.pm'.tr() : 'session.am'.tr()}';
+    }
+
+    return AppSessionCard(
+      sessionId: session.id,
+      title: session.title,
+      lecturerName: lecturer.isNotEmpty ? lecturer : 'session.unspecified'.tr(),
+      lecturerInitial: lecturer.isNotEmpty ? lecturer[0] : ' — ',
+      dateLabel: dateLabel,
+      timeLabel: timeLabel,
+      locationLabel: location.isNotEmpty ? location : 'session.unspecified'.tr(),
+      mapPillLabel: location.isNotEmpty ? location : 'session.unspecified'.tr(),
+      capacityFactor: factor,
+      percentLabel: '$percent%',
+      seatsLabel: '$bookedCount/$maxSeats',
+      lat: session.lat,
+      lng: session.lng,
+      
+      // 👈 التعديلات المطلوبة:
+      ctaLabel: 'تفاصيل', // الزر أصبح "تفاصيل"
+      noteLabel: 'لا يمكن حذف المحاضرة إلا قبل 48 ساعة من موعدها', // الملاحظة
+      // الرابط الخاص بصاحب المحاضرة
+      onTap: () => context.push('/session-details/${session.id}?isPublisher=true'),
     );
   }
 

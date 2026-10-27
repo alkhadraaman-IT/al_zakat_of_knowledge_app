@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' hide AuthState; // 1. أضف مكتبة سوبابيس
 
 import '../../../../app/theme/app_typography.dart';
 import '../../../articles/presentation/bloc/article_cubit.dart';
@@ -13,8 +14,6 @@ import '../../../favorites/presentation/views/favorites_view.dart';
 import '../../../home/presentation/views/home_view.dart';
 
 /// Main navigation shell — Stitch Design System.
-/// True persistent shell: Top Header Bar and Bottom Navigation Dock remain
-/// 100% fixed across all main tabs. Body content swaps dynamically.
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
 
@@ -24,25 +23,55 @@ class MainShell extends StatefulWidget {
 
 class _MainShellState extends State<MainShell> {
   int _currentIndex = 0;
+  
+  // متغيرات لتخزين بيانات البروفايل (الاسم والصورة من جدول profiles مباشرة)
+  String? _profileName;
+  String? _profilePhotoUrl;
 
-  /// Body content screens — swapped dynamically via IndexedStack.
-  /// Top header and bottom nav remain fixed.
   final List<Widget> _screens = const [
     HomeView(),
     FavoritesView(),
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _fetchUserProfile(); // جلب بيانات البروفايل عند فتح الشل
+  }
+
+  /// جلب بيانات البروفايل من جدول profiles تماماً مثل صفحة البروفايل
+  Future<void> _fetchUserProfile() async {
+    try {
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user == null) return;
+
+      final response = await Supabase.instance.client
+          .from('profiles')
+          .select('name, photo_url')
+          .eq('id', user.id)
+          .maybeSingle();
+
+      if (response != null && mounted) {
+        setState(() {
+          _profileName = response['name']?.toString();
+          _profilePhotoUrl = response['photo_url']?.toString();
+        });
+      }
+    } catch (e) {
+      debugPrint('<<<<<<<<< MainShell Profile Fetch Error: $e >>>>>>>>>');
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return BlocListener<AuthCubit, AuthState>(
       listener: (context, state) {
-        if (state is AuthUnauthenticated) {
-          // AuthCubit handles navigation via GoRouter refresh
+        if (state is AuthAuthenticated) {
+          _fetchUserProfile(); // إعادة الجلب عند تسجيل الدخول
         }
       },
       child: Scaffold(
         backgroundColor: Theme.of(context).colorScheme.surface,
-        // ── Fixed Top Header Bar (persistent) ──────────────────
         appBar: PreferredSize(
           preferredSize: Size.fromHeight(64.h),
           child: SafeArea(
@@ -50,24 +79,34 @@ class _MainShellState extends State<MainShell> {
             child: _buildTopHeader(context),
           ),
         ),
-        // ── Dynamic Body Content (swaps on tab change) ─────────
         body: IndexedStack(
           index: _currentIndex,
           children: _screens,
         ),
-        // ── Fixed Bottom Navigation Dock (persistent) ─────────
         bottomNavigationBar: _buildBottomNavDock(context),
       ),
     );
   }
 
-  /// Fixed Top Header Bar — standard AppTopHeader with bell + avatar trailing.
+  /// Fixed Top Header Bar — يعرض الصورة أو الحرف الأول من جدول profiles
   Widget _buildTopHeader(BuildContext context) {
+    // استخدام الاسم من البروفايل، وإلا كبديل من الـ AuthCubit
+    final authState = context.watch<AuthCubit>().state;
+    String? fallbackName;
+    if (authState is AuthAuthenticated) {
+      fallbackName = authState.user.fullName;
+    }
+
+    final displayName = _profileName ?? fallbackName;
+    final String userInitial = (displayName != null && displayName.trim().isNotEmpty) 
+        ? displayName.trim()[0] 
+        : 'م';
+
     return AppTopHeader(
       context: context,
       trailing: Row(
         children: [
-          // Notification bell — navigates to notifications
+          // Notification bell
           GestureDetector(
             onTap: () => context.push('/notifications'),
             child: Container(
@@ -110,30 +149,53 @@ class _MainShellState extends State<MainShell> {
             ),
           ),
           SizedBox(width: 12.w),
-          // Avatar — navigates to Profile
+          // Avatar — يعرض الصورة الحقيقية من جدول profiles أو الحرف الأول
           GestureDetector(
-            onTap: () => context.push('/profile'),
+            onTap: () async {
+              await context.push('/profile');
+              _fetchUserProfile(); // تحديث الصورة عند العودة من صفحة البروفايل في حال تم تغييرها
+            },
             child: Container(
               width: 40.w,
               height: 40.w,
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primary,
+                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(12.r),
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+                ),
                 boxShadow: [
                   BoxShadow(
-                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.35),
+                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
                     blurRadius: 12.r,
                   ),
                 ],
               ),
-              child: Center(
-                child: Text(
-                  'ع',
-                  style: AppTypography.arabicTitle(
-                    color: Theme.of(context).colorScheme.onPrimary,
-                    fontSize: 20,
-                  ),
-                ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12.r),
+                child: (_profilePhotoUrl != null && _profilePhotoUrl!.trim().isNotEmpty)
+                    ? Image.network(
+                        _profilePhotoUrl!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Center(
+                          child: Text(
+                            userInitial,
+                            style: AppTypography.arabicTitle(
+                              color: Theme.of(context).colorScheme.primary,
+                              fontSize: 18,
+                            ),
+                          ),
+                        ),
+                      )
+                    : Center(
+                        child: Text(
+                          userInitial,
+                          style: AppTypography.arabicTitle(
+                            color: Theme.of(context).colorScheme.primary,
+                            fontSize: 18,
+                          ),
+                        ),
+                      ),
               ),
             ),
           ),
@@ -142,8 +204,6 @@ class _MainShellState extends State<MainShell> {
     );
   }
 
-  /// Fixed Bottom Navigation Dock — never destroyed, always visible.
-  /// RTL layout: Favorites (left) | Plus (center, FIXED) | Home (right).
   Widget _buildBottomNavDock(BuildContext context) {
     return Container(
       margin: EdgeInsets.only(
@@ -162,26 +222,17 @@ class _MainShellState extends State<MainShell> {
             blurRadius: 20.r,
             spreadRadius: 0,
           ),
-          BoxShadow(
-            color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.6),
-            blurRadius: 35.r,
-            spreadRadius: 0,
-          ),
         ],
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Favorites tab (left side in RTL)
           _NavItem(
             icon: Icons.bookmark_outline,
             label: '',
-            // label: 'المفضلة',
             isActive: _currentIndex == 1,
             onTap: () => setState(() => _currentIndex = 1),
           ),
-
-          // Center raised add dome — FIXED position, never shifts
           SizedBox(
             width: 56.w,
             child: Transform.translate(
@@ -189,9 +240,6 @@ class _MainShellState extends State<MainShell> {
               child: GestureDetector(
                 onTap: () => showContentTypeSelector(
                   context,
-                  // Refresh the feed through the cubit once an
-                  // article is published — the BlocConsumer in
-                  // HomeView rebuilds with the new list.
                   onArticleCreated: () {
                     if (mounted) {
                       context.read<ArticleCubit>().getArticles();
@@ -222,12 +270,9 @@ class _MainShellState extends State<MainShell> {
               ),
             ),
           ),
-
-          // Home tab (right side in RTL)
           _NavItem(
             icon: Icons.home_outlined,
             label: '',
-            // label: 'الرئيسية',
             isActive: _currentIndex == 0,
             onTap: () => setState(() => _currentIndex = 0),
           ),
@@ -237,7 +282,6 @@ class _MainShellState extends State<MainShell> {
   }
 }
 
-/// Navigation item widget.
 class _NavItem extends StatelessWidget {
   final IconData icon;
   final String label;

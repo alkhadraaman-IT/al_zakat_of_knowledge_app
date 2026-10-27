@@ -4,7 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../app/theme/app_typography.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../domain/entities/app_notification.dart';
-import '../../domain/entities/notification_type.dart';
+import 'notification_type_style.dart';
 
 class NotificationCard extends StatelessWidget {
   final AppNotification notification;
@@ -15,18 +15,6 @@ class NotificationCard extends StatelessWidget {
     required this.notification,
     required this.onTap,
   });
-
-  static IconData iconFor(NotificationType type) => switch (type) {
-        NotificationType.sessionCancelled => Icons.event_busy_outlined,
-        NotificationType.sessionUpdated => Icons.edit_calendar_outlined,
-        NotificationType.materialTaken => Icons.check_circle_outline,
-        NotificationType.newSession => Icons.groups_2_outlined,
-        NotificationType.newMaterial => Icons.menu_book_outlined,
-        NotificationType.newArticle => Icons.article_outlined,
-        NotificationType.sessionEndedDua => Icons.favorite_border,
-        NotificationType.sessionReminder => Icons.alarm_outlined,
-        NotificationType.system => Icons.notifications_outlined,
-      };
 
   static String timeAgo(DateTime dateTime) {
     final diff = DateTime.now().difference(dateTime);
@@ -42,7 +30,7 @@ class NotificationCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final isUnread = !notification.isRead;
-    final isAlert = notification.type == NotificationType.sessionCancelled;
+    final isAlert = notification.type.style.isAlert;
     final accent = isAlert ? cs.error : cs.primary;
 
     return Material(
@@ -77,7 +65,7 @@ class NotificationCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12.r),
                 ),
                 child: Icon(
-                  iconFor(notification.type),
+                  notification.type.style.icon,
                   color: isUnread ? accent : cs.onSurfaceVariant,
                   size: 22.w,
                 ),
@@ -95,7 +83,7 @@ class NotificationCard extends StatelessWidget {
                             style: AppTypography.arabicTitle(
                               color: cs.onSurface,
                               fontSize: 15,
-),
+                            ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -113,7 +101,7 @@ class NotificationCard extends StatelessWidget {
                     SizedBox(height: 4.h),
                     Text(
                       notification.body,
-                      style: AppTypography.arabicBody(
+style: AppTypography.arabicBody(
                         color: cs.onSurfaceVariant,
                         fontSize: 13,
                       ),

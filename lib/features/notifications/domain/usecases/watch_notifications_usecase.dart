@@ -1,10 +1,8 @@
-import '../entities/app_notification.dart';
 import '../repositories/notification_repository.dart';
 
-class WatchNotificationsUseCase {
+class WatchLocalNotificationChangesUseCase {
   final NotificationsRepository _repo;
-  const WatchNotificationsUseCase(this._repo);
+  const WatchLocalNotificationChangesUseCase(this._repo);
 
-  Stream<List<AppNotification>> call({int limit = 50}) =>
-      _repo.watchNotifications(limit: limit);
+  Stream<void> call() => _repo.watchChanges();
 }

@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:al_zakat_of_knowledge_app/features/notifications/data/datasources/fcm_data_source.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:hive_ce/hive_ce.dart';
 import 'package:hive_ce_flutter/hive_ce_flutter.dart';
 import 'package:http/io_client.dart';
@@ -38,18 +40,39 @@ import '../../features/favorites/domain/usecases/toggle_favorite_usecase.dart'
     show ToggleFavoriteUseCase;
 import '../../features/favorites/presentation/cubit/favorites_cubit.dart';
 import '../../features/notifications/data/datasources/device_tokens_remote_data_source.dart';
+import '../../features/notifications/data/datasources/incoming_message_bus.dart';
+import '../../features/notifications/data/datasources/local_notifications_data_source.dart';
+import '../../features/notifications/data/datasources/notification_local_datasource.dart';
 import '../../features/notifications/data/datasources/notification_remote_data_source.dart';
+import '../../features/notifications/data/datasources/pending_messages_data_source.dart';
+import '../../features/notifications/data/repositories/category_topics_repository_impl.dart';
+import '../../features/notifications/data/repositories/notification_scheduler_impl.dart';
 import '../../features/notifications/data/repositories/notifications_repository_impl.dart';
+import '../../features/notifications/domain/repositories/category_topics_repository.dart';
 import '../../features/notifications/domain/repositories/notification_repository.dart';
+import '../../features/notifications/domain/repositories/notification_scheduler.dart';
+import '../../features/notifications/domain/usecases/cancel_session_notifications_usecase.dart';
 import '../../features/notifications/domain/usecases/delete_notification_usecase.dart';
 import '../../features/notifications/domain/usecases/get_notifications_usecase.dart';
+import '../../features/notifications/domain/usecases/handle_incoming_notification_usecase.dart';
 import '../../features/notifications/domain/usecases/mark_all_notifications_read_usecase.dart';
 import '../../features/notifications/domain/usecases/mark_notification_read_usecase.dart';
-import '../../features/notifications/domain/usecases/record_session_ended_dua_usecase.dart';
+import '../../features/notifications/domain/usecases/save_local_notification_usecase.dart';
+import '../../features/notifications/domain/usecases/schedule_session_dua_usecase.dart';
+import '../../features/notifications/domain/usecases/schedule_session_reminder_usecase.dart';
+import '../../features/notifications/domain/usecases/sync_category_topics_usecase.dart';
 import '../../features/notifications/domain/usecases/watch_notifications_usecase.dart';
 import '../../features/notifications/presentation/cubit/notification_cubit.dart';
+import '../../features/notifications/services/fcm_service.dart';
+import '../../features/notifications/services/fcm_token_manager.dart';
+import '../../features/notifications/services/followed_categories_provider.dart';
+import '../../features/notifications/services/foreground_message_listener.dart';
+import '../../features/notifications/services/incoming_message_pipeline.dart';
+import '../../features/notifications/services/notifications_session_coordinator.dart';
+import '../../features/notifications/services/pending_messages_drainer.dart';
 import '../../features/sessions/data/datasources/session_remote_datasource.dart';
-import '../../features/sessions/data/repositories/session_repository_impl.dart' hide SessionRemoteDataSourceImpl;
+import '../../features/sessions/data/repositories/session_repository_impl.dart'
+    hide SessionRemoteDataSourceImpl;
 import '../../features/sessions/domain/repositories/session_repository.dart';
 import '../../features/sessions/domain/usecases/book_session_usecase.dart';
 import '../../features/sessions/domain/usecases/cancel_booking_usecase.dart';
@@ -361,42 +384,83 @@ Future<void> initDependencies() async {
   // Favorites Cubit — Singleton (ﻛﺎن registerFactory):
 
   sl.registerLazySingleton<FavoritesCubit>(() {
-  final auth = sl<SupabaseClient>().auth;
-  return FavoritesCubit(
-    getFavoritesUseCase: sl<GetFavoritesUseCase>(),
-    toggleFavoriteUseCase: sl<ToggleFavoriteUseCase>(),
-    initialUserId: auth.currentUser?.id,
-    userIdChanges: auth.onAuthStateChange.map((e) => e.session?.user.id),
-  );
-});
+    final auth = sl<SupabaseClient>().auth;
+    return FavoritesCubit(
+      getFavoritesUseCase: sl<GetFavoritesUseCase>(),
+      toggleFavoriteUseCase: sl<ToggleFavoriteUseCase>(),
+      initialUserId: auth.currentUser?.id,
+      userIdChanges: auth.onAuthStateChange.map((e) => e.session?.user.id),
+    );
+  });
 
+  Future<void> initNotifications(GetIt sl) async {
+  final client = Supabase.instance.client;
+  final box = await Hive.openBox<String>('notifications_local');
+  final metaBox = await Hive.openBox<String>('notifications_meta');
+  String? currentUserId() => client.auth.currentUser?.id;
 
-  // void initNotifications(GetIt sl) {
-  //   final client = Supabase.instance.client;
+  sl
+    // ── data sources ──
+    ..registerLazySingleton<NotificationsRemoteDataSource>(
+        () => NotificationsRemoteDataSourceImpl(client))
+    ..registerLazySingleton<NotificationsLocalDataSource>(
+        () => NotificationsLocalDataSourceImpl(box))
+    ..registerLazySingleton(() => DeviceTokensRemoteDataSource(client))
+    ..registerLazySingleton(() => LocalNotificationsDataSource())
+    ..registerLazySingleton(() => FcmDataSource(FirebaseMessaging.instance))
+    ..registerLazySingleton(() => PendingMessagesDataSource())
+    ..registerLazySingleton(() => IncomingMessageBus())
+    // ── repositories ──
+    ..registerLazySingleton<NotificationsRepository>(() => NotificationsRepositoryImpl(
+          remote: sl(),
+          local: sl(),
+          bus: sl(),
+          currentUserId: currentUserId,
+        ))
+    ..registerLazySingleton<NotificationScheduler>(() => NotificationSchedulerImpl(sl()))
+    ..registerLazySingleton<CategoryTopicsRepository>(
+        () => CategoryTopicsRepositoryImpl(sl(), metaBox))
+    // ── use cases ──
+    ..registerLazySingleton(() => GetNotificationsUseCase(sl()))
+    ..registerLazySingleton(() => WatchLocalNotificationChangesUseCase(sl()))
+    ..registerLazySingleton(() => MarkNotificationReadUseCase(sl()))
+    ..registerLazySingleton(() => MarkAllNotificationsReadUseCase(sl()))
+    ..registerLazySingleton(() => DeleteNotificationUseCase(sl()))
+    ..registerLazySingleton(() => SaveLocalNotificationUseCase(sl()))
+    ..registerLazySingleton(() => ScheduleSessionDuaUseCase(sl(), sl()))
+    ..registerLazySingleton(() => ScheduleSessionReminderUseCase(sl(), sl()))
+    ..registerLazySingleton(() => CancelSessionNotificationsUseCase(sl(), sl()))
+    ..registerLazySingleton(() => SyncCategoryTopicsUseCase(sl()))
+    ..registerLazySingleton(() => HandleIncomingNotificationUseCase(sl(), sl(), sl()))
+    // ── services (FCM مقسّمة) ──
+    ..registerLazySingleton(() => FcmTokenManager(sl(), sl()))
+    ..registerLazySingleton(() => IncomingMessagePipeline(
+          handle: sl(),
+          bus: sl(),
+          currentUserId: currentUserId,
+        ))
+    ..registerLazySingleton(() => ForegroundMessageListener(sl(), sl()))
+    ..registerLazySingleton(() => PendingMessagesDrainer(sl(), sl()))
+    ..registerLazySingleton(() => FcmService(
+          token: sl(),
+          foreground: sl(),
+          drainer: sl(),
+          topics: sl(),
+          scheduler: sl(),
+          pending: sl(),
+          currentUserId: currentUserId,
+        ))
+    ..registerLazySingleton(() => FollowedCategoriesProvider(client))
+    ..registerLazySingleton(
+        () => NotificationsSessionCoordinator(client, sl(), sl()))
+    // ── presentation: نسخة جديدة كل مرة تُفتح الشاشة ──
+    ..registerFactory(() => NotificationsCubit(
+          getNotifications: sl(),
+          watchLocalChanges: sl(),
+          markRead: sl(),
+          markAllRead: sl(),
+          deleteNotification: sl(),
+        ));
+}
 
-  //   sl
-  //     ..registerLazySingleton<NotificationsRemoteDataSource>(
-  //       () => NotificationsRemoteDataSourceImpl(client),
-  //     )
-  //     ..registerLazySingleton(() => DeviceTokensRemoteDataSource(client))
-  //     ..registerLazySingleton<NotificationsRepository>(
-  //       () => NotificationsRepositoryImpl(sl()),
-  //     )
-  //     ..registerLazySingleton(() => GetNotificationsUseCase(sl()))
-  //     ..registerLazySingleton(() => WatchNotificationsUseCase(sl()))
-  //     ..registerLazySingleton(() => MarkNotificationReadUseCase(sl()))
-  //     ..registerLazySingleton(() => MarkAllNotificationsReadUseCase(sl()))
-  //     ..registerLazySingleton(() => DeleteNotificationUseCase(sl()))
-  //     ..registerLazySingleton(() => RecordSessionEndedDuaUseCase(sl()))
-  //     // factory: نسخة جديدة كل مرة تُفتح الشاشة
-  //     ..registerFactory(
-  //       () => NotificationsCubit(
-  //         getNotifications: sl(),
-  //         watchNotifications: sl(),
-  //         markRead: sl(),
-  //         markAllRead: sl(),
-  //         deleteNotification: sl(),
-  //       ),
-  //     );
-  // }
 }

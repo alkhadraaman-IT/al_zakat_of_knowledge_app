@@ -1,6 +1,5 @@
 import '../../domain/entities/app_notification.dart';
 import '../../domain/entities/notification_type.dart';
-import '../../domain/entities/notification_type.dart';
 
 class NotificationModel extends AppNotification {
   const NotificationModel({
@@ -14,20 +13,55 @@ class NotificationModel extends AppNotification {
     required super.createdAt,
   });
 
-  factory NotificationModel.fromJson(Map<String, dynamic> json) {
+  // الإنشاء من Map (fromMap)
+  factory NotificationModel.fromMap(Map<String, dynamic> map) {
     return NotificationModel(
-      id: json['id'] as String,
-      userId: json['user_id'] as String,
-      type: NotificationType.fromString(json['type'] as String?),
-      title: (json['title'] as String?) ?? '',
-      body: (json['body'] as String?) ?? '',
-      data: (json['data'] as Map?)?.cast<String, dynamic>(),
-      isRead: (json['is_read'] as bool?) ?? false,
-      createdAt: DateTime.parse(json['created_at'] as String).toLocal(),
+      id: map['id'] as String,
+      userId: map['user_id'] as String,
+      type: NotificationType.fromString(map['type'] as String?),
+      title: (map['title'] as String?) ?? '',
+      body: (map['body'] as String?) ?? '',
+      data: (map['data'] as Map?)?.cast<String, dynamic>(),
+      isRead: (map['is_read'] as bool?) ?? false,
+      createdAt: DateTime.parse(map['created_at'] as String).toLocal(),
     );
   }
 
-  // لا يوجد toInsertJson: الإنشاء من الخادم فقط.
+  // دعم fromJson كمرادف لـ fromMap للتوافق
+  factory NotificationModel.fromJson(Map<String, dynamic> json) => 
+      NotificationModel.fromMap(json);
+
+  // الإنشاء من الـ Entity (لحل مشكلة fromEntity المفقودة)
+  factory NotificationModel.fromEntity(AppNotification entity) {
+    return NotificationModel(
+      id: entity.id,
+      userId: entity.userId,
+      type: entity.type,
+      title: entity.title,
+      body: entity.body,
+      data: entity.data,
+      isRead: entity.isRead,
+      createdAt: entity.createdAt,
+    );
+  }
+
+  // التحويل إلى Map (toMap)
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'user_id': userId,
+      'type': type.name, // تأكد من مطابقة طريقة حفظ النوع لديك (مثل استخدام .name لو كان Enum)
+      'title': title,
+      'body': body,
+      'data': data,
+      'is_read': isRead,
+      'created_at': createdAt.toIso8601String(),
+    };
+  }
+
+  // دعم toJson كمرادف لـ toMap
+  Map<String, dynamic> toJson() => toMap();
+
   // التعديل المسموح من التطبيق: is_read فقط.
   Map<String, dynamic> toUpdateJson() => {'is_read': isRead};
 }
