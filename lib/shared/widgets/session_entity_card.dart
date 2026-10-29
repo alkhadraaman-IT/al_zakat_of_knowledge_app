@@ -44,9 +44,10 @@ class SessionEntityCard extends StatelessWidget {
     final maxSeats = session.maxSeats > 0 ? session.maxSeats : 1;
     final ratio = booked / maxSeats;
     final lecturer = session.lecturerName;
-    final location = [session.placeName, session.city]
-        .where((part) => part.isNotEmpty)
-        .join(' — ');
+    final location = [
+      session.placeName,
+      session.city,
+    ].where((part) => part.isNotEmpty).join(' — ');
 
     var dateLabel = 'session.unspecified'.tr();
     var timeLabel = 'session.unspecified'.tr();
@@ -57,8 +58,9 @@ class SessionEntityCard extends StatelessWidget {
 
       final hour12 = startTime.hour % 12 == 0 ? 12 : startTime.hour % 12;
       final minute = startTime.minute.toString().padLeft(2, '0');
-      final period =
-          startTime.hour >= 12 ? 'session.pm'.tr() : 'session.am'.tr();
+      final period = startTime.hour >= 12
+          ? 'session.pm'.tr()
+          : 'session.am'.tr();
       timeLabel = '$hour12:$minute $period';
     }
 
@@ -80,8 +82,15 @@ class SessionEntityCard extends StatelessWidget {
         seatsLabel: '$booked/$maxSeats',
         isFavorite: isFavorite,
         onFavoriteToggle: onToggle,
-        ctaLabel: 'session.details'.tr(),                      
-        onTap: () => context.push('/session-details/${session.id}'),  
+        ctaLabel: 'تفاصيل',
+        // ⬇️ الملاحظة الجديدة ⬇️
+        noteLabel: session.bookedCount >= session.maxSeats
+            ? 'اكتمل النصاب الأدنى! لا يزال بإمكانك الحجز والانضمام'
+            : 'العدد المحدد هو النصاب الأدنى.. يمكنك الحجز دائماً',
+        noteColor: Theme.of(context).colorScheme.secondary, // لون إيجابي
+        noteIcon: Icons.stars, // أيقونة تشجيعية
+        // ⬆️ نهاية الملاحظة ⬆️
+        onTap: () => context.push('/session-details/${session.id}'),
         lat: session.lat,
         lng: session.lng,
       ),

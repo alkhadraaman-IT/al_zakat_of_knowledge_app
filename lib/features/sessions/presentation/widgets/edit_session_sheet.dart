@@ -49,8 +49,6 @@ class _EditSessionSheetState extends State<_EditSessionSheet> {
   late final TextEditingController _placeController;
   late final TextEditingController _durationController;
 
- 
-
   String? _selectedCity;
 
   List<CategoryEntity> _categories = const [];
@@ -138,29 +136,27 @@ class _EditSessionSheetState extends State<_EditSessionSheet> {
   }
 
   Future<void> _pickLocation() async {
-  FocusScope.of(context).unfocus();
+    FocusScope.of(context).unfocus();
 
-  // إن لم يختر المستخدم مدينة بعد → نطلب منه اختيارها أولاً
-  if (_selectedCity == null && _pickedLocation == null) {
-    _showMessage('اختر المحافظة أولاً ليتم تحديد موقعها على الخريطة');
-    return;
+    // إن لم يختر المستخدم مدينة بعد → نطلب منه اختيارها أولاً
+    if (_selectedCity == null && _pickedLocation == null) {
+      _showMessage('اختر المحافظة أولاً ليتم تحديد موقعها على الخريطة');
+      return;
+    }
+
+    // الأولوية: الموقع الذي اختاره المستخدم سابقاً، ثم مركز المدينة
+    final initial = _pickedLocation ?? SyrianCities.centerOf(_selectedCity);
+
+    final result = await Navigator.of(context).push<LatLng>(
+      MaterialPageRoute(builder: (_) => PickLocationPage(initial: initial)),
+    );
+    if (result != null && mounted) {
+      setState(() {
+        _pickedLocation = result;
+        _formError = null;
+      });
+    }
   }
-
-  // الأولوية: الموقع الذي اختاره المستخدم سابقاً، ثم مركز المدينة
-  final initial = _pickedLocation ?? SyrianCities.centerOf(_selectedCity);
-
-  final result = await Navigator.of(context).push<LatLng>(
-    MaterialPageRoute(
-      builder: (_) => PickLocationPage(initial: initial),
-    ),
-  );
-  if (result != null && mounted) {
-    setState(() {
-      _pickedLocation = result;
-      _formError = null;
-    });
-  }
-}
 
   Future<void> _submit() async {
     setState(() => _formError = null);
@@ -184,28 +180,28 @@ class _EditSessionSheetState extends State<_EditSessionSheet> {
       _showMessage('حدّد موقع المحاضرة على الخريطة أولاً');
       return;
     }
-    
+
     if (_selectedCity == null) {
       _showMessage('create.city_required'.tr());
       return;
     }
 
-// ⬇️ هنا تضع التحقق ⬇️
-final cityCenter = SyrianCities.centerOf(_selectedCity);
-if (cityCenter != null && _pickedLocation != null) {
-  final distance = const Distance().as(
-    LengthUnit.Kilometer,
-    cityCenter,
-    _pickedLocation!,
-  );
-  if (distance > 100) {
-    _showMessage(
-      'الموقع المختار بعيد عن $_selectedCity (${distance.toStringAsFixed(0)} كم). '
-      'تأكد من صحة الموقع.',
-    );
-    return;
-  }
-}
+    // ⬇️ هنا تضع التحقق ⬇️
+    final cityCenter = SyrianCities.centerOf(_selectedCity);
+    if (cityCenter != null && _pickedLocation != null) {
+      final distance = const Distance().as(
+        LengthUnit.Kilometer,
+        cityCenter,
+        _pickedLocation!,
+      );
+      if (distance > 100) {
+        _showMessage(
+          'الموقع المختار بعيد عن $_selectedCity (${distance.toStringAsFixed(0)} كم). '
+          'تأكد من صحة الموقع.',
+        );
+        return;
+      }
+    }
     final startLocal = DateTime(
       _selectedDate!.year,
       _selectedDate!.month,
@@ -575,8 +571,10 @@ if (cityCenter != null && _pickedLocation != null) {
                   final picked = await showDatePicker(
                     context: context,
                     initialDate:
-                        _selectedDate ??
-                        DateTime.now().add(const Duration(days: 2)),
+                        (_selectedDate != null &&
+                            !_selectedDate!.isBefore(DateTime.now()))
+                        ? _selectedDate!
+                        : DateTime.now().add(const Duration(days: 1)),
                     firstDate: DateTime.now(),
                     lastDate: DateTime.now().add(const Duration(days: 365)),
                   );

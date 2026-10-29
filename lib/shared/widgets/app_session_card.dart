@@ -27,7 +27,9 @@ class AppSessionCard extends StatelessWidget {
   final dynamic lat;
   final dynamic lng;
 
-  final String? noteLabel; // 👈 حقل جديد للملاحظة
+  final String? noteLabel;
+  final Color? noteColor; // ← جديد (لون الملاحظة)
+  final IconData? noteIcon; // ← جديد (أيقونة الملاحظة)
   final VoidCallback? onTap; // 👈 حقل جديد للتحكم بحدث النقر
 
   const AppSessionCard({
@@ -49,6 +51,8 @@ class AppSessionCard extends StatelessWidget {
     this.lat,
     this.lng,
     this.noteLabel,
+    this.noteColor,
+    this.noteIcon,
     this.onTap,
   });
 
@@ -243,20 +247,23 @@ class AppSessionCard extends StatelessWidget {
                     percentLabel: percentLabel,
                     seatsLabel: seatsLabel,
                   ),
-
-                  // 👈 عرض الملاحظة إذا كانت موجودة
+                  
                   if (noteLabel != null) ...[
                     SizedBox(height: 12.h),
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(Icons.info_outline, color: cs.error, size: 16.w),
+                        Icon(
+                          noteIcon ?? Icons.info_outline,
+                          color: noteColor ?? cs.error,
+                          size: 16.w,
+                        ),
                         SizedBox(width: 6.w),
                         Expanded(
                           child: Text(
                             noteLabel!,
                             style: AppTypography.arabicCaption(
-                              color: cs.error,
+                              color: noteColor ?? cs.error,
                               fontSize: 11,
                             ),
                           ),
@@ -306,8 +313,8 @@ class AppSessionCard extends StatelessWidget {
                 ),
                 children: [
                   TileLayer(
- urlTemplate:
-      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',                    userAgentPackageName:
+                    urlTemplate: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
+                    userAgentPackageName:
                         'com.example.al_zakat_of_knowledge_app',
                     maxNativeZoom: 19,
                   ),

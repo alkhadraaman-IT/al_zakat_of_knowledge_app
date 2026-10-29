@@ -86,28 +86,28 @@ class _SessionDetailsContentState extends State<_SessionDetailsContent> {
   bool get _isLight => Theme.of(context).brightness == Brightness.light;
 
   List<String> get _weekdays => [
-    'session.day_sunday'.tr(),
-    'session.day_monday'.tr(),
-    'session.day_tuesday'.tr(),
-    'session.day_wednesday'.tr(),
-    'session.day_thursday'.tr(),
-    'session.day_friday'.tr(),
-    'session.day_saturday'.tr(),
-  ];
+        'session.day_sunday'.tr(),
+        'session.day_monday'.tr(),
+        'session.day_tuesday'.tr(),
+        'session.day_wednesday'.tr(),
+        'session.day_thursday'.tr(),
+        'session.day_friday'.tr(),
+        'session.day_saturday'.tr(),
+      ];
   List<String> get _months => [
-    'session.month_january'.tr(),
-    'session.month_february'.tr(),
-    'session.month_march'.tr(),
-    'session.month_april'.tr(),
-    'session.month_may'.tr(),
-    'session.month_june'.tr(),
-    'session.month_july'.tr(),
-    'session.month_august'.tr(),
-    'session.month_september'.tr(),
-    'session.month_october'.tr(),
-    'session.month_november'.tr(),
-    'session.month_december'.tr(),
-  ];
+        'session.month_january'.tr(),
+        'session.month_february'.tr(),
+        'session.month_march'.tr(),
+        'session.month_april'.tr(),
+        'session.month_may'.tr(),
+        'session.month_june'.tr(),
+        'session.month_july'.tr(),
+        'session.month_august'.tr(),
+        'session.month_september'.tr(),
+        'session.month_october'.tr(),
+        'session.month_november'.tr(),
+        'session.month_december'.tr(),
+      ];
 
   @override
   void initState() {
@@ -321,7 +321,10 @@ class _SessionDetailsContentState extends State<_SessionDetailsContent> {
     final int remainingSeats = maxSeats > bookedCount
         ? maxSeats - bookedCount
         : 0;
-    final isFull = remainingSeats <= 0;
+    
+    // 👈 تم تغيير المنطق هنا: النصاب مكتمل يعني وصلنا للحد المطلوب
+    final bool quorumReached = bookedCount >= maxSeats;
+    
     final createdAt = DateTime.tryParse(
       _session!['created_at']?.toString() ?? '',
     );
@@ -363,7 +366,6 @@ class _SessionDetailsContentState extends State<_SessionDetailsContent> {
             }
           },
         ),
-        // الاستماع لحالات SessionCubit الخاصة بك التي أرفقتها في الملفات
         BlocListener<SessionCubit, SessionState>(
           listener: (context, state) {
             if (state is SessionSuccess &&
@@ -375,7 +377,7 @@ class _SessionDetailsContentState extends State<_SessionDetailsContent> {
       ],
       child: _buildContent(
         cs,
-        isFull,
+        quorumReached, // 👈 تمرير المتغير الجديد
         isNew,
         bookedCount,
         maxSeats,
@@ -387,7 +389,7 @@ class _SessionDetailsContentState extends State<_SessionDetailsContent> {
 
   Widget _buildContent(
     ColorScheme cs,
-    bool isFull,
+    bool quorumReached, // 👈 استقبال المتغير الجديد
     bool isNew,
     int bookedCount,
     int maxSeats,
@@ -427,7 +429,7 @@ class _SessionDetailsContentState extends State<_SessionDetailsContent> {
                 bookedCount,
                 maxSeats,
                 remainingSeats,
-                isFull,
+                quorumReached, // 👈 تمرير المتغير
                 percent,
               ),
               SizedBox(height: 140.h),
@@ -435,7 +437,7 @@ class _SessionDetailsContentState extends State<_SessionDetailsContent> {
           ),
         ),
       ),
-      bottomNavigationBar: _buildBottomBar(cs, isFull),
+      bottomNavigationBar: _buildBottomBar(cs, quorumReached), // 👈 تمرير المتغير
     );
   }
 
@@ -457,8 +459,9 @@ class _SessionDetailsContentState extends State<_SessionDetailsContent> {
             ),
             children: [
               TileLayer(
- urlTemplate:
-      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',                userAgentPackageName: 'com.example.al_zakat_of_knowledge_app',
+                urlTemplate:
+                    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
+                userAgentPackageName: 'com.example.al_zakat_of_knowledge_app',
                 maxNativeZoom: 19,
               ),
               MarkerLayer(
@@ -550,8 +553,8 @@ class _SessionDetailsContentState extends State<_SessionDetailsContent> {
   Widget _buildMapCard(ColorScheme cs) {
     final placeName =
         _session!['place_name']?.toString() ??
-        _session!['city']?.toString() ??
-        '';
+            _session!['city']?.toString() ??
+            '';
     final city = _session!['city']?.toString() ?? '';
     final lat = (_session!['lat'] as num?)?.toDouble();
     final lng = (_session!['lng'] as num?)?.toDouble();
@@ -867,8 +870,8 @@ class _SessionDetailsContentState extends State<_SessionDetailsContent> {
     final when = startsAt == null
         ? ''
         : '${startsAt.day}/${startsAt.month}/${startsAt.year}  '
-              '${startsAt.hour.toString().padLeft(2, '0')}:'
-              '${startsAt.minute.toString().padLeft(2, '0')}';
+            '${startsAt.hour.toString().padLeft(2, '0')}:'
+            '${startsAt.minute.toString().padLeft(2, '0')}';
     final placeName = _session?['place_name']?.toString() ?? '';
     final cityName = _session?['city']?.toString() ?? '';
     final where = [placeName, cityName].where((e) => e.isNotEmpty).join('، ');
@@ -1105,8 +1108,8 @@ class _SessionDetailsContentState extends State<_SessionDetailsContent> {
     final initial = name.trim().isNotEmpty ? name.trim()[0] : 'د';
     final publisherId =
         _publisher?['id']?.toString() ??
-        _session!['publisher_id']?.toString() ??
-        '';
+            _session!['publisher_id']?.toString() ??
+            '';
 
     return Material(
       color: cs.surfaceContainer,
@@ -1348,7 +1351,7 @@ class _SessionDetailsContentState extends State<_SessionDetailsContent> {
     int booked,
     int max,
     int remaining,
-    bool isFull,
+    bool quorumReached, // 👈 تم التعديل
     double percent,
   ) {
     final percentLabel = '${(percent * 100).round()}%';
@@ -1428,14 +1431,14 @@ class _SessionDetailsContentState extends State<_SessionDetailsContent> {
               child: Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: isFull
-                        ? [cs.error, cs.error.withValues(alpha: 0.6)]
-                        : [cs.primary, cs.secondary],
+                    colors: quorumReached
+                        ? [cs.primary, cs.secondary]
+                        : [cs.secondary, cs.secondary.withValues(alpha: 0.6)],
                   ),
                   borderRadius: BorderRadius.circular(999.r),
                   boxShadow: [
                     BoxShadow(
-                      color: (isFull ? cs.error : cs.primary).withValues(
+                      color: (quorumReached ? cs.primary : cs.secondary).withValues(
                         alpha: 0.4,
                       ),
                       blurRadius: 8.r,
@@ -1448,11 +1451,17 @@ class _SessionDetailsContentState extends State<_SessionDetailsContent> {
           SizedBox(height: AppSpacing.sm),
           Row(
             children: [
-              Icon(Icons.verified_user, color: cs.primary, size: 17.w),
+              Icon(
+                quorumReached ? Icons.check_circle : Icons.verified_user,
+                color: cs.primary,
+                size: 17.w,
+              ),
               SizedBox(width: 6.w),
               Expanded(
                 child: Text(
-                  'session.min_quorum'.tr(),
+                  quorumReached
+                      ? 'اكتمل النصاب .. الحجز مفتوح للجميع'
+                      : 'النصاب الأدنى: (الحجز مفتوح دائماً)',
                   style: AppTypography.arabicLabel(
                     color: cs.onSurfaceVariant,
                     fontSize: 11,
@@ -1464,17 +1473,15 @@ class _SessionDetailsContentState extends State<_SessionDetailsContent> {
               Container(
                 padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
                 decoration: BoxDecoration(
-                  color: isFull
-                      ? cs.error.withValues(alpha: 0.1)
-                      : cs.primary.withValues(alpha: 0.1),
+                  color: quorumReached
+                      ? cs.primary.withValues(alpha: 0.1)
+                      : cs.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(8.r),
                 ),
                 child: Text(
-                  isFull
-                      ? 'session.full'.tr()
-                      : 'session.confirmed_quorum'.tr(),
+                  quorumReached ? 'مكتمل' : 'بانتظار النصاب',
                   style: AppTypography.monoCaption(
-                    color: isFull ? cs.error : cs.primary,
+                    color: quorumReached ? cs.primary : cs.onSurfaceVariant,
                     fontSize: 11,
                   ),
                 ),
@@ -1486,7 +1493,7 @@ class _SessionDetailsContentState extends State<_SessionDetailsContent> {
     );
   }
 
-  Widget _buildBottomBar(ColorScheme cs, bool isFull) {
+  Widget _buildBottomBar(ColorScheme cs, bool quorumReached) {
     return SafeArea(
       top: false,
       child: Padding(
@@ -1507,13 +1514,19 @@ class _SessionDetailsContentState extends State<_SessionDetailsContent> {
           ),
           child: _isPublisherEffective
               ? _buildPublisherActions(cs)
-              : _buildAttendeeActions(cs, isFull),
+              : _buildAttendeeActions(cs, quorumReached),
         ),
       ),
     );
   }
 
   Widget _buildPublisherActions(ColorScheme cs) {
+    final startsAtTime = DateTime.tryParse(
+      _session!['starts_at']?.toString() ?? '',
+    )?.toLocal();
+    final hasStarted =
+        startsAtTime != null && !startsAtTime.isAfter(DateTime.now());
+
     return Row(
       children: [
         Expanded(
@@ -1521,9 +1534,19 @@ class _SessionDetailsContentState extends State<_SessionDetailsContent> {
             cs: cs,
             label: 'session.edit'.tr(),
             icon: Icons.edit_outlined,
-            background: cs.primary,
-            foreground: cs.onPrimary,
-            onTap: _openEditSheet,
+            background: hasStarted ? cs.surfaceContainerHighest : cs.primary,
+            foreground: hasStarted ? cs.onSurfaceVariant : cs.onPrimary,
+            onTap: hasStarted
+                ? () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          'لا يمكن تعديل محاضرة بدأ موعدها أو انتهى',
+                        ),
+                      ),
+                    );
+                  }
+                : _openEditSheet,
           ),
         ),
         SizedBox(width: AppSpacing.sm),
@@ -1616,7 +1639,7 @@ class _SessionDetailsContentState extends State<_SessionDetailsContent> {
     }
   }
 
-  Widget _buildAttendeeActions(ColorScheme cs, bool isFull) {
+  Widget _buildAttendeeActions(ColorScheme cs, bool quorumReached) {
     final status = _session?['status']?.toString() ?? 'active';
     final startsAtTime = DateTime.tryParse(
       _session?['starts_at']?.toString() ?? '',
@@ -1625,7 +1648,9 @@ class _SessionDetailsContentState extends State<_SessionDetailsContent> {
     final bool hasStarted =
         startsAtTime != null && !startsAtTime.isAfter(DateTime.now());
     final bool unavailable = !_isBooked && (isCancelled || hasStarted);
-    final bool seatsDisabled = (isFull && !_isBooked) || unavailable;
+    
+    // ✅ الحجز مسموح دائماً حتى بعد النصاب، الزر يتعطل فقط لو بدأت الجلسة أو انتهت
+    final bool seatsDisabled = unavailable;
 
     return BlocBuilder<BookingCubit, BookingState>(
       builder: (context, state) {
@@ -1633,34 +1658,32 @@ class _SessionDetailsContentState extends State<_SessionDetailsContent> {
         final Color ctaBg = isBooking
             ? cs.surfaceContainerHighest
             : _isBooked
-            ? cs.surfaceContainerLowest
-            : seatsDisabled
-            ? cs.surfaceContainerHighest
-            : cs.primary;
+                ? cs.surfaceContainerLowest
+                : seatsDisabled
+                    ? cs.surfaceContainerHighest
+                    : cs.primary;
         final Color ctaFg = isBooking
             ? cs.onSurfaceVariant
             : _isBooked
-            ? cs.primary
-            : seatsDisabled
-            ? cs.onSurfaceVariant
-            : cs.onPrimary;
+                ? cs.primary
+                : seatsDisabled
+                    ? cs.onSurfaceVariant
+                    : cs.onPrimary;
 
         final String ctaLabel = isBooking
             ? 'booking.booking'.tr()
             : _isBooked
-            ? 'booking.cancel'.tr()
-            : unavailable
-            ? (isCancelled ? 'الجلسة ملغاة' : 'انتهى موعد الجلسة')
-            : seatsDisabled
-            ? 'session.full'.tr()
-            : 'booking.book_seat'.tr();
+                ? 'booking.cancel'.tr()
+                : unavailable
+                    ? (isCancelled ? 'الجلسة ملغاة' : 'انتهى موعد الجلسة')
+                    : 'booking.book_seat'.tr();
         final IconData ctaIcon = isBooking
             ? Icons.hourglass_empty
             : _isBooked
-            ? Icons.cancel_outlined
-            : seatsDisabled
-            ? Icons.event_busy
-            : Icons.how_to_reg;
+                ? Icons.cancel_outlined
+                : seatsDisabled
+                    ? Icons.event_busy
+                    : Icons.how_to_reg;
 
         return Row(
           children: [
