@@ -7,28 +7,24 @@ import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../shared/widgets/app_segmented_bar.dart';
 import '../../../../shared/widgets/app_state_views.dart';
+import '../../../articles/presentation/bloc/article_cubit.dart';
 import '../../../sessions/presentation/session_cubit/session_cubit.dart';
-import '../../../study_tools/presentation/bloc/study_tool_cubit.dart';
+import '../../../study_tools/presentation/cubit/study_tool_cubit.dart';
 import '../../domain/entities/favorite_item_entity.dart';
 import '../cubit/favorites_cubit.dart';
 import '../cubit/favorites_state.dart';
 import '../widgets/favorite_card.dart';
 
-/// شاشة المفضلة (جسم الصفحة فقط — الـ AppBar والـ bottom nav من الـ shell).
-///
-/// - بدون setState: التاب المختار والقائمة من [FavoritesCubit].
-/// - القائمة بتتحدّث لحالها: الـ Cubit مشترك على Stream من صندوق Hive.
-/// - يحتاج [FavoritesCubit] مزوّد من أعلى التطبيق (main.dart).
 class FavoritesView extends StatelessWidget {
   const FavoritesView({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // SessionCubit و StudyToolCubit: لعرض النسخة الحية للمحاضرة/الأداة.
     return MultiBlocProvider(
       providers: [
         BlocProvider.value(value: sl<SessionCubit>()),
         BlocProvider.value(value: sl<StudyToolCubit>()),
+        BlocProvider.value(value: sl<ArticleCubit>()),
       ],
       child: const _FavoritesBody(),
     );
@@ -49,7 +45,6 @@ class _FavoritesBody extends StatelessWidget {
           child: BlocSelector<FavoritesCubit, FavoritesState, FavoriteType>(
             selector: (state) => state.selectedType,
             builder: (context, type) => AppSegmentedBar(
-              // نفس ترتيب enum FavoriteType: lecture, article, tool
               labels: [
                 'favorites.tab_lectures'.tr(),
                 'favorites.tab_articles'.tr(),
@@ -108,7 +103,7 @@ class _FavoritesList extends StatelessWidget {
         return ListView.separated(
           padding: EdgeInsets.only(
             left: AppSpacing.screenHorizontal,
-right: AppSpacing.screenHorizontal,
+            right: AppSpacing.screenHorizontal,
             bottom: AppSpacing.xl,
           ),
           itemCount: items.length,

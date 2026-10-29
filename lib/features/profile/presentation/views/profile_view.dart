@@ -3,9 +3,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/constants/app_spacing.dart';
+import '../../../../core/di/injection_container.dart';
 import '../../../../shared/widgets/app_top_header.dart';
+import '../../../articles/presentation/bloc/article_cubit.dart';
+import '../../../articles/presentation/cubit/categories_cubit.dart';
 import '../../../auth/presentation/bloc/auth_cubit.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
+import '../../../study_tools/presentation/cubit/study_tool_cubit.dart';
 import '../cubit/profile_cubit.dart';
 import '../cubit/profile_state.dart';
 import '../widgets/profile_activity_tabs.dart';
@@ -20,15 +24,22 @@ class ProfileView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) {
-        final authState = context.read<AuthCubit>().state;
-        String? authUserId;
-        if (authState is AuthAuthenticated) {
-          authUserId = authState.user.id;
-        }
-        return ProfileCubit(userId: userId)..loadProfileData(authUserId);
-      },
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider.value(value: sl<StudyToolCubit>()),
+        BlocProvider.value(value: sl<ArticleCubit>()),
+        BlocProvider.value(value: sl<CategoriesCubit>()),
+        BlocProvider(
+          create: (context) {
+            final authState = context.read<AuthCubit>().state;
+            String? authUserId;
+            if (authState is AuthAuthenticated) {
+              authUserId = authState.user.id;
+            }
+            return ProfileCubit(userId: userId)..loadProfileData(authUserId);
+          },
+        ),
+      ],
       child: const _ProfileViewBody(),
     );
   }
@@ -43,9 +54,11 @@ class _ProfileViewBody extends StatelessWidget {
     return null;
   }
 
-  Future<void> _openUrl(BuildContext context, String urlString, {bool isPdf = false}) async {
+  Future<void> _openUrl(BuildContext context, String urlString,
+      {bool isPdf = false}) async {
     String formattedUrl = urlString.trim();
-    if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
+    if (!formattedUrl.startsWith('http://') &&
+        !formattedUrl.startsWith('https://')) {
       formattedUrl = 'https://$formattedUrl';
     }
 
@@ -76,11 +89,8 @@ class _ProfileViewBody extends StatelessWidget {
       body: SafeArea(
         child: BlocBuilder<ProfileCubit, ProfileState>(
           builder: (context, state) {
-            // مؤشر تحميل عام يظهر لحين اكتمال جلب كل البيانات دفعة واحدة
             if (state is ProfileLoading || state is ProfileInitial) {
-              return const Center(
-                child: CircularProgressIndicator(),
-              );
+              return const Center(child: CircularProgressIndicator());
             }
 
             if (state is ProfileLoaded) {
@@ -89,7 +99,9 @@ class _ProfileViewBody extends StatelessWidget {
                   children: [
                     AppTopHeader(
                       context: context,
-                      onBack: Navigator.canPop(context) ? () => Navigator.maybePop(context) : null,
+                      onBack: Navigator.canPop(context)
+                          ? () => Navigator.maybePop(context)
+                          : null,
                     ),
                     Expanded(
                       child: Padding(
@@ -98,7 +110,9 @@ class _ProfileViewBody extends StatelessWidget {
                           child: Text(
                             'تعذّر تحميل هذا الملف الشخصي',
                             style: TextStyle(
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
                             ),
                           ),
                         ),
@@ -116,7 +130,9 @@ class _ProfileViewBody extends StatelessWidget {
                   children: [
                     AppTopHeader(
                       context: context,
-                      onBack: Navigator.canPop(context) ? () => Navigator.maybePop(context) : null,
+                      onBack: Navigator.canPop(context)
+                          ? () => Navigator.maybePop(context)
+                          : null,
                     ),
                     SizedBox(height: AppSpacing.md),
                     ProfileCard(
@@ -130,7 +146,8 @@ class _ProfileViewBody extends StatelessWidget {
                       linkedInUrl: profile?.linkedinUrl,
                       isOwnerProfile: isOwnerProfile,
                       onProfileUpdated: () => cubit.loadProfileData(authUserId),
-                      onOpenUrl: (url, {isPdf = false}) => _openUrl(context, url, isPdf: isPdf),
+                      onOpenUrl: (url, {isPdf = false}) =>
+                          _openUrl(context, url, isPdf: isPdf),
                     ),
                     SizedBox(height: AppSpacing.lg),
                     ProfileActivityTabs(

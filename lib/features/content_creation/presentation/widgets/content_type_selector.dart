@@ -4,8 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../../app/theme/app_typography.dart';
 import '../../../../core/utils/app_refresh.dart';
-import 'create_article_sheet.dart';
-import 'create_material_sheet.dart';
+import '../../../study_tools/presentation/widgets/create_study_tool_sheet.dart';
 
 /// Content type selector bottom sheet.
 /// Optional [onArticleCreated] callback is invoked after a
@@ -74,7 +73,7 @@ void showContentTypeSelector(
               cs: cs,
               onTap: () {
                 Navigator.pop(sheetContext);
-                showCreateArticleSheet(context, onSuccess: onArticleCreated);
+                showCreateToolSheet(context); // ✅
               },
             ),
             SizedBox(height: 12.h),
@@ -85,7 +84,7 @@ void showContentTypeSelector(
               cs: cs,
               onTap: () {
                 Navigator.pop(sheetContext);
-                showCreateMaterialSheet(context);
+                showCreateToolSheet(context);
               },
             ),
             SizedBox(height: 20.h),

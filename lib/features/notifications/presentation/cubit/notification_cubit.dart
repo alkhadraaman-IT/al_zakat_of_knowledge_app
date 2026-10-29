@@ -1,8 +1,5 @@
 import 'dart:async';
-
 import 'package:flutter_bloc/flutter_bloc.dart';
-
-import '../../domain/entities/app_notification.dart';
 import '../../domain/entities/notification_failure.dart';
 import '../../domain/usecases/delete_notification_usecase.dart';
 import '../../domain/usecases/get_notifications_usecase.dart';
@@ -13,15 +10,13 @@ import 'notification_state.dart';
 
 class NotificationsCubit extends Cubit<NotificationsState> {
   final GetNotificationsUseCase _get;
-  final WatchLocalNotificationChangesUseCase _watchChanges;
+  final WatchLocalNotificationChangesUseCase _watch;
   final MarkNotificationReadUseCase _markRead;
   final MarkAllNotificationsReadUseCase _markAllRead;
   final DeleteNotificationUseCase _delete;
 
-  StreamSubscription<void>? _sub;
-
-  /// آخر عملية فشلت (تحديد كمقروء/حذف...) لزر إعادة المحاولة.
-  Future<void> Function()? _retryAction;
+  StreamSubscription? _sub;
+  bool _isLoading = false; // حماية من التحميل المتزامن
 
   NotificationsCubit({
     required GetNotificationsUseCase getNotifications,
@@ -30,29 +25,34 @@ class NotificationsCubit extends Cubit<NotificationsState> {
     required MarkAllNotificationsReadUseCase markAllRead,
     required DeleteNotificationUseCase deleteNotification,
   })  : _get = getNotifications,
-        _watchChanges = watchLocalChanges,
+        _watch = watchLocalChanges,
         _markRead = markRead,
         _markAllRead = markAllRead,
         _delete = deleteNotification,
         super(const NotificationsState());
 
-  /// يحمّل القائمة ثم يحدّثها تلقائياً عند أي تغيير (رسالة وصلت، تغيّر محلي).
-  Future<void> start() async {
-    _retryAction = null;
-    emit(state.copyWith(status: NotificationsStatus.loading));
-    await _load();
-    _sub ??= _watchChanges().listen((_) => _load());
+  void start() {
+    if (state.status != NotificationsStatus.initial) return;
+    _sub = _watch().listen((_) {
+      // عند حدوث تغيير في Hive، نقوم بإعادة التحميل
+      _load();
+    });
+    _load();
   }
 
   Future<void> refresh() => _load();
 
-  /// زر "إعادة المحاولة": يعيد آخر عملية فاشلة، أو تحميل القائمة.
-  Future<void> retry() {
-    final action = _retryAction;
-    return action != null ? action() : start();
-  }
+  Future<void> retry() => _load();
 
   Future<void> _load() async {
+    if (_isLoading) return; // منع الدخول إذا كان هناك تحميل جاري
+    _isLoading = true;
+    
+    // إظهار حالة التحميل فقط إذا كانت القائمة فارغة
+    if (state.notifications.isEmpty) {
+      emit(state.copyWith(status: NotificationsStatus.loading));
+    }
+
     try {
       final r = await _get();
       if (isClosed) return;
@@ -60,55 +60,42 @@ class NotificationsCubit extends Cubit<NotificationsState> {
         status: NotificationsStatus.success,
         notifications: r.items,
         partialFailure: r.remoteFailure,
+        clearFailure: true,
       ));
     } on NotificationsException catch (e) {
       if (isClosed) return;
-      emit(state.copyWith(status: NotificationsStatus.failure, failure: e.kind));
+      emit(state.copyWith(
+        status: NotificationsStatus.failure,
+        failure: e.kind,
+      ));
+    } catch (e) {
+      if (isClosed) return;
+      emit(state.copyWith(
+        status: NotificationsStatus.failure,
+        failure: NotificationsFailureKind.unknown,
+      ));
+    } finally {
+      _isLoading = false;
     }
   }
 
-  Future<void> markAsRead(String id) => _mutate(
-        apply: (l) => l.map((n) => n.id == id ? n.copyWith(isRead: true) : n).toList(),
-        action: () => _markRead(id),
-        retry: () => markAsRead(id),
-      );
+  Future<void> markAsRead(String id) async {
+    // تحديث الواجهة فوراً (Optimistic Update)
+    final updatedList = state.notifications.map((n) => n.id == id ? n.copyWith(isRead: true) : n).toList();
+    emit(state.copyWith(notifications: updatedList));
+    await _markRead(id);
+  }
 
-  Future<void> markAllAsRead() => _mutate(
-        apply: (l) => l.map((n) => n.copyWith(isRead: true)).toList(),
-        action: () => _markAllRead(),
-        retry: markAllAsRead,
-      );
+  Future<void> markAllAsRead() async {
+    final updatedList = state.notifications.map((n) => n.copyWith(isRead: true)).toList();
+    emit(state.copyWith(notifications: updatedList));
+    await _markAllRead();
+  }
 
-  Future<void> delete(String id) => _mutate(
-        apply: (l) => l.where((n) => n.id != id).toList(),
-        action: () => _delete(id),
-        retry: () => delete(id),
-      );
-
-  /// تحديث متفائل ثم تراجع + تسجيل "إعادة المحاولة" إن فشلت العملية.
-  Future<void> _mutate({
-    required List<AppNotification> Function(List<AppNotification>) apply,
-    required Future<void> Function() action,
-    required Future<void> Function() retry,
-  }) async {
-    final prev = state.notifications;
-    emit(state.copyWith(
-      status: NotificationsStatus.success,
-      notifications: apply(prev),
-      partialFailure: state.partialFailure,
-    ));
-    try {
-      await action();
-      _retryAction = null;
-    } on NotificationsException catch (e) {
-      if (isClosed) return;
-      _retryAction = retry;
-      emit(state.copyWith(
-        status: NotificationsStatus.failure,
-        notifications: prev,
-        failure: e.kind,
-      ));
-    }
+  Future<void> delete(String id) async {
+    final updatedList = state.notifications.where((n) => n.id != id).toList();
+    emit(state.copyWith(notifications: updatedList));
+    await _delete(id);
   }
 
   @override

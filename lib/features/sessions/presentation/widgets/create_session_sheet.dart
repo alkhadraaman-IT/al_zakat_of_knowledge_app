@@ -4,13 +4,14 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../../app/theme/app_typography.dart';
+import '../../../../core/constants/syrian_cities.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/network/network_info.dart';
 import '../../../articles/domain/entities/category_entity.dart';
 import '../../../articles/domain/usecases/get_categories_usecase.dart';
 import '../../../auth/presentation/bloc/auth_cubit.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
-import '../../../content_creation/presentation/widgets/success_dialog.dart';
+import '../../../../shared/widgets/success_dialog.dart';
 import '../session_cubit/session_cubit.dart';
 import '../session_cubit/session_state.dart';
 
@@ -38,7 +39,7 @@ Future<bool> showCreateSessionSheet(BuildContext context) async {
   );
 
   if (created == true && context.mounted) {
-    await showDuaSuccessDialog(context);
+    await showSuccessDialog(context);
   }
 
   return created ?? false;
@@ -52,11 +53,11 @@ class _CreateSessionSheet extends StatefulWidget {
 }
 
 class _CreateSessionSheetState extends State<_CreateSessionSheet> {
+  String? _selectedCity; // ← بديل _cityController
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _seatsController = TextEditingController();
-  final _cityController = TextEditingController();
   final _placeController = TextEditingController();
   final _durationController = TextEditingController();
 
@@ -87,7 +88,6 @@ class _CreateSessionSheetState extends State<_CreateSessionSheet> {
     _titleController.dispose();
     _descriptionController.dispose();
     _seatsController.dispose();
-    _cityController.dispose();
     _placeController.dispose();
     _durationController.dispose();
     super.dispose();
@@ -149,6 +149,25 @@ class _CreateSessionSheetState extends State<_CreateSessionSheet> {
       return;
     }
 
+    if (_selectedCity == null) {
+      _showMessage('create.city_required'.tr());
+      return;
+    }
+    final cityCenter = SyrianCities.centerOf(_selectedCity);
+    if (cityCenter != null && _pickedLocation != null) {
+      final distance = const Distance().as(
+        LengthUnit.Kilometer,
+        cityCenter,
+        _pickedLocation!,
+      );
+      if (distance > 100) {
+        _showMessage(
+          'الموقع المختار بعيد عن $_selectedCity (${distance.toStringAsFixed(0)} كم). '
+          'تأكد من صحة الموقع.',
+        );
+        return;
+      }
+    }
     final ownerId = _resolveOwnerId(context);
     if (ownerId == null) {
       _showMessage('create.error_auth'.tr());
@@ -179,13 +198,61 @@ class _CreateSessionSheetState extends State<_CreateSessionSheet> {
       title: _titleController.text.trim(),
       description: _descriptionController.text.trim(),
       categoryId: _selectedCategoryId!,
-      city: _cityController.text.trim(),
+      city: _selectedCity ?? '',
       placeName: _placeController.text.trim(),
       startsAt: startsAt,
       durationMinutes: durationMinutes,
       maxSeats: int.tryParse(_seatsController.text.trim()) ?? 30,
       lat: _pickedLocation!.latitude,
       lng: _pickedLocation!.longitude,
+    );
+  }
+
+  Widget _cityDropdown() {
+    final cs = Theme.of(context).colorScheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'create.city_label'.tr(),
+          style: AppTypography.arabicLabel(color: cs.onSurface, fontSize: 14),
+        ),
+        SizedBox(height: 8.h),
+        Container(
+          padding: EdgeInsets.symmetric(horizontal: 16.w),
+          decoration: BoxDecoration(
+            color: cs.surfaceContainerLow,
+            borderRadius: BorderRadius.circular(12.r),
+            border: Border.all(color: cs.outline),
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: _selectedCity,
+              isExpanded: true,
+              hint: Text(
+                'اختر المحافظة',
+                style: AppTypography.arabicBody(
+                  color: cs.onSurfaceVariant.withValues(alpha: 0.5),
+                  fontSize: 16,
+                ),
+              ),
+              items: SyrianCities.all.map((city) {
+                return DropdownMenuItem<String>(
+                  value: city,
+                  child: Text(
+                    city,
+                    style: AppTypography.arabicBody(
+                      color: cs.onSurface,
+                      fontSize: 16,
+                    ),
+                  ),
+                );
+              }).toList(),
+              onChanged: (v) => setState(() => _selectedCity = v),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -358,14 +425,7 @@ class _CreateSessionSheetState extends State<_CreateSessionSheet> {
                       },
                     ),
                     SizedBox(height: 12.h),
-                    _field(
-                      label: 'create.city_label'.tr(),
-                      hint: 'create.city_hint'.tr(),
-                      controller: _cityController,
-                      validator: (v) => (v == null || v.trim().isEmpty)
-                          ? 'create.city_required'.tr()
-                          : null,
-                    ),
+                    _cityDropdown(),
                     SizedBox(height: 12.h),
                     _field(
                       label: 'create.place_label'.tr(),

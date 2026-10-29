@@ -4,78 +4,61 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../app/theme/app_typography.dart';
 
-/// Study tool card — Stitch Design System (Tab 3: أدوات دراسية).
-///
-/// Renders the demo content when only [index] is supplied; pass the real
-/// material values ([title], [subject], ...) to render an actual
-/// `StudyToolEntity`. Real cards are display-only — `is_taken` is toggled
-/// through the backend RPC, so no local action button is rendered for them.
-///
-/// هذا الكرت الوحيد لعرض الأدوات (Home + StudyTools + Favorites).
-/// الحقول الاختيارية [kind] و [categoryLabel] و [pickupNotes] و [onReport]
-/// كانت موجودة فقط بنسخة مكررة داخل StudyToolsView.
 class AppStudyToolCard extends StatelessWidget {
   final int index;
   final VoidCallback? onTap;
 
-  /// Favorite state for real materials. When
-  /// [onFavoriteToggle] is provided the bookmark
-  /// icon becomes interactive.
   final bool isFavorite;
   final VoidCallback? onFavoriteToggle;
 
-  /// Real material values — when [title] is non-null the card renders
-  /// the actual material instead of the demo content.
-  final String? title;
-  final String? subject;
-  final String? studyYear;
-  final String? university;
-  final String? city;
-  final String? pickupPlace;
-  final String? pickupNotes;
+  final String title;
+  final String subject;
+  final String studyYear;
+  final String university;
+  final String city;
+  final String pickupPlace;
+  final String pickupNotes;
 
-  /// Mirrors the material's `is_taken` column.
-  final bool? isTaken;
-
-  /// book | stationery | notes | other — يحدد الأيقونة وشارة النوع.
-  final String? kind;
-
-  /// اسم التصنيف (شارة بأعلى الكرت).
+  final bool isTaken;
   final String? categoryLabel;
 
-  /// إذا كان غير null يظهر زر الإبلاغ.
   final VoidCallback? onReport;
+
+  // المالك
+  final bool isOwner;
+  final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
+
+  // غير المالك
+  final VoidCallback? onTake;
 
   const AppStudyToolCard({
     super.key,
     required this.index,
+    required this.title,
+    required this.subject,
+    required this.studyYear,
+    required this.university,
+    required this.city,
+    required this.pickupPlace,
+    required this.pickupNotes,
+    required this.isTaken,
+    this.categoryLabel,
     this.onTap,
     this.isFavorite = false,
     this.onFavoriteToggle,
-    this.title,
-    this.subject,
-    this.studyYear,
-    this.university,
-    this.city,
-    this.pickupPlace,
-    this.pickupNotes,
-    this.isTaken,
-    this.kind,
-    this.categoryLabel,
     this.onReport,
+    this.isOwner = false,
+    this.onEdit,
+    this.onDelete,
+    this.onTake,
   });
 
-  /// True when real material values are supplied.
-  bool get hasRealData => title != null;
-
-  /// الحالة تُشتق من البيانات فقط (لا State محلي ولا setState):
-  /// الحقيقي من is_taken، والتجريبي يتناوب حسب [index].
-  bool get _isAvailable => hasRealData ? !(isTaken ?? false) : index % 2 == 0;
+  bool get _isAvailable => !isTaken;
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final isDemo = !hasRealData;
     final available = _isAvailable;
 
     return GestureDetector(
@@ -106,7 +89,7 @@ class AppStudyToolCard extends StatelessWidget {
             _buildHeader(cs),
             SizedBox(height: 12.h),
             Text(
-              isDemo ? _toolTitles[index % _toolTitles.length] : title!,
+              title,
               style: AppTypography.arabicTitle(
                 color: cs.onSurface,
                 fontSize: 16,
@@ -116,9 +99,7 @@ class AppStudyToolCard extends StatelessWidget {
             ),
             SizedBox(height: 4.h),
             Text(
-              isDemo
-                  ? _toolDescriptions[index % _toolDescriptions.length]
-                  : (subject ?? ''),
+              subject,
               style: AppTypography.arabicCaption(
                 color: cs.onSurfaceVariant,
                 fontSize: 12,
@@ -126,35 +107,34 @@ class AppStudyToolCard extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
-            if (!isDemo) ...[
-              SizedBox(height: 8.h),
-              if (_hasText(studyYear) || _hasText(university))
-                _detailRow(
-                  cs,
-                  Icons.school_outlined,
-                  [studyYear, university].where(_hasText).join(' — '),
-                ),
-              if (_hasText(city))
-                _detailRow(cs, Icons.location_on_outlined, city!),
-              if (_hasText(pickupPlace))
-                _detailRow(cs, Icons.storefront_outlined, pickupPlace!),
-              if (_hasText(pickupNotes))
-                _detailRow(cs, Icons.note_outlined, pickupNotes!, maxLines: 2),
-            ],
+            SizedBox(height: 8.h),
+            if (_hasText(studyYear) || _hasText(university))
+              _detailRow(
+                cs,
+                Icons.school_outlined,
+                [studyYear, university].where(_hasText).join(' — '),
+              ),
+            if (_hasText(city))
+              _detailRow(cs, Icons.location_on_outlined, city),
+            if (_hasText(pickupPlace))
+              _detailRow(cs, Icons.storefront_outlined, pickupPlace),
+            if (_hasText(pickupNotes))
+              _detailRow(cs, Icons.note_outlined, pickupNotes, maxLines: 2),
             SizedBox(height: 12.h),
-            _buildFooter(cs, isDemo, available),
+            _buildStatusChip(cs, available),
+            SizedBox(height: 12.h),
+            _buildBottomRow(context, cs, available),
           ],
         ),
       ),
     );
   }
 
-  /// Bookmark + (category chip) + (report) + kind icon.
   Widget _buildHeader(ColorScheme cs) {
     return Row(
       children: [
         InkWell(
-          onTap: onFavoriteToggle, // null-safe (كان onFavoriteToggle!())
+          onTap: onFavoriteToggle,
           borderRadius: BorderRadius.circular(10.r),
           child: Container(
             width: 36.w,
@@ -176,46 +156,33 @@ class AppStudyToolCard extends StatelessWidget {
           _chip(cs, categoryLabel!),
           SizedBox(width: 8.w),
         ],
-        if (onReport != null) ...[
-          Tooltip(
-            message: 'report.title'.tr(),
-            child: Material(
-              color: cs.surfaceContainer,
-              borderRadius: BorderRadius.circular(10.r),
-              child: InkWell(
-                onTap: onReport,
-                borderRadius: BorderRadius.circular(10.r),
-                child: SizedBox(
-                  width: 36.w,
-                  height: 36.w,
-                  child: Icon(
-                    Icons.flag_outlined,
-                    color: cs.onSurfaceVariant,
-                    size: 18.w,
-                  ),
-                ),
-              ),
-            ),
-          ),
-          SizedBox(width: 8.w),
-        ],
-        Container(
-          width: 36.w,
-          height: 36.w,
-          decoration: BoxDecoration(
-            color: cs.surfaceContainerHigh,
-            borderRadius: BorderRadius.circular(10.r),
-            border: Border.all(color: cs.outline.withValues(alpha: 0.3)),
-          ),
-          child: Icon(_kindIcon(kind), color: cs.onSurfaceVariant, size: 18.w),
-        ),
+        if (!isOwner && onReport != null) _reportButton(cs),
       ],
     );
   }
 
-  /// Status chip (+ kind chip للأدوات الحقيقية).
-  Widget _buildFooter(ColorScheme cs, bool isDemo, bool available) {
-    final status = Container(
+  Widget _reportButton(ColorScheme cs) {
+    return Tooltip(
+      message: 'report.title'.tr(),
+      child: Material(
+        color: cs.surfaceContainer,
+        borderRadius: BorderRadius.circular(10.r),
+        child: InkWell(
+          onTap: onReport,
+          borderRadius: BorderRadius.circular(10.r),
+          child: SizedBox(
+            width: 36.w,
+            height: 36.w,
+            child: Icon(Icons.flag_outlined,
+                color: cs.onSurfaceVariant, size: 18.w),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatusChip(ColorScheme cs, bool available) {
+    return Container(
       padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
       decoration: BoxDecoration(
         color: available
@@ -239,7 +206,7 @@ class AppStudyToolCard extends StatelessWidget {
           ),
           SizedBox(width: 6.w),
           Text(
-            available ? 'tool.available'.tr() : 'tool.taken'.tr(),
+            available ? 'متاحة' : 'تم الأخذ',
             style: AppTypography.arabicCaption(
               color: available ? cs.primary : cs.onSurfaceVariant,
               fontSize: 11,
@@ -248,32 +215,184 @@ class AppStudyToolCard extends StatelessWidget {
         ],
       ),
     );
+  }
 
-    final kindName = _kindName(kind);
-
-    return Row(
-      children: [
-        // Demo cards show a placeholder pickup time when taken.
-        if (isDemo && !available) ...[
-          Icon(Icons.schedule, color: cs.onSurfaceVariant, size: 14.w),
-          SizedBox(width: 4.w),
-          Text(
-            '٢ أكتوبر ٨:٣٠ م',
-            style: AppTypography.monoCaption(
-              color: cs.onSurfaceVariant,
-              fontSize: 11,
+  /// الصف السفلي:
+  /// - المالك: [تعديل] [حذف]
+  /// - غير المالك + متاحة: [أخذت الأداة] (مع تأكيد)
+  /// - غير المالك + مأخوذة: [تم الأخذ] معطل
+  Widget _buildBottomRow(BuildContext context, ColorScheme cs, bool available) {
+    if (isOwner) {
+      return Row(
+        children: [
+          Expanded(
+            child: _actionButton(
+              cs: cs,
+              label: 'تعديل',
+              icon: Icons.edit_outlined,
+              background: cs.primary,
+              foreground: cs.onPrimary,
+              onTap: onEdit,
+            ),
+          ),
+          SizedBox(width: 10.w),
+          Expanded(
+            child: _actionButton(
+              cs: cs,
+              label: 'حذف',
+              icon: Icons.delete_outline,
+              background: cs.error.withValues(alpha: 0.12),
+              foreground: cs.error,
+              onTap: onDelete,
             ),
           ),
         ],
-        if (kindName != null) ...[
-          status,
-          const Spacer(),
-          _chip(cs, kindName),
-        ] else ...[
-          const Spacer(),
-          status,
+      );
+    }
+
+    if (!available) {
+      return _disabledTakeButton(cs);
+    }
+
+    return _takeButton(context, cs);
+  }
+
+  Widget _actionButton({
+    required ColorScheme cs,
+    required String label,
+    required IconData icon,
+    required Color background,
+    required Color foreground,
+    required VoidCallback? onTap,
+  }) {
+    return Material(
+      color: background,
+      borderRadius: BorderRadius.circular(12.r),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12.r),
+        child: SizedBox(
+          height: 44.h,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: foreground, size: 18.w),
+              SizedBox(width: 6.w),
+              Text(
+                label,
+                style: AppTypography.arabicTitle(
+                  color: foreground,
+                  fontSize: 13,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _takeButton(BuildContext context, ColorScheme cs) {
+    return Material(
+      color: cs.primary,
+      borderRadius: BorderRadius.circular(12.r),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12.r),
+        onTap: onTake == null
+            ? null
+            : () async {
+                final confirmed = await showDialog<bool>(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    backgroundColor: cs.surfaceContainerHigh,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16.r),
+                    ),
+                    title: Text(
+                      'تأكيد أخذ الأداة',
+                      style: AppTypography.arabicTitle(
+                        color: cs.onSurface,
+                        fontSize: 17,
+                      ),
+                    ),
+                    content: Text(
+                      'هل أنت متأكد من رغبتك في أخذ هذه الأداة؟ '
+                      'لن تتمكن من التراجع بعد التأكيد.',
+                      style: AppTypography.arabicBody(
+                        color: cs.onSurfaceVariant,
+                        fontSize: 14,
+                      ),
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx, false),
+                        child: Text(
+                          'إلغاء',
+                          style: AppTypography.arabicLabel(
+                            color: cs.onSurfaceVariant,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx, true),
+                        child: Text(
+                          'نعم، أخذ',
+                          style: AppTypography.arabicLabel(
+                            color: cs.primary,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+                if (confirmed == true) onTake!();
+              },
+        child: SizedBox(
+          height: 44.h,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.shopping_bag_outlined,
+                  color: cs.onPrimary, size: 18.w),
+              SizedBox(width: 8.w),
+              Text(
+                'أخذت الأداة',
+                style: AppTypography.arabicTitle(
+                  color: cs.onPrimary,
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _disabledTakeButton(ColorScheme cs) {
+    return Container(
+      height: 44.h,
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(12.r),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.check_circle_outline,
+              color: cs.onSurfaceVariant, size: 18.w),
+          SizedBox(width: 8.w),
+          Text(
+            'تم الأخذ',
+            style: AppTypography.arabicLabel(
+              color: cs.onSurfaceVariant,
+              fontSize: 14,
+            ),
+          ),
         ],
-      ],
+      ),
     );
   }
 
@@ -285,17 +404,12 @@ class AppStudyToolCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(20.r),
         border: Border.all(color: cs.outline.withValues(alpha: 0.3)),
       ),
-      child: Text(
-        text,
-        style: AppTypography.arabicCaption(
-          color: cs.onSurfaceVariant,
-          fontSize: 11,
-        ),
-      ),
+      child: Text(text,
+          style: AppTypography.arabicCaption(
+              color: cs.onSurfaceVariant, fontSize: 11)),
     );
   }
 
-  /// Real-material detail line — leading icon + text.
   Widget _detailRow(
     ColorScheme cs,
     IconData icon,
@@ -327,45 +441,4 @@ class AppStudyToolCard extends StatelessWidget {
 
   static bool _hasText(String? value) =>
       value != null && value.trim().isNotEmpty;
-
-  /// اسم النوع محلياً، أو null إذا ما انمرر نوع.
-  static String? _kindName(String? kind) {
-    switch (kind) {
-      case null:
-        return null;
-      case 'book':
-        return 'tool.kind_book'.tr();
-      case 'stationery':
-        return 'tool.kind_stationery'.tr();
-      case 'notes':
-        return 'tool.kind_notes'.tr();
-      case 'other':
-        return 'tool.kind_other'.tr();
-      default:
-        return kind;
-    }
-  }
-
-  static IconData _kindIcon(String? kind) {
-    switch (kind) {
-      case 'book':
-        return Icons.book_outlined;
-      case 'stationery':
-        return Icons.brush_outlined;
-      case 'notes':
-        return Icons.article_outlined;
-      default:
-        return Icons.inventory_2_outlined;
-    }
-  }
-
-  static const List<String> _toolTitles = [
-    'حقيبة طالب العلم — ٥ كتب علمية',
-    'مصحف مجلد — نسخة فاخرة',
-  ];
-
-  static const List<String> _toolDescriptions = [
-    'مجموعة كتب مطبوعة للمتون في أصول العلم',
-    'مصحف طباعة واضحة وإهداء للمتدبر',
-  ];
 }

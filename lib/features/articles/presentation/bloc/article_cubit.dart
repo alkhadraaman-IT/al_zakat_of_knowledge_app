@@ -1,47 +1,48 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../domain/entities/article_entity.dart';
 import '../../domain/usecases/create_article_usecase.dart';
+import '../../domain/usecases/delete_article_usecase.dart';
 import '../../domain/usecases/get_articles_usecase.dart';
+import '../../domain/usecases/update_article_usecase.dart';
 import 'article_state.dart';
 
-/// Articles Cubit managing the published
-/// articles feed and the publication flow.
 class ArticleCubit extends Cubit<ArticleState> {
   final GetArticlesUseCase getArticlesUseCase;
   final CreateArticleUseCase createArticleUseCase;
+  final UpdateArticleUseCase updateArticleUseCase;
+  final DeleteArticleUseCase deleteArticleUseCase;
 
   ArticleCubit({
     required this.getArticlesUseCase,
     required this.createArticleUseCase,
+    required this.updateArticleUseCase,
+    required this.deleteArticleUseCase,
   }) : super(const ArticleInitial());
 
-  /// Loads the published articles, newest first.
   Future<void> getArticles() async {
-    print('<<<<<<<<<<<[ArticleCubit.getArticles]>>>>>>>>>>>>>');
     emit(const ArticleLoading());
     final result = await getArticlesUseCase();
     result.fold(
-      (failure) {
-        print('<<<<<<<<<<<[getArticles Error]>>>>>>>>>>>>>');
-        print('Error object: $failure');
-        print('Error type: ${failure.runtimeType}');
-        print('Message: ${failure.message}');
-        print('Code: ${failure.code ?? 'none'}');
-        print('Stack trace: ${StackTrace.current}');
-        emit(ArticleError(message: failure.message, code: failure.code));
-      },
+      (f) => emit(ArticleError(message: f.message, code: f.code)),
       (articles) => emit(ArticleLoaded(articles: articles)),
     );
   }
 
-  /// Publishes a new article (sadaqah jariyah).
+  Future<void> _refreshQuietly() async {
+    final result = await getArticlesUseCase();
+    result.fold(
+      (_) {},
+      (articles) => emit(ArticleLoaded(articles: articles)),
+    );
+  }
+
   Future<void> createArticle({
     required String authorId,
     required String title,
     required String body,
     required int categoryId,
   }) async {
-    print('<<<<<<<<<<<[ArticleCubit.createArticle]>>>>>>>>>>>>>');
     emit(const ArticleSubmitting());
     final result = await createArticleUseCase(
       authorId: authorId,
@@ -50,18 +51,54 @@ class ArticleCubit extends Cubit<ArticleState> {
       categoryId: categoryId,
     );
     result.fold(
-      (failure) {
-        print('<<<<<<<<<<<[createArticle Error]>>>>>>>>>>>>>');
-        print('Error object: $failure');
-        print('Error type: ${failure.runtimeType}');
-        print('Message: ${failure.message}');
-        print('Code: ${failure.code ?? 'none'}');
-        print('Stack trace: ${StackTrace.current}');
-        emit(ArticleError(message: failure.message, code: failure.code));
-      },
+      (f) => emit(ArticleError(message: f.message, code: f.code)),
       (article) {
         emit(ArticleSuccess(article: article));
-        getArticles(); // <--- الحل الجذري: إعادة جلب المقالات فوراً لتحديث الواجهة تلقائياً
+        _refreshQuietly();
+      },
+    );
+  }
+
+  Future<void> updateArticle({
+    required String articleId,
+    required String title,
+    required String body,
+    required int categoryId,
+  }) async {
+    emit(const ArticleUpdating());
+    final result = await updateArticleUseCase(
+      articleId: articleId,
+      title: title,
+      body: body,
+      categoryId: categoryId,
+    );
+    result.fold(
+      (f) => emit(ArticleError(message: f.message, code: f.code)),
+      (_) {
+        emit(ArticleUpdateSuccess(
+          article: ArticleEntity(
+            id: articleId,
+            authorId: '',
+            title: title,
+            body: body,
+            categoryId: categoryId,
+            imageUrl: null,
+            createdAt: DateTime.now(),
+          ),
+        ));
+        _refreshQuietly();
+      },
+    );
+  }
+
+  Future<void> deleteArticle({required String articleId}) async {
+    emit(const ArticleDeleting());
+    final result = await deleteArticleUseCase(articleId: articleId);
+    result.fold(
+      (f) => emit(ArticleError(message: f.message, code: f.code)),
+      (_) {
+        emit(ArticleDeleteSuccess(articleId: articleId));
+        _refreshQuietly();
       },
     );
   }

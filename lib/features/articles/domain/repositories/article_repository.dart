@@ -26,4 +26,13 @@ abstract class ArticleRepository {
   Future<Either<Failure, List<ArticleEntity>>> getArticlesByAuthor(
     String authorId,
   );
+
+  Future<Either<Failure, void>> updateArticle({
+  required String articleId,
+  required String title,
+  required String body,
+  required int categoryId,
+});
+
+Future<Either<Failure, void>> deleteArticle({required String articleId});
 }

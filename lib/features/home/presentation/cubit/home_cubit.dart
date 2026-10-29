@@ -2,7 +2,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../articles/presentation/bloc/article_cubit.dart';
 import '../../../sessions/presentation/session_cubit/session_cubit.dart';
-import '../../../study_tools/presentation/bloc/study_tool_cubit.dart';
+import '../../../study_tools/presentation/cubit/study_tool_cubit.dart';
 
 /// Cubit الرئيسية. الـ State هو رقم التاب المختار:
 /// 0 محاضرات، 1 مقالات، 2 أدوات.

@@ -58,8 +58,8 @@ class _PickLocationPageState extends State<PickLocationPage> {
             ),
             children: [
               TileLayer(
-                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                // مطلوب من سياسة استخدام OpenStreetMap: اسم حزمة التطبيق.
+ urlTemplate:
+      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',                // مطلوب من سياسة استخدام OpenStreetMap: اسم حزمة التطبيق.
                 userAgentPackageName: 'com.example.al_zakat_of_knowledge_app',
                 maxNativeZoom: 19,
               ),
@@ -71,11 +71,7 @@ class _PickLocationPageState extends State<PickLocationPage> {
             child: Center(
               child: Transform.translate(
                 offset: Offset(0, -24.w),
-                child: Icon(
-                  Icons.location_on,
-                  size: 48.w,
-                  color: cs.primary,
-                ),
+                child: Icon(Icons.location_on, size: 48.w, color: cs.primary),
               ),
             ),
           ),
@@ -91,7 +87,7 @@ class _PickLocationPageState extends State<PickLocationPage> {
                 borderRadius: BorderRadius.circular(6.r),
               ),
               child: Text(
-                '© OpenStreetMap contributors',
+                '© OpenStreetMap · © CARTO',
                 style: TextStyle(fontSize: 10.sp, color: cs.onSurfaceVariant),
               ),
             ),

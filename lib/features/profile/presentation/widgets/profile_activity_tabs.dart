@@ -1,18 +1,24 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../app/theme/app_typography.dart';
 import '../../../../core/constants/app_spacing.dart';
-import '../../../../shared/widgets/app_article_card.dart';
 import '../../../../shared/widgets/app_segmented_bar.dart';
 import '../../../../shared/widgets/app_session_card.dart';
-import '../../../../shared/widgets/app_study_tool_card.dart';
+import '../../../../shared/widgets/article_entity_card.dart';
+import '../../../../shared/widgets/study_tool_entity_card.dart';
 import '../../../articles/domain/entities/article_entity.dart';
+import '../../../articles/presentation/bloc/article_cubit.dart';
+import '../../../articles/presentation/bloc/article_state.dart';
 import '../../../sessions/domain/entities/booking_entity.dart';
 import '../../../sessions/domain/entities/session_entity.dart';
 import '../../../study_tools/domain/entities/study_tool_entity.dart';
+import '../../../study_tools/presentation/cubit/study_tool_cubit.dart';
+import '../../../study_tools/presentation/cubit/study_tool_state.dart';
 
 class ProfileActivityTabs extends StatefulWidget {
   final bool isOwnerProfile;
@@ -145,8 +151,6 @@ class _ProfileActivityTabsState extends State<ProfileActivityTabs> {
     }
   }
 
-  // داخل كلاس _ProfileActivityTabsState:
-
   Widget _buildLecturesTab(BuildContext context) {
     if (widget.isLoadingLectures) {
       return const SizedBox(
@@ -182,7 +186,6 @@ class _ProfileActivityTabsState extends State<ProfileActivityTabs> {
     return Column(
       children: [
         for (var i = 0; i < widget.lectures.length; i++) ...[
-          // 👈 استبدلنا _ActivityCard هنا بهذا الاستدعاء
           _buildPublisherSessionCard(context, widget.lectures[i]),
           if (i < widget.lectures.length - 1) SizedBox(height: 12.h),
         ],
@@ -190,8 +193,10 @@ class _ProfileActivityTabsState extends State<ProfileActivityTabs> {
     );
   }
 
-  // 👈 دالة جديدة خاصة بمحاضراتي (تحتوي على الملاحظة والزر المخصص)
-  Widget _buildPublisherSessionCard(BuildContext context, SessionEntity session) {
+  Widget _buildPublisherSessionCard(
+    BuildContext context,
+    SessionEntity session,
+  ) {
     final startTime = DateTime.tryParse(session.startsAt)?.toLocal();
     final bookedCount = session.bookedCount;
     final maxSeats = session.maxSeats > 0 ? session.maxSeats : 1;
@@ -221,124 +226,144 @@ class _ProfileActivityTabsState extends State<ProfileActivityTabs> {
       lecturerInitial: lecturer.isNotEmpty ? lecturer[0] : ' — ',
       dateLabel: dateLabel,
       timeLabel: timeLabel,
-      locationLabel: location.isNotEmpty ? location : 'session.unspecified'.tr(),
+      locationLabel: location.isNotEmpty
+          ? location
+          : 'session.unspecified'.tr(),
       mapPillLabel: location.isNotEmpty ? location : 'session.unspecified'.tr(),
       capacityFactor: factor,
       percentLabel: '$percent%',
       seatsLabel: '$bookedCount/$maxSeats',
       lat: session.lat,
       lng: session.lng,
-      
-      // 👈 التعديلات المطلوبة:
-      ctaLabel: 'تفاصيل', // الزر أصبح "تفاصيل"
-      noteLabel: 'لا يمكن حذف المحاضرة إلا قبل 48 ساعة من موعدها', // الملاحظة
-      // الرابط الخاص بصاحب المحاضرة
-      onTap: () => context.push('/session-details/${session.id}?isPublisher=true'),
+      ctaLabel: 'تفاصيل',
+      noteLabel: 'لا يمكن حذف المحاضرة إلا قبل 48 ساعة من موعدها',
+      onTap: () =>
+          context.push('/session-details/${session.id}?isPublisher=true'),
     );
   }
 
   Widget _buildArticlesTab(BuildContext context) {
-    if (widget.isLoadingArticles) {
-      return const SizedBox(
-        height: 200,
-        child: Center(child: CircularProgressIndicator()),
-      );
-    }
+    return BlocBuilder<ArticleCubit, ArticleState>(
+      buildWhen: (_, c) => c is ArticleLoaded || c is ArticleLoading,
+      builder: (context, state) {
+        final authorId = widget.isOwnerProfile
+            ? Supabase.instance.client.auth.currentUser?.id
+            : (widget.articles.isNotEmpty
+                ? widget.articles.first.authorId
+                : null);
 
-    if (widget.articles.isEmpty) {
-      final cs = Theme.of(context).colorScheme;
-      return Center(
-        child: Padding(
-          padding: EdgeInsets.symmetric(vertical: 40.h),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.article_outlined,
-                color: cs.onSurfaceVariant,
-                size: 56.w,
+        final liveArticles = (state is ArticleLoaded && authorId != null)
+            ? state.articles.where((a) => a.authorId == authorId).toList()
+            : widget.articles;
+
+        if (widget.isLoadingArticles && state is! ArticleLoaded) {
+          return const SizedBox(
+            height: 200,
+            child: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        if (liveArticles.isEmpty) {
+          final cs = Theme.of(context).colorScheme;
+          return Center(
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: 40.h),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.article_outlined,
+                    color: cs.onSurfaceVariant,
+                    size: 56.w,
+                  ),
+                  SizedBox(height: 12.h),
+                  Text(
+                    'profile.my_articles_empty'.tr(),
+                    style: AppTypography.arabicTitle(
+                      color: cs.onSurface,
+                      fontSize: 16,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
               ),
-              SizedBox(height: 12.h),
-              Text(
-                'profile.my_articles_empty'.tr(),
-                style: AppTypography.arabicTitle(
-                  color: cs.onSurface,
-                  fontSize: 16,
-                ),
-                textAlign: TextAlign.center,
+            ),
+          );
+        }
+
+        return Column(
+          children: [
+            for (var i = 0; i < liveArticles.length; i++) ...[
+              ArticleEntityCard(
+                key: ValueKey(liveArticles[i].id),
+                article: liveArticles[i],
               ),
+              if (i < liveArticles.length - 1) SizedBox(height: 12.h),
             ],
-          ),
-        ),
-      );
-    }
-
-    return Column(
-      children: [
-        for (var i = 0; i < widget.articles.length; i++) ...[
-          AppArticleCard(
-            title: widget.articles[i].title,
-            body: widget.articles[i].body,
-            articleId: widget.articles[i].id,
-          ),
-          if (i < widget.articles.length - 1) SizedBox(height: 12.h),
-        ],
-      ],
+          ],
+        );
+      },
     );
   }
 
   Widget _buildToolsTab(BuildContext context) {
-    if (widget.isLoadingTools) {
-      return const SizedBox(
-        height: 200,
-        child: Center(child: CircularProgressIndicator()),
-      );
-    }
+    return BlocBuilder<StudyToolCubit, StudyToolState>(
+      buildWhen: (_, c) => c is StudyToolLoaded || c is StudyToolLoading,
+      builder: (context, state) {
+        final ownerId =
+            widget.tools.isNotEmpty ? widget.tools.first.ownerId : null;
+        final liveTools = (state is StudyToolLoaded && ownerId != null)
+            ? state.tools.where((t) => t.ownerId == ownerId).toList()
+            : widget.tools;
 
-    if (widget.tools.isEmpty) {
-      final cs = Theme.of(context).colorScheme;
-      return Center(
-        child: Padding(
-          padding: EdgeInsets.symmetric(vertical: 40.h),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.inventory_2_outlined,
-                color: cs.onSurfaceVariant,
-                size: 56.w,
+        if (widget.isLoadingTools && state is! StudyToolLoaded) {
+          return const SizedBox(
+            height: 200,
+            child: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        if (liveTools.isEmpty) {
+          final cs = Theme.of(context).colorScheme;
+          return Center(
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: 40.h),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.inventory_2_outlined,
+                    color: cs.onSurfaceVariant,
+                    size: 56.w,
+                  ),
+                  SizedBox(height: 12.h),
+                  Text(
+                    'profile.my_tools_empty'.tr(),
+                    style: AppTypography.arabicTitle(
+                      color: cs.onSurface,
+                      fontSize: 16,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
               ),
-              SizedBox(height: 12.h),
-              Text(
-                'profile.my_tools_empty'.tr(),
-                style: AppTypography.arabicTitle(
-                  color: cs.onSurface,
-                  fontSize: 16,
-                ),
-                textAlign: TextAlign.center,
+            ),
+          );
+        }
+
+        return Column(
+          children: [
+            for (var i = 0; i < liveTools.length; i++) ...[
+              StudyToolEntityCard(
+                key: ValueKey(liveTools[i].id),
+                tool: liveTools[i],
+                index: i,
               ),
+              if (i < liveTools.length - 1) SizedBox(height: 12.h),
             ],
-          ),
-        ),
-      );
-    }
-
-    return Column(
-      children: [
-        for (var i = 0; i < widget.tools.length; i++) ...[
-          AppStudyToolCard(
-            index: i,
-            title: widget.tools[i].title,
-            subject: widget.tools[i].subject,
-            studyYear: widget.tools[i].studyYear,
-            university: widget.tools[i].university,
-            city: widget.tools[i].city,
-            pickupPlace: widget.tools[i].pickupPlace,
-            isTaken: widget.tools[i].isTaken,
-          ),
-          if (i < widget.tools.length - 1) SizedBox(height: 12.h),
-        ],
-      ],
+          ],
+        );
+      },
     );
   }
 
@@ -430,7 +455,6 @@ class _ProfileActivityTabsState extends State<ProfileActivityTabs> {
     );
   }
 
-  /// عرض محاضرات المحاضر العامة (الحقيقية القادمة من القاعدة)
   Widget _buildPublicLecturesTab(BuildContext context) {
     if (widget.isLoadingLectures) {
       return const SizedBox(
@@ -503,7 +527,9 @@ class _ProfileActivityTabsState extends State<ProfileActivityTabs> {
       lecturerInitial: lecturer.isNotEmpty ? lecturer[0] : ' — ',
       dateLabel: dateLabel,
       timeLabel: timeLabel,
-      locationLabel: location.isNotEmpty ? location : 'session.unspecified'.tr(),
+      locationLabel: location.isNotEmpty
+          ? location
+          : 'session.unspecified'.tr(),
       mapPillLabel: location.isNotEmpty ? location : 'session.unspecified'.tr(),
       capacityFactor: factor,
       percentLabel: '$percent%',
@@ -513,165 +539,64 @@ class _ProfileActivityTabsState extends State<ProfileActivityTabs> {
     );
   }
 
-  /// عرض مقالات المحاضر العامة (الحقيقية القادمة من القاعدة)
   Widget _buildPublicArticlesTab(BuildContext context) {
-    if (widget.isLoadingArticles) {
-      return const SizedBox(
-        height: 200,
-        child: Center(child: CircularProgressIndicator()),
-      );
-    }
+    return BlocBuilder<ArticleCubit, ArticleState>(
+      buildWhen: (_, c) => c is ArticleLoaded || c is ArticleLoading,
+      builder: (context, state) {
+        final authorId =
+            widget.articles.isNotEmpty ? widget.articles.first.authorId : null;
 
-    if (widget.articles.isEmpty) {
-      final cs = Theme.of(context).colorScheme;
-      return Center(
-        child: Padding(
-          padding: EdgeInsets.symmetric(vertical: 40.h),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.article_outlined,
-                color: cs.onSurfaceVariant,
-                size: 56.w,
+        final liveArticles = (state is ArticleLoaded && authorId != null)
+            ? state.articles.where((a) => a.authorId == authorId).toList()
+            : widget.articles;
+
+        if (widget.isLoadingArticles && state is! ArticleLoaded) {
+          return const SizedBox(
+            height: 200,
+            child: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        if (liveArticles.isEmpty) {
+          final cs = Theme.of(context).colorScheme;
+          return Center(
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: 40.h),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.article_outlined,
+                    color: cs.onSurfaceVariant,
+                    size: 56.w,
+                  ),
+                  SizedBox(height: 12.h),
+                  Text(
+                    'لا توجد مقالات بعد',
+                    style: AppTypography.arabicTitle(
+                      color: cs.onSurface,
+                      fontSize: 16,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
               ),
-              SizedBox(height: 12.h),
-              Text(
-                'لا توجد مقالات بعد',
-                style: AppTypography.arabicTitle(
-                  color: cs.onSurface,
-                  fontSize: 16,
-                ),
-                textAlign: TextAlign.center,
+            ),
+          );
+        }
+
+        return Column(
+          children: [
+            for (var i = 0; i < liveArticles.length; i++) ...[
+              ArticleEntityCard(
+                key: ValueKey(liveArticles[i].id),
+                article: liveArticles[i],
               ),
+              if (i < liveArticles.length - 1) SizedBox(height: 12.h),
             ],
-          ),
-        ),
-      );
-    }
-
-    return Column(
-      children: [
-        for (var i = 0; i < widget.articles.length; i++) ...[
-          AppArticleCard(
-            title: widget.articles[i].title,
-            body: widget.articles[i].body,
-            articleId: widget.articles[i].id,
-          ),
-          if (i < widget.articles.length - 1) SizedBox(height: 12.h),
-        ],
-      ],
-    );
-  }
-}
-
-class _ActivityCard extends StatelessWidget {
-  final String status;
-  final String title;
-  final String description;
-  final String seats;
-  final String minSeats;
-
-  const _ActivityCard({
-    required this.status,
-    required this.title,
-    required this.description,
-    required this.seats,
-    required this.minSeats,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.all(16.w),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(16.r),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary
-                  .withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(20.r),
-              border: Border.all(
-                color: Theme.of(context).colorScheme.primary
-                    .withValues(alpha: 0.3),
-              ),
-            ),
-            child: Text(
-              status,
-              style: AppTypography.arabicCaption(
-                color: Theme.of(context).colorScheme.primary,
-                fontSize: 11,
-              ),
-            ),
-          ),
-          SizedBox(height: 12.h),
-          Text(
-            title,
-            style: AppTypography.arabicTitle(
-              color: Theme.of(context).colorScheme.onSurface,
-              fontSize: 15,
-            ),
-          ),
-          SizedBox(height: 4.h),
-          Text(
-            description,
-            style: AppTypography.arabicCaption(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-              fontSize: 12,
-            ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-          SizedBox(height: 12.h),
-          Row(
-            children: [
-              Text(
-                minSeats,
-                style: AppTypography.arabicCaption(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  fontSize: 11,
-                ),
-              ),
-              const Spacer(),
-              Text(
-                seats,
-                style: AppTypography.monoCaption(
-                  color: Theme.of(context).colorScheme.primary,
-                  fontSize: 12,
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 12.h),
-          Container(
-            width: double.infinity,
-            padding: EdgeInsets.symmetric(vertical: 10.h),
-            decoration: BoxDecoration(
-              color: Colors.transparent,
-              borderRadius: BorderRadius.circular(12.r),
-              border: Border.all(color: Theme.of(context).colorScheme.outline),
-            ),
-            child: Center(
-              child: Text(
-                'profile.cancel_48h'.tr(),
-                style: AppTypography.arabicLabel(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  fontSize: 12,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
+          ],
+        );
+      },
     );
   }
 }

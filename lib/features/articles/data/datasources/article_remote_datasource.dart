@@ -14,6 +14,15 @@ abstract class ArticleRemoteDataSource {
   Future<List<CategoryModel>> getCategories();
   Future<List<ArticleModel>> getArticles();
   Future<List<ArticleModel>> getArticlesByAuthor(String authorId);
+
+  Future<void> updateArticle({
+    required String articleId,
+    required String title,
+    required String body,
+    required int categoryId,
+  });
+
+  Future<void> deleteArticle({required String articleId});
 }
 
 class ArticleRemoteDataSourceImpl implements ArticleRemoteDataSource {
@@ -40,17 +49,16 @@ class ArticleRemoteDataSourceImpl implements ArticleRemoteDataSource {
     );
 
     final response = await (supabaseClient
-        .from('articles')
-        .insert(article.toInsertJson())
-        .select()
-        .maybeSingle())
+            .from('articles')
+            .insert(article.toInsertJson())
+            .select()
+            .maybeSingle())
         .withTimeout(operationName: 'createArticle');
 
     if (response == null) {
       throw Exception('Article creation returned no row');
     }
 
-    // التصحيح هنا: استخدام fromMap بدلاً من fromEntity
     return ArticleModel.fromMap(response);
   }
 
@@ -58,9 +66,9 @@ class ArticleRemoteDataSourceImpl implements ArticleRemoteDataSource {
   Future<List<CategoryModel>> getCategories() async {
     print('<<<<<<<<<<<[getCategories]>>>>>>>>>>>>>');
     final response = await (supabaseClient
-        .from('categories')
-        .select()
-        .order('sort_order'))
+            .from('categories')
+            .select()
+            .order('sort_order'))
         .withTimeout(operationName: 'getCategories');
     return response.map((json) => CategoryModel.fromSupabase(json)).toList();
   }
@@ -69,28 +77,56 @@ class ArticleRemoteDataSourceImpl implements ArticleRemoteDataSource {
   Future<List<ArticleModel>> getArticles() async {
     print('<<<<<<<<<<<[getArticles]>>>>>>>>>>>>>');
     final response = await (supabaseClient
-        .from('articles')
-        .select()
-        .order('created_at', ascending: false))
+            .from('articles')
+            .select()
+            .order('created_at', ascending: false))
         .withTimeout(operationName: 'getArticles');
-    
-    return response
-        .map((json) => ArticleModel.fromMap(json))
-        .toList();
+
+    return response.map((json) => ArticleModel.fromMap(json)).toList();
   }
 
   @override
   Future<List<ArticleModel>> getArticlesByAuthor(String authorId) async {
     print('<<<<<<<<<<<[getArticlesByAuthor]>>>>>>>>>>>>>');
     final response = await (supabaseClient
-        .from('articles')
-        .select()
-        .eq('author_id', authorId)
-        .order('created_at', ascending: false))
+            .from('articles')
+            .select()
+            .eq('author_id', authorId)
+            .order('created_at', ascending: false))
         .withTimeout(operationName: 'getArticlesByAuthor');
-    
-    return response
-        .map((json) => ArticleModel.fromMap(json))
-        .toList();
+
+    return response.map((json) => ArticleModel.fromMap(json)).toList();
+  }
+
+  /// التحديث عبر RPC — يتجاوز RLS بأمان (يتحقق من author_id = auth.uid())
+  @override
+  Future<void> updateArticle({
+    required String articleId,
+    required String title,
+    required String body,
+    required int categoryId,
+  }) async {
+    print('<<<<<<<<<<<[updateArticle RPC]>>>>>>>>>>>>>');
+    await supabaseClient.rpc(
+      'update_article',
+      params: {
+        'p_article_id': articleId,
+        'p_title': title,
+        'p_body': body,
+        'p_category_id': categoryId,
+      },
+    );
+    print('<<<<<<<<<<<[updateArticle RPC DONE]>>>>>>>>>>>>>');
+  }
+
+  /// الحذف عبر RPC — يتجاوز RLS بأمان (يتحقق من author_id = auth.uid())
+  @override
+  Future<void> deleteArticle({required String articleId}) async {
+    print('<<<<<<<<<<<[deleteArticle RPC]>>>>>>>>>>>>>');
+    await supabaseClient.rpc(
+      'delete_article',
+      params: {'p_article_id': articleId},
+    );
+    print('<<<<<<<<<<<[deleteArticle RPC DONE]>>>>>>>>>>>>>');
   }
 }

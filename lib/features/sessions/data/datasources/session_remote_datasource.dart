@@ -5,7 +5,6 @@ import '../../domain/entities/booking_entity.dart';
 import '../../domain/entities/session_entity.dart';
 
 /// مصدر بيانات الجلسات من Supabase.
-/// يجب أن يحتوي كل التوابع التي يستدعيها SessionRepositoryImpl.
 abstract class SessionRemoteDataSource {
   Future<List<BookingEntity>> getUserBookings(String userId);
 
@@ -15,6 +14,20 @@ abstract class SessionRemoteDataSource {
 
   Future<SessionEntity> createSession({
     required String publisherId,
+    required String title,
+    required String description,
+    required int categoryId,
+    required String city,
+    required String placeName,
+    required String startsAt,
+    required int durationMinutes,
+    required int maxSeats,
+    required double lat,
+    required double lng,
+  });
+
+  Future<SessionEntity> updateSession({
+    required String sessionId,
     required String title,
     required String description,
     required int categoryId,
@@ -37,9 +50,7 @@ class SessionRemoteDataSourceImpl implements SessionRemoteDataSource {
 
   SessionRemoteDataSourceImpl({required this.supabaseClient});
 
-  /// ملاحظة مهمة: نكتب profiles!publisher_id وليس profiles فقط.
-  /// جدول bookings يربط sessions بـ profiles أيضاً، فبدون الإشارة
-  /// لعمود الربط يعيد PostgREST خطأ "more than one relationship".
+  /// نستخدم profiles!publisher_id لتجنّب خطأ "more than one relationship".
   static const String _sessionWithPublisher = '*, profiles!publisher_id(name)';
 
   List<Map<String, dynamic>> _asRows(dynamic data) {
@@ -48,6 +59,7 @@ class SessionRemoteDataSourceImpl implements SessionRemoteDataSource {
         .toList();
   }
 
+  // ── قراءة ─────────────────────────────────────────────
   @override
   Future<List<SessionEntity>> getSessions() async {
     final data = await supabaseClient
@@ -61,7 +73,9 @@ class SessionRemoteDataSourceImpl implements SessionRemoteDataSource {
   }
 
   @override
-  Future<List<SessionEntity>> getSessionsByPublisher(String publisherId) async {
+  Future<List<SessionEntity>> getSessionsByPublisher(
+    String publisherId,
+  ) async {
     final data = await supabaseClient
         .from('sessions')
         .select(_sessionWithPublisher)
@@ -73,7 +87,6 @@ class SessionRemoteDataSourceImpl implements SessionRemoteDataSource {
 
   @override
   Future<List<BookingEntity>> getUserBookings(String userId) async {
-    // 1) الحجوزات المؤكدة فقط: الحجز الملغى لا يظهر في "حجوزاتي".
     final bookingRows = _asRows(
       await supabaseClient
           .from('bookings')
@@ -84,8 +97,6 @@ class SessionRemoteDataSourceImpl implements SessionRemoteDataSource {
     );
     if (bookingRows.isEmpty) return [];
 
-    // 2) الجلسات المرتبطة مع اسم المحاضر. استعلام منفصل أبسط وأوثق
-    // من التضمين المتداخل بين ثلاثة جداول.
     final sessionIds = bookingRows
         .map((b) => b['session_id'].toString())
         .toList();
@@ -116,6 +127,7 @@ class SessionRemoteDataSourceImpl implements SessionRemoteDataSource {
     return result;
   }
 
+  // ── كتابة ─────────────────────────────────────────────
   @override
   Future<SessionEntity> createSession({
     required String publisherId,
@@ -157,7 +169,7 @@ class SessionRemoteDataSourceImpl implements SessionRemoteDataSource {
     final response = await supabaseClient
         .from('sessions')
         .insert(payload)
-        .select()
+        .select(_sessionWithPublisher)
         .maybeSingleWithTimeout(operationName: 'createSession');
 
     if (response == null) {
@@ -167,7 +179,47 @@ class SessionRemoteDataSourceImpl implements SessionRemoteDataSource {
     return SessionEntity.fromSupabase(response);
   }
 
-  /// الحجز عبر دالة RPC فقط (لا إدراج مباشر في bookings).
+  @override
+  Future<SessionEntity> updateSession({
+    required String sessionId,
+    required String title,
+    required String description,
+    required int categoryId,
+    required String city,
+    required String placeName,
+    required String startsAt,
+    required int durationMinutes,
+    required int maxSeats,
+    required double lat,
+    required double lng,
+  }) async {
+    final payload = <String, dynamic>{
+      'title': title,
+      'description': description,
+      'category_id': categoryId,
+      'city': city,
+      'place_name': placeName,
+      'starts_at': startsAt,
+      'duration_minutes': durationMinutes,
+      'max_seats': maxSeats,
+      'lat': lat,
+      'lng': lng,
+    };
+
+    final response = await supabaseClient
+        .from('sessions')
+        .update(payload)
+        .eq('id', sessionId)
+        .select(_sessionWithPublisher)
+        .maybeSingleWithTimeout(operationName: 'updateSession');
+
+    if (response == null) {
+      throw Exception('Session update returned no row');
+    }
+
+    return SessionEntity.fromSupabase(response);
+  }
+
   @override
   Future<void> bookSession({required String sessionId}) async {
     await supabaseClient.rpc(
@@ -176,7 +228,6 @@ class SessionRemoteDataSourceImpl implements SessionRemoteDataSource {
     );
   }
 
-  /// الإلغاء عبر دالة RPC فقط.
   @override
   Future<void> cancelBooking({required String sessionId}) async {
     await supabaseClient.rpc(

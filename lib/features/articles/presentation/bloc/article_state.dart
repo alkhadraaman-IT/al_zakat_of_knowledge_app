@@ -55,3 +55,25 @@ class ArticleSuccess extends ArticleState {
   @override
   List<Object?> get props => [article];
 }
+
+class ArticleUpdating extends ArticleState {
+  const ArticleUpdating();
+}
+
+class ArticleUpdateSuccess extends ArticleState {
+  final ArticleEntity article;
+  const ArticleUpdateSuccess({required this.article});
+  @override
+  List<Object?> get props => [article];
+}
+
+class ArticleDeleting extends ArticleState {
+  const ArticleDeleting();
+}
+
+class ArticleDeleteSuccess extends ArticleState {
+  final String articleId;
+  const ArticleDeleteSuccess({required this.articleId});
+  @override
+  List<Object?> get props => [articleId];
+}

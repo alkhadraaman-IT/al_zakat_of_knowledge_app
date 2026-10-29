@@ -43,7 +43,11 @@ class ArticleRepositoryImpl implements ArticleRepository {
       return Left(ServerFailure(message: e.message, code: e.code));
     } on SupabaseTimeoutException catch (_) {
       print('<<<<<<<<<<<[createArticle Timeout]>>>>>>>>>>>>>');
-      return Left(NetworkFailure(message: 'Network request timed out. Please check your connection.'));
+      return Left(
+        NetworkFailure(
+          message: 'Network request timed out. Please check your connection.',
+        ),
+      );
     } on SupabaseSocketException catch (_) {
       print('<<<<<<<<<<<[createArticle SocketException]>>>>>>>>>>>>>');
       return Left(NetworkFailure(message: 'Network error'));
@@ -66,7 +70,11 @@ class ArticleRepositoryImpl implements ArticleRepository {
       return Left(ServerFailure(message: e.message, code: e.code));
     } on SupabaseTimeoutException catch (_) {
       print('<<<<<<<<<<<[getCategories Timeout]>>>>>>>>>>>>>');
-      return Left(NetworkFailure(message: 'Network request timed out. Please check your connection.'));
+      return Left(
+        NetworkFailure(
+          message: 'Network request timed out. Please check your connection.',
+        ),
+      );
     } on SupabaseSocketException catch (_) {
       print('<<<<<<<<<<<[getCategories SocketException]>>>>>>>>>>>>>');
       return Left(NetworkFailure(message: 'Network error'));
@@ -91,7 +99,11 @@ class ArticleRepositoryImpl implements ArticleRepository {
       return Left(ServerFailure(message: e.message, code: e.code));
     } on SupabaseTimeoutException catch (_) {
       print('<<<<<<<<<<<[getArticles Timeout]>>>>>>>>>>>>>');
-      return Left(NetworkFailure(message: 'Network request timed out. Please check your connection.'));
+      return Left(
+        NetworkFailure(
+          message: 'Network request timed out. Please check your connection.',
+        ),
+      );
     } on SupabaseSocketException catch (_) {
       print('<<<<<<<<<<<[getArticles SocketException]>>>>>>>>>>>>>');
       return Left(NetworkFailure(message: 'Network error'));
@@ -118,12 +130,66 @@ class ArticleRepositoryImpl implements ArticleRepository {
       return Left(ServerFailure(message: e.message, code: e.code));
     } on SupabaseTimeoutException catch (_) {
       print('<<<<<<<<<<<[getArticlesByAuthor Timeout]>>>>>>>>>>>>>');
-      return Left(NetworkFailure(message: 'Network request timed out. Please check your connection.'));
+      return Left(
+        NetworkFailure(
+          message: 'Network request timed out. Please check your connection.',
+        ),
+      );
     } on SupabaseSocketException catch (_) {
       print('<<<<<<<<<<<[getArticlesByAuthor SocketException]>>>>>>>>>>>>>');
       return Left(NetworkFailure(message: 'Network error'));
     } catch (_) {
       return Left(ServerFailure(message: 'Server error'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> updateArticle({
+    required String articleId,
+    required String title,
+    required String body,
+    required int categoryId,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      return const Left(NetworkFailure(message: 'No internet connection'));
+    }
+    try {
+      await remoteDataSource.updateArticle(
+        articleId: articleId,
+        title: title,
+        body: body,
+        categoryId: categoryId,
+      );
+      return const Right(null);
+    } on PostgrestException catch (e) {
+      return Left(ServerFailure(message: e.message, code: e.code));
+    } on SupabaseTimeoutException catch (_) {
+      return const Left(NetworkFailure(message: 'Network timeout'));
+    } on SupabaseSocketException catch (_) {
+      return const Left(NetworkFailure(message: 'Network error'));
+    } catch (_) {
+      return const Left(ServerFailure(message: 'Server error'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> deleteArticle({
+    required String articleId,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      return const Left(NetworkFailure(message: 'No internet connection'));
+    }
+    try {
+      await remoteDataSource.deleteArticle(articleId: articleId);
+      return const Right(null);
+    } on PostgrestException catch (e) {
+      return Left(ServerFailure(message: e.message, code: e.code));
+    } on SupabaseTimeoutException catch (_) {
+      return const Left(NetworkFailure(message: 'Network timeout'));
+    } on SupabaseSocketException catch (_) {
+      return const Left(NetworkFailure(message: 'Network error'));
+    } catch (_) {
+      return const Left(ServerFailure(message: 'Server error'));
     }
   }
 }

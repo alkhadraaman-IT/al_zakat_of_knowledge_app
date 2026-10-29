@@ -1,16 +1,19 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../domain/usecases/get_sessions_usecase.dart';
 import '../../domain/usecases/create_session_usecase.dart';
+import '../../domain/usecases/update_session_usecase.dart';
 import 'session_state.dart';
 
-/// Cubit الخاص بإدارة المحاضرات وعمليات الإنشاء والجلب
+/// Cubit الخاص بإدارة المحاضرات وعمليات الإنشاء/التحديث والجلب
 class SessionCubit extends Cubit<SessionState> {
   final GetSessionsUseCase getSessionsUseCase;
   final CreateSessionUseCase createSessionUseCase;
+  final UpdateSessionUseCase updateSessionUseCase;
 
   SessionCubit({
     required this.getSessionsUseCase,
     required this.createSessionUseCase,
+    required this.updateSessionUseCase,
   }) : super(const SessionInitial());
 
   /// جلب قائمة المحاضرات
@@ -28,7 +31,7 @@ class SessionCubit extends Cubit<SessionState> {
     );
   }
 
-  /// إنشاء محاضرة جديدة باحترافية
+  /// إنشاء محاضرة جديدة
   Future<void> createSession({
     required String publisherId,
     required String title,
@@ -44,7 +47,7 @@ class SessionCubit extends Cubit<SessionState> {
   }) async {
     print('<<<<<<<<<<<[SessionCubit.createSession]>>>>>>>>>>>>>');
     emit(const SessionSubmitting());
-    
+
     final result = await createSessionUseCase(
       publisherId: publisherId,
       title: title,
@@ -68,7 +71,52 @@ class SessionCubit extends Cubit<SessionState> {
       (session) {
         print('<<<<<<<<<<<[createSession Success]>>>>>>>>>>>>>');
         emit(SessionSuccess(session: session));
-        getSessions(); // إعادة جلب القائمة لتحديث الواجهة تلقائياً
+        getSessions();
+      },
+    );
+  }
+
+  /// تعديل محاضرة موجودة
+  Future<void> updateSession({
+    required String sessionId,
+    required String title,
+    required String description,
+    required int categoryId,
+    required String city,
+    required String placeName,
+    required String startsAt,
+    required int durationMinutes,
+    required int maxSeats,
+    required double lat,
+    required double lng,
+  }) async {
+    print('<<<<<<<<<<<[SessionCubit.updateSession]>>>>>>>>>>>>>');
+    emit(const SessionUpdating());
+
+    final result = await updateSessionUseCase(
+      sessionId: sessionId,
+      title: title,
+      description: description,
+      categoryId: categoryId,
+      city: city,
+      placeName: placeName,
+      startsAt: startsAt,
+      durationMinutes: durationMinutes,
+      maxSeats: maxSeats,
+      lat: lat,
+      lng: lng,
+    );
+
+    result.fold(
+      (failure) {
+        print('<<<<<<<<<<<[updateSession Error]>>>>>>>>>>>>>');
+        print('Message: ${failure.message}');
+        emit(SessionError(message: failure.message, code: failure.code));
+      },
+      (session) {
+        print('<<<<<<<<<<<[updateSession Success]>>>>>>>>>>>>>');
+        emit(SessionUpdateSuccess(session: session));
+        getSessions();
       },
     );
   }

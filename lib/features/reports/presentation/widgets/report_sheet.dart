@@ -8,7 +8,7 @@ import '../../../../core/di/injection_container.dart';
 import '../../../../core/errors/failures.dart';
 import '../../../auth/presentation/bloc/auth_cubit.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
-import '../../../content_creation/presentation/widgets/success_dialog.dart';
+import '../../../../shared/widgets/success_dialog.dart';
 import '../../domain/usecases/create_report_usecase.dart';
 
 // Helper method to show a SnackBar message — used by both showReportSheet and _ReportSheetState.

@@ -54,4 +54,18 @@ abstract class SessionRepository {
   /// Returns Right(null) on success,
   /// [Failure] on error.
   Future<Either<Failure, void>> cancelBooking({required String sessionId});
+
+  Future<Either<Failure, SessionEntity>> updateSession({
+  required String sessionId,
+  required String title,
+  required String description,
+  required int categoryId,
+  required String city,
+  required String placeName,
+  required String startsAt,
+  required int durationMinutes,
+  required int maxSeats,
+  required double lat,
+  required double lng,
+});
 }

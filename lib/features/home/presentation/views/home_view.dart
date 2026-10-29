@@ -11,7 +11,9 @@ import '../../../../core/di/injection_container.dart';
 import '../../../../shared/widgets/app_search_bar.dart';
 import '../../../../shared/widgets/app_segmented_bar.dart';
 import '../../../../shared/widgets/app_state_views.dart';
+import '../../../../shared/widgets/article_entity_card.dart';
 import '../../../../shared/widgets/session_entity_card.dart';
+import '../../../../shared/widgets/study_tool_entity_card.dart';
 import '../../../articles/domain/entities/article_entity.dart';
 import '../../../articles/presentation/bloc/article_cubit.dart';
 import '../../../articles/presentation/bloc/article_state.dart';
@@ -21,8 +23,8 @@ import '../../../sessions/domain/entities/session_entity.dart';
 import '../../../sessions/presentation/session_cubit/session_cubit.dart';
 import '../../../sessions/presentation/session_cubit/session_state.dart';
 import '../../../study_tools/domain/entities/study_tool_entity.dart';
-import '../../../study_tools/presentation/bloc/study_tool_cubit.dart';
-import '../../../study_tools/presentation/bloc/study_tool_state.dart';
+import '../../../study_tools/presentation/cubit/study_tool_cubit.dart';
+import '../../../study_tools/presentation/cubit/study_tool_state.dart';
 import '../cubit/home_cubit.dart';
 
 /// Home Feed — بدون setState وبدون StatefulWidget.
@@ -94,7 +96,7 @@ class _HomeScreen extends StatelessWidget {
                       borderRadius: BorderRadius.circular(12.r),
                       boxShadow: [
                         BoxShadow(
-color: cs.primary.withValues(alpha: 0.3),
+                          color: cs.primary.withValues(alpha: 0.3),
                           blurRadius: 10.r,
                         ),
                       ],
@@ -203,13 +205,14 @@ class _LecturesTab extends StatelessWidget {
       // Submitting / Success (من شاشة الإضافة) ما بتغيّر القائمة الظاهرة
       buildWhen: (_, c) => c is! SessionSubmitting && c is! SessionSuccess,
       builder: (context, state) {
-        final sessions =
-            state is SessionsLoaded ? state.sessions : const <SessionEntity>[];
+        final sessions = state is SessionsLoaded
+            ? state.sessions
+            : const <SessionEntity>[];
         return _FeedBody(
           isLoading: state is! SessionsLoaded && state is! SessionError,
           error: state is SessionError ? state.message : null,
           onRetry: () => context.read<SessionCubit>().getSessions(),
-errorTitle: 'sessions.error_loading'.tr(),
+          errorTitle: 'sessions.error_loading'.tr(),
           retryLabel: 'sessions.retry'.tr(),
           emptyIcon: Icons.groups_3,
           emptyTitle: 'sessions.empty'.tr(),
@@ -232,8 +235,9 @@ class _ArticlesTab extends StatelessWidget {
     return BlocBuilder<ArticleCubit, ArticleState>(
       buildWhen: (_, c) => c is! ArticleSubmitting && c is! ArticleSuccess,
       builder: (context, state) {
-        final articles =
-            state is ArticleLoaded ? state.articles : const <ArticleEntity>[];
+        final articles = state is ArticleLoaded
+            ? state.articles
+            : const <ArticleEntity>[];
         return _FeedBody(
           isLoading: state is! ArticleLoaded && state is! ArticleError,
           error: state is ArticleError ? state.message : null,
@@ -259,13 +263,17 @@ class _ToolsTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<StudyToolCubit, StudyToolState>(
-      buildWhen: (_, c) => c is! StudyToolSubmitting && c is! StudyToolSuccess,
+      // ✅ يعيد البناء فقط عند تغير فعلي في القائمة
+      buildWhen: (_, current) =>
+          current is StudyToolLoaded ||
+          current is StudyToolLoading ||
+          current is StudyToolError,
       builder: (context, state) {
         final tools = state is StudyToolLoaded
             ? state.tools
             : const <StudyToolEntity>[];
         return _FeedBody(
-          isLoading: state is! StudyToolLoaded && state is! StudyToolError,
+          isLoading: state is StudyToolLoading,
           error: state is StudyToolError ? state.message : null,
           onRetry: () => context.read<StudyToolCubit>().getStudyTools(),
           errorTitle: 'study_tools.error_loading'.tr(),

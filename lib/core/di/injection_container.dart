@@ -14,10 +14,13 @@ import '../../features/articles/data/datasources/article_remote_datasource.dart'
 import '../../features/articles/data/repositories/article_repository_impl.dart';
 import '../../features/articles/domain/repositories/article_repository.dart';
 import '../../features/articles/domain/usecases/create_article_usecase.dart';
+import '../../features/articles/domain/usecases/delete_article_usecase.dart';
 import '../../features/articles/domain/usecases/get_articles_usecase.dart';
 import '../../features/articles/domain/usecases/get_my_articles_usecase.dart';
 import '../../features/articles/domain/usecases/get_categories_usecase.dart';
+import '../../features/articles/domain/usecases/update_article_usecase.dart';
 import '../../features/articles/presentation/bloc/article_cubit.dart';
+import '../../features/articles/presentation/cubit/categories_cubit.dart';
 import '../../features/auth/data/datasources/auth_local_datasource.dart';
 import '../../features/auth/data/datasources/auth_remote_datasource.dart';
 import '../../features/auth/data/repositories/auth_repository_impl.dart';
@@ -40,11 +43,10 @@ import '../../features/favorites/domain/usecases/toggle_favorite_usecase.dart'
     show ToggleFavoriteUseCase;
 import '../../features/favorites/presentation/cubit/favorites_cubit.dart';
 
-// 👇 تم تصحيح أسماء الاستيرادات هنا (جمع بدلاً من مفرد)
 import '../../features/notifications/data/datasources/device_tokens_remote_data_source.dart';
 import '../../features/notifications/data/datasources/incoming_message_bus.dart';
 import '../../features/notifications/data/datasources/local_notifications_data_source.dart';
-import '../../features/notifications/data/datasources/notification_local_datasource.dart';
+import '../../features/notifications/data/datasources/notification_local_data_source.dart';
 import '../../features/notifications/data/datasources/notification_remote_data_source.dart';
 import '../../features/notifications/data/datasources/pending_messages_data_source.dart';
 import '../../features/notifications/data/repositories/category_topics_repository_impl.dart';
@@ -74,8 +76,7 @@ import '../../features/notifications/services/notifications_session_coordinator.
 import '../../features/notifications/services/pending_messages_drainer.dart';
 
 import '../../features/sessions/data/datasources/session_remote_datasource.dart';
-import '../../features/sessions/data/repositories/session_repository_impl.dart'
-    hide SessionRemoteDataSourceImpl;
+import '../../features/sessions/data/repositories/session_repository_impl.dart';
 import '../../features/sessions/domain/repositories/session_repository.dart';
 import '../../features/sessions/domain/usecases/book_session_usecase.dart';
 import '../../features/sessions/domain/usecases/cancel_booking_usecase.dart';
@@ -83,6 +84,7 @@ import '../../features/sessions/domain/usecases/create_session_usecase.dart';
 import '../../features/sessions/domain/usecases/get_sessions_by_publisher_usecase.dart';
 import '../../features/sessions/domain/usecases/get_sessions_usecase.dart';
 import '../../features/sessions/domain/usecases/get_user_bookings_usecase.dart';
+import '../../features/sessions/domain/usecases/update_session_usecase.dart';
 import '../../features/sessions/presentation/booking_cubit/booking_cubit.dart';
 import '../../features/sessions/presentation/session_cubit/session_cubit.dart';
 import '../../features/search/presentation/bloc/search_cubit.dart';
@@ -94,10 +96,13 @@ import '../../features/study_tools/data/datasources/study_tool_remote_datasource
 import '../../features/study_tools/data/repositories/study_tool_repository_impl.dart';
 import '../../features/study_tools/domain/repositories/study_tool_repository.dart';
 import '../../features/study_tools/domain/usecases/create_study_tool_usecase.dart';
+import '../../features/study_tools/domain/usecases/delete_study_tool_usecase.dart';
 import '../../features/study_tools/domain/usecases/get_study_tools_by_owner_usecase.dart';
 import '../../features/study_tools/domain/usecases/get_study_tools_usecase.dart';
-import '../../features/study_tools/presentation/bloc/study_tool_cubit.dart';
+import '../../features/study_tools/domain/usecases/take_study_tool_usecase.dart';
+import '../../features/study_tools/domain/usecases/update_study_tool_usecase.dart';
 import '../../core/services/profile_media_service.dart';
+import '../../features/study_tools/presentation/cubit/study_tool_cubit.dart';
 import '../constants/app_constants.dart';
 import '../constants/app_timeouts.dart';
 import '../network/network_info.dart';
@@ -109,6 +114,17 @@ final GetIt sl = GetIt.instance;
 /// Initializes all dependencies.
 Future<void> initDependencies() async {
   print('<<<<<<<<<<<[initDependencies]>>>>>>>>>>>>>');
+  print('<<<<<<<<<<<[ACTUAL SUPABASE URL]>>>>>>>>>>>>>');
+  print(AppConstants.supabaseUrl);
+  print('<<<<<<<<<<<[ACTUAL SUPABASE ANON KEY (first 30)]>>>>>>>>>>>>>');
+  print(
+    AppConstants.supabaseAnonKey.substring(
+      0,
+      AppConstants.supabaseAnonKey.length > 30
+          ? 30
+          : AppConstants.supabaseAnonKey.length,
+    ),
+  );
   // External
   final sharedPreferences = await SharedPreferences.getInstance();
   await Hive.initFlutter();
@@ -149,12 +165,6 @@ Future<void> initDependencies() async {
   );
 
   // Session Cubit
-  sl.registerLazySingleton<SessionCubit>(
-    () => SessionCubit(
-      getSessionsUseCase: sl<GetSessionsUseCase>(),
-      createSessionUseCase: sl<CreateSessionUseCase>(),
-    ),
-  );
 
   sl.registerLazySingleton<SharedPreferences>(() => sharedPreferences);
   sl.registerLazySingleton<Box>(() => authBox, instanceName: 'authBox');
@@ -198,6 +208,15 @@ Future<void> initDependencies() async {
       sharedPreferences: sl<SharedPreferences>(),
     ),
   );
+  // //!انا ضفت تبع StudyToolCubit & CreateStudyToolCubit لعند ===========
+  //   sl.registerFactory(
+  //     () => StudyToolCubit(
+  //       getStudyToolsUseCase: sl(),
+  //       createStudyToolUseCase: sl(),
+  //     ),
+  //   );
+  //   sl.registerFactory(() => CreateStudyToolCubit(createStudyToolUseCase: sl()));
+  // //!==============================
   sl.registerLazySingleton<ProfileMediaService>(
     () => ProfileMediaService(supabaseClient: sl<SupabaseClient>()),
   );
@@ -246,6 +265,12 @@ Future<void> initDependencies() async {
   sl.registerLazySingleton<CreateArticleUseCase>(
     () => CreateArticleUseCase(sl<ArticleRepository>()),
   );
+  sl.registerLazySingleton<UpdateArticleUseCase>(
+    () => UpdateArticleUseCase(sl<ArticleRepository>()),
+  );
+  sl.registerLazySingleton<DeleteArticleUseCase>(
+    () => DeleteArticleUseCase(sl<ArticleRepository>()),
+  );
   sl.registerLazySingleton<GetCategoriesUseCase>(
     () => GetCategoriesUseCase(sl<ArticleRepository>()),
   );
@@ -267,6 +292,10 @@ Future<void> initDependencies() async {
   sl.registerLazySingleton<CreateSessionUseCase>(
     () => CreateSessionUseCase(sl<SessionRepository>()),
   );
+  sl.registerLazySingleton<UpdateSessionUseCase>(
+    // ← أضف هذا
+    () => UpdateSessionUseCase(sl<SessionRepository>()),
+  );
   sl.registerLazySingleton<GetSessionsUseCase>(
     () => GetSessionsUseCase(sl<SessionRepository>()),
   );
@@ -281,6 +310,16 @@ Future<void> initDependencies() async {
   );
   sl.registerLazySingleton<CreateStudyToolUseCase>(
     () => CreateStudyToolUseCase(sl<StudyToolRepository>()),
+  );
+  sl.registerLazySingleton<TakeStudyToolUseCase>(
+    // ← أضف هذا
+    () => TakeStudyToolUseCase(sl<StudyToolRepository>()),
+  );
+  sl.registerLazySingleton<UpdateStudyToolUseCase>(
+    () => UpdateStudyToolUseCase(sl<StudyToolRepository>()),
+  );
+  sl.registerLazySingleton<DeleteStudyToolUseCase>(
+    () => DeleteStudyToolUseCase(sl<StudyToolRepository>()),
   );
   sl.registerLazySingleton<BookSessionUseCase>(
     () => BookSessionUseCase(sl<SessionRepository>()),
@@ -340,13 +379,29 @@ Future<void> initDependencies() async {
     () => StudyToolCubit(
       getStudyToolsUseCase: sl<GetStudyToolsUseCase>(),
       createStudyToolUseCase: sl<CreateStudyToolUseCase>(),
+      updateStudyToolUseCase: sl<UpdateStudyToolUseCase>(),
+      deleteStudyToolUseCase: sl<DeleteStudyToolUseCase>(),
+      takeStudyToolUseCase: sl<TakeStudyToolUseCase>(), // ← sl بدل null
+    ),
+  );
+  sl.registerLazySingleton<SessionCubit>(
+    // ← أضف هذا
+    () => SessionCubit(
+      getSessionsUseCase: sl<GetSessionsUseCase>(),
+      createSessionUseCase: sl<CreateSessionUseCase>(),
+      updateSessionUseCase: sl<UpdateSessionUseCase>(),
     ),
   );
   sl.registerLazySingleton<ArticleCubit>(
     () => ArticleCubit(
       getArticlesUseCase: sl<GetArticlesUseCase>(),
       createArticleUseCase: sl<CreateArticleUseCase>(),
+      updateArticleUseCase: sl<UpdateArticleUseCase>(),
+      deleteArticleUseCase: sl<DeleteArticleUseCase>(),
     ),
+  );
+  sl.registerLazySingleton<CategoriesCubit>(
+    () => CategoriesCubit(getCategoriesUseCase: sl<GetCategoriesUseCase>()),
   );
   sl.registerFactory<BookingCubit>(
     () => BookingCubit(
@@ -371,7 +426,6 @@ Future<void> initDependencies() async {
       userIdChanges: auth.onAuthStateChange.map((e) => e.session?.user.id),
     );
   });
-  
 } // 👈 تم إغلاق دالة initDependencies هنا بنجاح
 
 // 👇 تم فصل دالة initNotifications لتصبح دالة مستقلة (Top-level)
@@ -384,24 +438,31 @@ Future<void> initNotifications(GetIt sl) async {
   sl
     // ── data sources ──
     ..registerLazySingleton<NotificationsRemoteDataSource>(
-        () => NotificationsRemoteDataSourceImpl(client))
+      () => NotificationsRemoteDataSourceImpl(client),
+    )
     ..registerLazySingleton<NotificationsLocalDataSource>(
-        () => NotificationsLocalDataSourceImpl(box))
+      () => NotificationsLocalDataSourceImpl(box),
+    )
     ..registerLazySingleton(() => DeviceTokensRemoteDataSource(client))
     ..registerLazySingleton(() => LocalNotificationsDataSource())
     ..registerLazySingleton(() => FcmDataSource(FirebaseMessaging.instance))
     ..registerLazySingleton(() => PendingMessagesDataSource())
     ..registerLazySingleton(() => IncomingMessageBus())
     // ── repositories ──
-    ..registerLazySingleton<NotificationsRepository>(() => NotificationsRepositoryImpl(
-          remote: sl(),
-          local: sl(),
-          bus: sl(),
-          currentUserId: currentUserId,
-        ))
-    ..registerLazySingleton<NotificationScheduler>(() => NotificationSchedulerImpl(sl()))
+    ..registerLazySingleton<NotificationsRepository>(
+      () => NotificationsRepositoryImpl(
+        remote: sl(),
+        local: sl(),
+        bus: sl(),
+        currentUserId: currentUserId,
+      ),
+    )
+    ..registerLazySingleton<NotificationScheduler>(
+      () => NotificationSchedulerImpl(sl()),
+    )
     ..registerLazySingleton<CategoryTopicsRepository>(
-        () => CategoryTopicsRepositoryImpl(sl(), metaBox))
+      () => CategoryTopicsRepositoryImpl(sl(), metaBox),
+    )
     // ── use cases ──
     ..registerLazySingleton(() => GetNotificationsUseCase(sl()))
     ..registerLazySingleton(() => WatchLocalNotificationChangesUseCase(sl()))
@@ -413,34 +474,43 @@ Future<void> initNotifications(GetIt sl) async {
     ..registerLazySingleton(() => ScheduleSessionReminderUseCase(sl(), sl()))
     ..registerLazySingleton(() => CancelSessionNotificationsUseCase(sl(), sl()))
     ..registerLazySingleton(() => SyncCategoryTopicsUseCase(sl()))
-    ..registerLazySingleton(() => HandleIncomingNotificationUseCase(sl(), sl(), sl()))
+    ..registerLazySingleton(
+      () => HandleIncomingNotificationUseCase(sl(), sl(), sl()),
+    )
     // ── services (FCM مقسّمة) ──
     ..registerLazySingleton(() => FcmTokenManager(sl(), sl()))
-    ..registerLazySingleton(() => IncomingMessagePipeline(
-          handle: sl(),
-          bus: sl(),
-          currentUserId: currentUserId,
-        ))
+    ..registerLazySingleton(
+      () => IncomingMessagePipeline(
+        handle: sl(),
+        bus: sl(),
+        currentUserId: currentUserId,
+      ),
+    )
     ..registerLazySingleton(() => ForegroundMessageListener(sl(), sl()))
     ..registerLazySingleton(() => PendingMessagesDrainer(sl(), sl()))
-    ..registerLazySingleton(() => FcmService(
-          token: sl(),
-          foreground: sl(),
-          drainer: sl(),
-          topics: sl(),
-          scheduler: sl(),
-          pending: sl(),
-          currentUserId: currentUserId,
-        ))
+    ..registerLazySingleton(
+      () => FcmService(
+        token: sl(),
+        foreground: sl(),
+        drainer: sl(),
+        topics: sl(),
+        scheduler: sl(),
+        pending: sl(),
+        currentUserId: currentUserId,
+      ),
+    )
     ..registerLazySingleton(() => FollowedCategoriesProvider(client))
     ..registerLazySingleton(
-        () => NotificationsSessionCoordinator(client, sl(), sl()))
+      () => NotificationsSessionCoordinator(client, sl(), sl()),
+    )
     // ── presentation: نسخة جديدة كل مرة تُفتح الشاشة ──
-    ..registerFactory(() => NotificationsCubit(
-          getNotifications: sl(),
-          watchLocalChanges: sl(),
-          markRead: sl(),
-          markAllRead: sl(),
-          deleteNotification: sl(),
-        ));
+    ..registerFactory(
+      () => NotificationsCubit(
+        getNotifications: sl(),
+        watchLocalChanges: sl(),
+        markRead: sl(),
+        markAllRead: sl(),
+        deleteNotification: sl(),
+      ),
+    );
 }

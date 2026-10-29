@@ -8,7 +8,6 @@ import '../../domain/entities/study_tool_entity.dart';
 import '../../domain/repositories/study_tool_repository.dart';
 import '../datasources/study_tool_remote_datasource.dart';
 
-/// Implementation of [StudyToolRepository] using Supabase.
 class StudyToolRepositoryImpl implements StudyToolRepository {
   final StudyToolRemoteDataSource remoteDataSource;
   final NetworkInfo networkInfo;
@@ -20,32 +19,20 @@ class StudyToolRepositoryImpl implements StudyToolRepository {
 
   @override
   Future<Either<Failure, List<StudyToolEntity>>> getStudyTools() async {
-    print('<<<<<<<<<<<[getStudyTools]>>>>>>>>>>>>>');
     if (!await networkInfo.isConnected) {
       return const Left(NetworkFailure(message: 'No internet connection'));
     }
-
     try {
       final tools = await remoteDataSource.getStudyTools();
       return Right(tools);
     } on PostgrestException catch (e) {
-      // Detailed logging — every backend rejection
-      // (RLS, undefined table, ...) is traced. An
-      // empty result is a legitimate empty list,
-      // never sample data.
-      print('<<<<<<<<<<<[getStudyTools PostgrestException]>>>>>>>>>>>>>');
-      print('Message: ${e.message} (code: ${e.code})');
       return Left(ServerFailure(message: e.message, code: e.code));
     } on SupabaseTimeoutException catch (_) {
-      print('<<<<<<<<<<<[getStudyTools Timeout]>>>>>>>>>>>>>');
-      return Left(NetworkFailure(message: 'Network request timed out. Please check your connection.'));
+      return const Left(NetworkFailure(message: 'Network timeout'));
     } on SupabaseSocketException catch (_) {
-      print('<<<<<<<<<<<[getStudyTools SocketException]>>>>>>>>>>>>>');
-      return Left(NetworkFailure(message: 'Network error'));
-    } catch (e) {
-      print('<<<<<<<<<<<[Repository Error]>>>>>>>>>>>>>');
-      print('Exception: $e');
-      return Left(ServerFailure(message: 'Server error'));
+      return const Left(NetworkFailure(message: 'Network error'));
+    } catch (_) {
+      return const Left(ServerFailure(message: 'Server error'));
     }
   }
 
@@ -53,32 +40,20 @@ class StudyToolRepositoryImpl implements StudyToolRepository {
   Future<Either<Failure, List<StudyToolEntity>>> getStudyToolsByOwner(
     String ownerId,
   ) async {
-    print('<<<<<<<<<<<[getStudyToolsByOwner]>>>>>>>>>>>>>');
     if (!await networkInfo.isConnected) {
       return const Left(NetworkFailure(message: 'No internet connection'));
     }
-
     try {
       final tools = await remoteDataSource.getStudyToolsByOwner(ownerId);
       return Right(tools);
     } on PostgrestException catch (e) {
-      // Detailed logging — every backend rejection
-      // (RLS, undefined table, ...) is traced. An
-      // empty result is a legitimate empty list,
-      // never sample data.
-      print('<<<<<<<<<<<[getStudyToolsByOwner PostgrestException]>>>>>>>>>>>>>');
-      print('Message: ${e.message} (code: ${e.code})');
       return Left(ServerFailure(message: e.message, code: e.code));
     } on SupabaseTimeoutException catch (_) {
-      print('<<<<<<<<<<<[getStudyToolsByOwner Timeout]>>>>>>>>>>>>>');
-      return Left(NetworkFailure(message: 'Network request timed out. Please check your connection.'));
+      return const Left(NetworkFailure(message: 'Network timeout'));
     } on SupabaseSocketException catch (_) {
-      print('<<<<<<<<<<<[getStudyToolsByOwner SocketException]>>>>>>>>>>>>>');
-      return Left(NetworkFailure(message: 'Network error'));
-    } catch (e) {
-      print('<<<<<<<<<<<[Repository Error]>>>>>>>>>>>>>');
-      print('Exception: $e');
-      return Left(ServerFailure(message: 'Server error'));
+      return const Left(NetworkFailure(message: 'Network error'));
+    } catch (_) {
+      return const Left(ServerFailure(message: 'Server error'));
     }
   }
 
@@ -95,13 +70,11 @@ class StudyToolRepositoryImpl implements StudyToolRepository {
     required int categoryId,
     required String kind,
   }) async {
-    print('<<<<<<<<<<<[createStudyTool]>>>>>>>>>>>>>');
     if (!await networkInfo.isConnected) {
       return const Left(NetworkFailure(message: 'No internet connection'));
     }
-
     try {
-      final material = await remoteDataSource.createStudyTool(
+      final tool = await remoteDataSource.createStudyTool(
         ownerId: ownerId,
         title: title,
         subject: subject,
@@ -113,21 +86,98 @@ class StudyToolRepositoryImpl implements StudyToolRepository {
         categoryId: categoryId,
         kind: kind,
       );
-      return Right(material);
+      return Right(tool);
     } on PostgrestException catch (e) {
-      print('<<<<<<<<<<<[createStudyTool PostgrestException]>>>>>>>>>>>>>');
-      print('Message: ${e.message} (code: ${e.code})');
       return Left(ServerFailure(message: e.message, code: e.code));
     } on SupabaseTimeoutException catch (_) {
-      print('<<<<<<<<<<<[createStudyTool Timeout]>>>>>>>>>>>>>');
-      return Left(NetworkFailure(message: 'Network request timed out. Please check your connection.'));
+      return const Left(NetworkFailure(message: 'Network timeout'));
     } on SupabaseSocketException catch (_) {
-      print('<<<<<<<<<<<[createStudyTool SocketException]>>>>>>>>>>>>>');
-      return Left(NetworkFailure(message: 'Network error'));
-    } catch (e) {
-      print('<<<<<<<<<<<[Repository Error]>>>>>>>>>>>>>');
-      print('Exception: $e');
-      return Left(ServerFailure(message: 'Server error'));
+      return const Left(NetworkFailure(message: 'Network error'));
+    } catch (_) {
+      return const Left(ServerFailure(message: 'Server error'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, StudyToolEntity>> updateStudyTool({
+    required String toolId,
+    required String title,
+    required String subject,
+    required String studyYear,
+    required String university,
+    required String city,
+    required String pickupPlace,
+    required String pickupNotes,
+    required int categoryId,
+    required String kind,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      return const Left(NetworkFailure(message: 'No internet connection'));
+    }
+    try {
+      final tool = await remoteDataSource.updateStudyTool(
+        toolId: toolId,
+        title: title,
+        subject: subject,
+        studyYear: studyYear,
+        university: university,
+        city: city,
+        pickupPlace: pickupPlace,
+        pickupNotes: pickupNotes,
+        categoryId: categoryId,
+        kind: kind,
+      );
+      return Right(tool);
+    } on PostgrestException catch (e) {
+      return Left(ServerFailure(message: e.message, code: e.code));
+    } on SupabaseTimeoutException catch (_) {
+      return const Left(NetworkFailure(message: 'Network timeout'));
+    } on SupabaseSocketException catch (_) {
+      return const Left(NetworkFailure(message: 'Network error'));
+    } catch (_) {
+      return const Left(ServerFailure(message: 'Server error'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> deleteStudyTool({
+    required String toolId,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      return const Left(NetworkFailure(message: 'No internet connection'));
+    }
+    try {
+      await remoteDataSource.deleteStudyTool(toolId: toolId);
+      return const Right(null);
+    } on PostgrestException catch (e) {
+      return Left(ServerFailure(message: e.message, code: e.code));
+    } on SupabaseTimeoutException catch (_) {
+      return const Left(NetworkFailure(message: 'Network timeout'));
+    } on SupabaseSocketException catch (_) {
+      return const Left(NetworkFailure(message: 'Network error'));
+    } catch (_) {
+      return const Left(ServerFailure(message: 'Server error'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> takeStudyTool({
+    required String toolId,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      return const Left(NetworkFailure(message: 'No internet connection'));
+    }
+    try {
+      await remoteDataSource.takeStudyTool(toolId: toolId);
+      return const Right(null);
+    } on PostgrestException catch (e) {
+      return Left(ServerFailure(message: e.message, code: e.code));
+    } on SupabaseTimeoutException catch (_) {
+      return const Left(NetworkFailure(message: 'Network timeout'));
+    } on SupabaseSocketException catch (_) {
+      return const Left(NetworkFailure(message: 'Network error'));
+    } catch (_) {
+      return const Left(ServerFailure(message: 'Server error'));
     }
   }
 }

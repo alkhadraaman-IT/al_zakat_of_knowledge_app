@@ -349,4 +349,21 @@ class SearchCubit extends Cubit<SearchState> {
       ),
     );
   }
+
+  /// تُستدعى من SearchView عندما يتغيّر ArticleCubit أو StudyToolCubit
+  /// (بعد تعديل/حذف/أخذ). تستبدل الكاش الداخلي وتُعيد الفلترة.
+  void refreshLists({
+    List<ArticleEntity>? articles,
+    List<StudyToolEntity>? tools,
+  }) {
+    if (articles != null) {
+      _allArticles = articles;
+      _articleCategories = _extractCategories(articles, (a) => a.categoryId);
+    }
+    if (tools != null) {
+      _allTools = tools;
+      _toolCategories = _extractCategories(tools, (t) => t.categoryId);
+    }
+    if (_loaded) _emitFiltered();
+  }  
 }

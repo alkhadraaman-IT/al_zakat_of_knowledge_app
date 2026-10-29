@@ -54,3 +54,16 @@ class SessionError extends SessionState {
   @override
   List<Object?> get props => [message, code];
 }
+
+/// جاري تحديث الجلسة
+class SessionUpdating extends SessionState {
+  const SessionUpdating();
+}
+
+/// تم تحديث الجلسة بنجاح
+class SessionUpdateSuccess extends SessionState {
+  final SessionEntity session;
+  const SessionUpdateSuccess({required this.session});
+  @override
+  List<Object?> get props => [session];
+}

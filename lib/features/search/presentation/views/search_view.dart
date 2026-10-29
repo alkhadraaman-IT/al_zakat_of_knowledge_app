@@ -5,18 +5,23 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../../app/theme/app_typography.dart';
 import '../../../../core/constants/app_spacing.dart';
+import '../../../../core/constants/syrian_cities.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../shared/widgets/app_search_bar.dart';
 import '../../../../shared/widgets/app_segmented_bar.dart';
 import '../../../../shared/widgets/app_session_card.dart';
-import '../../../../shared/widgets/app_study_tool_card.dart';
 import '../../../../shared/widgets/app_top_header.dart';
+import '../../../../shared/widgets/article_entity_card.dart';
+import '../../../../shared/widgets/study_tool_entity_card.dart';
 import '../../../articles/domain/entities/article_entity.dart';
+import '../../../articles/presentation/bloc/article_cubit.dart';
+import '../../../articles/presentation/bloc/article_state.dart';
 import '../../../sessions/domain/entities/session_entity.dart';
 import '../../../study_tools/domain/entities/study_tool_entity.dart';
+import '../../../study_tools/presentation/cubit/study_tool_cubit.dart';
+import '../../../study_tools/presentation/cubit/study_tool_state.dart';
 import '../../presentation/bloc/search_cubit.dart';
 import '../../presentation/bloc/search_state.dart';
-import '../../../../shared/widgets/app_article_card.dart';
 
 /// Search screen — Stitch Design System with tab switching and dynamic filtering.
 class SearchView extends StatefulWidget {
@@ -39,114 +44,157 @@ class _SearchViewState extends State<SearchView> {
   @override
   Widget build(BuildContext context) {
     print('<<<<<<<<<<<[SearchView.build]>>>>>>>>>>>>>');
-    return BlocProvider(
-      create: (_) => sl<SearchCubit>()..load(),
-      child: Builder(
-        builder: (context) {
-          return Scaffold(
-            backgroundColor: Theme.of(context).colorScheme.surface,
-            body: SafeArea(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  AppTopHeader(
-                    context: context,
-                    onBack: () => Navigator.of(context).pop(),
-                    trailing: null,
-                  ),
-                  Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: AppSpacing.screenHorizontal,
-                      vertical: AppSpacing.md,
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(create: (_) => sl<SearchCubit>()..load()),
+        BlocProvider.value(value: sl<ArticleCubit>()),
+        BlocProvider.value(value: sl<StudyToolCubit>()),
+      ],
+      child: MultiBlocListener(
+        listeners: [
+          BlocListener<ArticleCubit, ArticleState>(
+            listenWhen: (_, curr) => curr is ArticleLoaded,
+            listener: (context, state) {
+              if (state is ArticleLoaded) {
+                context.read<SearchCubit>().refreshLists(
+                  articles: state.articles,
+                );
+              }
+            },
+          ),
+          BlocListener<StudyToolCubit, StudyToolState>(
+            listenWhen: (_, curr) => curr is StudyToolLoaded,
+            listener: (context, state) {
+              if (state is StudyToolLoaded) {
+                context.read<SearchCubit>().refreshLists(tools: state.tools);
+              }
+            },
+          ),
+        ],
+        child: Builder(
+          builder: (context) {
+            return Scaffold(
+              backgroundColor: Theme.of(context).colorScheme.surface,
+              body: SafeArea(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    AppTopHeader(
+                      context: context,
+                      onBack: () => Navigator.of(context).pop(),
+                      trailing: null,
                     ),
-                    child: AppSearchBar(
-                      controller: _searchController,
-                      onChanged: (value) {
-                        context.read<SearchCubit>().setQuery(value);
-                      },
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          Icons.tune,
-                          color: Theme.of(context).colorScheme.onSurface,
+                    Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: AppSpacing.screenHorizontal,
+                        vertical: AppSpacing.md,
+                      ),
+                      child: AppSearchBar(
+                        controller: _searchController,
+                        onChanged: (value) {
+                          context.read<SearchCubit>().setQuery(value);
+                        },
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            Icons.tune,
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                          onPressed: () => _showFilterBottomSheet(context),
                         ),
-                        onPressed: () => _showFilterBottomSheet(context),
                       ),
                     ),
-                  ),
-                  SizedBox(height: AppSpacing.sm),
-                  Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: AppSpacing.screenHorizontal,
-                    ),
-                    child: BlocBuilder<SearchCubit, SearchState>(
-                      builder: (context, state) {
-                        final selectedTab = state is SearchLoaded
-                            ? state.selectedTab
-                            : 0;
-                        return AppSegmentedBar(
-                          labels: [
-                            'tabs.lectures'.tr(),
-                            'tabs.articles'.tr(),
-                            'tabs.tools'.tr(),
-                          ],
-                          selectedIndex: selectedTab,
-                          onTabChanged: (index) =>
-                              context.read<SearchCubit>().setTab(index),
-                        );
-                      },
-                    ),
-                  ),
-                  Expanded(
-                    child: BlocBuilder<SearchCubit, SearchState>(
-                      builder: (context, state) {
-                        if (state is SearchLoading) {
-                          return const Center(
-                            child: CircularProgressIndicator(),
+                    SizedBox(height: AppSpacing.sm),
+                    Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: AppSpacing.screenHorizontal,
+                      ),
+                      child: BlocBuilder<SearchCubit, SearchState>(
+                        builder: (context, state) {
+                          final selectedTab = state is SearchLoaded
+                              ? state.selectedTab
+                              : 0;
+                          return AppSegmentedBar(
+                            labels: [
+                              'tabs.lectures'.tr(),
+                              'tabs.articles'.tr(),
+                              'tabs.tools'.tr(),
+                            ],
+                            selectedIndex: selectedTab,
+                            onTabChanged: (index) =>
+                                context.read<SearchCubit>().setTab(index),
                           );
-                        }
-
-                        if (state is SearchError) {
-                          return _buildErrorState(context, state);
-                        }
-
-                        if (state is SearchLoaded) {
-                          final isQueryEmpty = _searchController.text
-                              .trim()
-                              .isEmpty;
-                          switch (state.selectedTab) {
-                            case 0:
-                              return state.sessions.isEmpty
-                                  ? _buildEmptyState(context, 0, isQueryEmpty)
-                                  : _buildSessionResults(state.sessions);
-                            case 1:
-                              return state.articles.isEmpty
-                                  ? _buildEmptyState(context, 1, isQueryEmpty)
-                                  : _buildArticleResults(state.articles);
-                            case 2:
-                              return state.tools.isEmpty
-                                  ? _buildEmptyState(context, 2, isQueryEmpty)
-                                  : _buildToolResults(state.tools);
-                            default:
-                              return _buildEmptyState(
-                                context,
-                                state.selectedTab,
-                                isQueryEmpty,
-                              );
-                          }
-                        }
-
-                        return const SizedBox.shrink();
-                      },
+                        },
+                      ),
                     ),
-                  ),
-                ],
+                    Expanded(
+                      child: BlocBuilder<SearchCubit, SearchState>(
+                        builder: (context, state) {
+                          if (state is SearchLoading) {
+                            return const Center(
+                              child: CircularProgressIndicator(),
+                            );
+                          }
+
+                          if (state is SearchError) {
+                            return _buildErrorState(context, state);
+                          }
+
+                          if (state is SearchLoaded) {
+                            final isQueryEmpty = _searchController.text
+                                .trim()
+                                .isEmpty;
+                            switch (state.selectedTab) {
+                              case 0:
+                                return state.sessions.isEmpty
+                                    ? _buildEmptyState(context, 0, isQueryEmpty)
+                                    : _buildSessionResults(state.sessions);
+                              case 1:
+                                return state.articles.isEmpty
+                                    ? _buildEmptyState(context, 1, isQueryEmpty)
+                                    : _buildArticleResults(state.articles);
+                              case 2:
+                                return state.tools.isEmpty
+                                    ? _buildEmptyState(context, 2, isQueryEmpty)
+                                    : _buildToolResults(state.tools);
+                              default:
+                                return _buildEmptyState(
+                                  context,
+                                  state.selectedTab,
+                                  isQueryEmpty,
+                                );
+                            }
+                          }
+
+                          return const SizedBox.shrink();
+                        },
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }
+
+  Widget _buildToolResults(List<StudyToolEntity> tools) {
+    return ListView.separated(
+      padding: EdgeInsets.symmetric(
+        horizontal: AppSpacing.screenHorizontal,
+        vertical: AppSpacing.md,
+      ),
+      itemCount: tools.length,
+      separatorBuilder: (_, _) => SizedBox(height: AppSpacing.md),
+      itemBuilder: (context, index) => StudyToolEntityCard(
+        key: ValueKey(tools[index].id),
+        tool: tools[index],
+        index: index,
+      ),
+    );
+  }
+  
 
   void _showFilterBottomSheet(BuildContext context) {
     final cubit = context.read<SearchCubit>();
@@ -340,7 +388,7 @@ class _SearchViewState extends State<SearchView> {
     return '${weekdayKey.tr()} ${value.day} ${monthKey.tr()}';
   }
 
-  Widget _buildArticleResults(List<ArticleEntity> articles) {
+    Widget _buildArticleResults(List<ArticleEntity> articles) {
     return ListView.separated(
       padding: EdgeInsets.symmetric(
         horizontal: AppSpacing.screenHorizontal,
@@ -348,34 +396,10 @@ class _SearchViewState extends State<SearchView> {
       ),
       itemCount: articles.length,
       separatorBuilder: (_, _) => SizedBox(height: AppSpacing.md),
-      itemBuilder: (context, index) {
-        final article = articles[index];
-        return AppArticleCard(title: article.title, body: article.body);
-      },
-    );
-  }
-
-  Widget _buildToolResults(List<StudyToolEntity> tools) {
-    return ListView.separated(
-      padding: EdgeInsets.symmetric(
-        horizontal: AppSpacing.screenHorizontal,
-        vertical: AppSpacing.md,
+      itemBuilder: (context, index) => ArticleEntityCard(
+        key: ValueKey(articles[index].id),
+        article: articles[index],
       ),
-      itemCount: tools.length,
-      separatorBuilder: (_, _) => SizedBox(height: AppSpacing.md),
-      itemBuilder: (context, index) {
-        final tool = tools[index];
-        return AppStudyToolCard(
-          index: index,
-          title: tool.title,
-          subject: tool.subject,
-          studyYear: tool.studyYear,
-          university: tool.university,
-          city: tool.city,
-          pickupPlace: tool.pickupPlace,
-          isTaken: tool.isTaken,
-        );
-      },
     );
   }
 }
@@ -397,22 +421,7 @@ class _SearchFilterBottomSheetState extends State<SearchFilterBottomSheet> {
   bool? _isAvailable;
   DateTime? _selectedDate;
 
-  static const List<String> _syrianGovernorates = [
-    'دمشق',
-    'ريف دمشق',
-    'حلب',
-    'حمص',
-    'حماة',
-    'اللاذقية',
-    'طرطوس',
-    'إدلب',
-    'درعا',
-    'السويداء',
-    'القنيطرة',
-    'دير الزور',
-    'الرقة',
-    'الحسكة',
-  ];
+  
 
   @override
   void initState() {
@@ -585,7 +594,7 @@ class _SearchFilterBottomSheetState extends State<SearchFilterBottomSheet> {
                 style: AppTypography.arabicBody(fontSize: 14),
               ),
             ),
-            ..._syrianGovernorates.map(
+            ...SyrianCities.all.map(
               (gov) => DropdownMenuItem<String>(
                 value: gov,
                 child: Text(gov, style: AppTypography.arabicBody(fontSize: 14)),
