@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest_all.dart' as tzdata;
@@ -7,10 +8,10 @@ import 'package:timezone/timezone.dart' as tz;
 class LocalNotificationsDataSource {
   final FlutterLocalNotificationsPlugin _plugin = FlutterLocalNotificationsPlugin();
 
-  static const _android = AndroidNotificationDetails(
+  static final _android = AndroidNotificationDetails(
     'zakat_sessions',
-    'تنبيهات الجلسات',
-    channelDescription: 'تذكير بالجلسات ودعاء بعد انتهائها',
+    'notifications.channel_name'.tr(),
+    channelDescription: 'notifications.channel_description'.tr(),
     importance: Importance.high,
     priority: Priority.high,
   );
@@ -59,7 +60,7 @@ class LocalNotificationsDataSource {
       id: id,
       title: title,
       body: body,
-      notificationDetails: const NotificationDetails(
+      notificationDetails: NotificationDetails(
         android: _android,
         iOS: DarwinNotificationDetails(),
       ),
@@ -91,7 +92,7 @@ class LocalNotificationsDataSource {
       body: body,
       // لحظة مطلقة بـ UTC: لا نحتاج حزمة المنطقة الزمنية ولا يؤثر التوقيت الصيفي
       scheduledDate: tz.TZDateTime.from(when, tz.UTC),
-      notificationDetails: const NotificationDetails(
+      notificationDetails: NotificationDetails(
         android: _android,
         iOS: DarwinNotificationDetails(),
       ),

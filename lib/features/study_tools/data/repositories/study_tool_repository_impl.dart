@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 import '../../../../core/errors/failures.dart';
 import '../../../../core/network/network_info.dart';
@@ -20,7 +21,7 @@ class StudyToolRepositoryImpl implements StudyToolRepository {
   @override
   Future<Either<Failure, List<StudyToolEntity>>> getStudyTools() async {
     if (!await networkInfo.isConnected) {
-      return const Left(NetworkFailure(message: 'No internet connection'));
+      return Left(NetworkFailure(message: 'messages.no_internet'.tr()));
     }
     try {
       final tools = await remoteDataSource.getStudyTools();
@@ -28,11 +29,11 @@ class StudyToolRepositoryImpl implements StudyToolRepository {
     } on PostgrestException catch (e) {
       return Left(ServerFailure(message: e.message, code: e.code));
     } on SupabaseTimeoutException catch (_) {
-      return const Left(NetworkFailure(message: 'Network timeout'));
+      return Left(NetworkFailure(message: 'messages.network_timeout'.tr()));
     } on SupabaseSocketException catch (_) {
-      return const Left(NetworkFailure(message: 'Network error'));
+      return Left(NetworkFailure(message: 'messages.network_error'.tr()));
     } catch (_) {
-      return const Left(ServerFailure(message: 'Server error'));
+      return Left(ServerFailure(message: 'messages.server_error'.tr()));
     }
   }
 
@@ -41,7 +42,7 @@ class StudyToolRepositoryImpl implements StudyToolRepository {
     String ownerId,
   ) async {
     if (!await networkInfo.isConnected) {
-      return const Left(NetworkFailure(message: 'No internet connection'));
+      return Left(NetworkFailure(message: 'messages.no_internet'.tr()));
     }
     try {
       final tools = await remoteDataSource.getStudyToolsByOwner(ownerId);
@@ -49,11 +50,11 @@ class StudyToolRepositoryImpl implements StudyToolRepository {
     } on PostgrestException catch (e) {
       return Left(ServerFailure(message: e.message, code: e.code));
     } on SupabaseTimeoutException catch (_) {
-      return const Left(NetworkFailure(message: 'Network timeout'));
+      return Left(NetworkFailure(message: 'messages.network_timeout'.tr()));
     } on SupabaseSocketException catch (_) {
-      return const Left(NetworkFailure(message: 'Network error'));
+      return Left(NetworkFailure(message: 'messages.network_error'.tr()));
     } catch (_) {
-      return const Left(ServerFailure(message: 'Server error'));
+      return Left(ServerFailure(message: 'messages.server_error'.tr()));
     }
   }
 
@@ -71,7 +72,7 @@ class StudyToolRepositoryImpl implements StudyToolRepository {
     required String kind,
   }) async {
     if (!await networkInfo.isConnected) {
-      return const Left(NetworkFailure(message: 'No internet connection'));
+      return Left(NetworkFailure(message: 'messages.no_internet'.tr()));
     }
     try {
       final tool = await remoteDataSource.createStudyTool(
@@ -90,11 +91,11 @@ class StudyToolRepositoryImpl implements StudyToolRepository {
     } on PostgrestException catch (e) {
       return Left(ServerFailure(message: e.message, code: e.code));
     } on SupabaseTimeoutException catch (_) {
-      return const Left(NetworkFailure(message: 'Network timeout'));
+      return Left(NetworkFailure(message: 'messages.network_timeout'.tr()));
     } on SupabaseSocketException catch (_) {
-      return const Left(NetworkFailure(message: 'Network error'));
+      return Left(NetworkFailure(message: 'messages.network_error'.tr()));
     } catch (_) {
-      return const Left(ServerFailure(message: 'Server error'));
+      return Left(ServerFailure(message: 'messages.server_error'.tr()));
     }
   }
 
@@ -112,7 +113,7 @@ class StudyToolRepositoryImpl implements StudyToolRepository {
     required String kind,
   }) async {
     if (!await networkInfo.isConnected) {
-      return const Left(NetworkFailure(message: 'No internet connection'));
+      return Left(NetworkFailure(message: 'messages.no_internet'.tr()));
     }
     try {
       final tool = await remoteDataSource.updateStudyTool(
@@ -131,11 +132,11 @@ class StudyToolRepositoryImpl implements StudyToolRepository {
     } on PostgrestException catch (e) {
       return Left(ServerFailure(message: e.message, code: e.code));
     } on SupabaseTimeoutException catch (_) {
-      return const Left(NetworkFailure(message: 'Network timeout'));
+      return Left(NetworkFailure(message: 'messages.network_timeout'.tr()));
     } on SupabaseSocketException catch (_) {
-      return const Left(NetworkFailure(message: 'Network error'));
+      return Left(NetworkFailure(message: 'messages.network_error'.tr()));
     } catch (_) {
-      return const Left(ServerFailure(message: 'Server error'));
+      return Left(ServerFailure(message: 'messages.server_error'.tr()));
     }
   }
 
@@ -144,7 +145,7 @@ class StudyToolRepositoryImpl implements StudyToolRepository {
     required String toolId,
   }) async {
     if (!await networkInfo.isConnected) {
-      return const Left(NetworkFailure(message: 'No internet connection'));
+      return Left(NetworkFailure(message: 'messages.no_internet'.tr()));
     }
     try {
       await remoteDataSource.deleteStudyTool(toolId: toolId);
@@ -152,11 +153,11 @@ class StudyToolRepositoryImpl implements StudyToolRepository {
     } on PostgrestException catch (e) {
       return Left(ServerFailure(message: e.message, code: e.code));
     } on SupabaseTimeoutException catch (_) {
-      return const Left(NetworkFailure(message: 'Network timeout'));
+      return Left(NetworkFailure(message: 'messages.network_timeout'.tr()));
     } on SupabaseSocketException catch (_) {
-      return const Left(NetworkFailure(message: 'Network error'));
+      return Left(NetworkFailure(message: 'messages.network_error'.tr()));
     } catch (_) {
-      return const Left(ServerFailure(message: 'Server error'));
+      return Left(ServerFailure(message: 'messages.server_error'.tr()));
     }
   }
 
@@ -165,7 +166,7 @@ class StudyToolRepositoryImpl implements StudyToolRepository {
     required String toolId,
   }) async {
     if (!await networkInfo.isConnected) {
-      return const Left(NetworkFailure(message: 'No internet connection'));
+      return Left(NetworkFailure(message: 'messages.no_internet'.tr()));
     }
     try {
       await remoteDataSource.takeStudyTool(toolId: toolId);
@@ -173,11 +174,11 @@ class StudyToolRepositoryImpl implements StudyToolRepository {
     } on PostgrestException catch (e) {
       return Left(ServerFailure(message: e.message, code: e.code));
     } on SupabaseTimeoutException catch (_) {
-      return const Left(NetworkFailure(message: 'Network timeout'));
+      return Left(NetworkFailure(message: 'messages.network_timeout'.tr()));
     } on SupabaseSocketException catch (_) {
-      return const Left(NetworkFailure(message: 'Network error'));
+      return Left(NetworkFailure(message: 'messages.network_error'.tr()));
     } catch (_) {
-      return const Left(ServerFailure(message: 'Server error'));
+      return Left(ServerFailure(message: 'messages.server_error'.tr()));
     }
   }
 }

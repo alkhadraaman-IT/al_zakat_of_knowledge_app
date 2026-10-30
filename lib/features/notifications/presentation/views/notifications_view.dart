@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -47,9 +48,9 @@ class NotificationsView extends StatelessWidget {
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(
-          const SnackBar(
-            content: Text('صفحة التفاصيل قيد التطوير'),
-            duration: Duration(seconds: 2),
+          SnackBar(
+            content: Text('notifications.details_coming_soon'.tr()),
+            duration: const Duration(seconds: 2),
           ),
         );
     }
@@ -75,7 +76,7 @@ class NotificationsView extends StatelessWidget {
                         onPressed: () =>
                             context.read<NotificationsCubit>().markAllAsRead(),
                         child: Text(
-                          'تحديد الكل كمقروء',
+                          'notifications.mark_all_read'.tr(),
                           style: AppTypography.arabicLabel(
                             color: cs.primary,
                             fontSize: 13,
@@ -99,10 +100,14 @@ class NotificationsView extends StatelessWidget {
                     ..hideCurrentSnackBar()
                     ..showSnackBar(
                       SnackBar(
-                        content: Text('فشلت العملية. ${kind.message}'),
+                        content: Text(
+                          'notifications.action_failed'.tr(
+                            namedArgs: {'error': kind.message},
+                          ),
+                        ),
                         action: kind.isRetryable
                             ? SnackBarAction(
-                                label: 'إعادة المحاولة',
+                                label: 'common.retry'.tr(),
                                 onPressed: () =>
                                     context.read<NotificationsCubit>().retry(),
                               )

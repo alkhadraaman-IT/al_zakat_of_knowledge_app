@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../app/theme/app_typography.dart';
@@ -26,7 +27,9 @@ class NotificationsStaleBanner extends StatelessWidget {
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              'فشل تحديث الإشعارات. المعروض هو المحفوظ على جهازك فقط.\n${kind.message}',
+              'notifications.stale'.tr(
+                namedArgs: {'error': kind.message},
+              ),
               style: AppTypography.arabicBody(color: cs.onErrorContainer, fontSize: 12),
             ),
           ),
@@ -34,7 +37,7 @@ class NotificationsStaleBanner extends StatelessWidget {
             TextButton(
               onPressed: onRetry,
               child: Text(
-                'إعادة المحاولة',
+                'common.retry'.tr(),
                 style: AppTypography.arabicLabel(color: cs.onErrorContainer, fontSize: 12),
               ),
             ),

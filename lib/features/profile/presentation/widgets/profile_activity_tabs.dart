@@ -235,8 +235,8 @@ class _ProfileActivityTabsState extends State<ProfileActivityTabs> {
       seatsLabel: '$bookedCount/$maxSeats',
       lat: session.lat,
       lng: session.lng,
-      ctaLabel: 'تفاصيل',
-      noteLabel: 'لا يمكن حذف المحاضرة إلا قبل 48 ساعة من موعدها',
+      ctaLabel: 'session.details'.tr(),
+      noteLabel: 'session.cancel_48h_note'.tr(),
       onTap: () =>
           context.push('/session-details/${session.id}?isPublisher=true'),
     );
@@ -474,7 +474,7 @@ class _ProfileActivityTabsState extends State<ProfileActivityTabs> {
               Icon(Icons.groups_3, color: cs.onSurfaceVariant, size: 56.w),
               SizedBox(height: 12.h),
               Text(
-                'لا توجد محاضرات قادمة',
+                'profile.no_upcoming_lectures'.tr(),
                 style: AppTypography.arabicTitle(
                   color: cs.onSurface,
                   fontSize: 16,
@@ -572,7 +572,7 @@ class _ProfileActivityTabsState extends State<ProfileActivityTabs> {
                   ),
                   SizedBox(height: 12.h),
                   Text(
-                    'لا توجد مقالات بعد',
+                    'profile.no_articles_yet'.tr(),
                     style: AppTypography.arabicTitle(
                       color: cs.onSurface,
                       fontSize: 16,

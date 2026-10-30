@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -18,11 +19,23 @@ class NotificationCard extends StatelessWidget {
 
   static String timeAgo(DateTime dateTime) {
     final diff = DateTime.now().difference(dateTime);
-    if (diff.inMinutes < 1) return 'الآن';
-    if (diff.inMinutes < 60) return 'منذ ${diff.inMinutes} دقيقة';
-    if (diff.inHours < 24) return 'منذ ${diff.inHours} ساعة';
-    if (diff.inDays == 1) return 'منذ يوم واحد';
-    if (diff.inDays < 7) return 'منذ ${diff.inDays} أيام';
+    if (diff.inMinutes < 1) return 'notifications.now'.tr();
+    if (diff.inMinutes < 60) {
+      return 'notifications.minutes_ago'.tr(
+        namedArgs: {'count': diff.inMinutes.toString()},
+      );
+    }
+    if (diff.inHours < 24) {
+      return 'notifications.hours_ago'.tr(
+        namedArgs: {'count': diff.inHours.toString()},
+      );
+    }
+    if (diff.inDays == 1) return 'notifications.yesterday'.tr();
+    if (diff.inDays < 7) {
+      return 'notifications.days_ago'.tr(
+        namedArgs: {'count': diff.inDays.toString()},
+      );
+    }
     return '${dateTime.day}/${dateTime.month}/${dateTime.year}';
   }
 

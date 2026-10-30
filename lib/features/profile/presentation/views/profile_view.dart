@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -73,7 +74,7 @@ class _ProfileViewBody extends StatelessWidget {
     } catch (_) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('تعذر فتح الرابط المنسوب')),
+        SnackBar(content: Text('profile.link_open_failed'.tr())),
       );
     }
   }
@@ -108,7 +109,7 @@ class _ProfileViewBody extends StatelessWidget {
                         padding: EdgeInsets.all(AppSpacing.xl),
                         child: Center(
                           child: Text(
-                            'تعذّر تحميل هذا الملف الشخصي',
+                            'profile.not_found'.tr(),
                             style: TextStyle(
                               color: Theme.of(context)
                                   .colorScheme

@@ -14,7 +14,16 @@
     "description_3": "Read and share academic articles that benefit the community as ongoing charity.",
     "get_started": "Get Started",
     "skip": "Skip",
-    "next": "Next"
+    "next": "Next",
+    "quote_1": "The Prophet ﷺ said: \"The best of people are those who are most beneficial to others.\"",
+    "body_1": "Organise and announce gatherings that bring together students of knowledge at the university, institute or anywhere else, and share beneficial knowledge for the sake of God, making your knowledge a source of reward.",
+    "badge_1": "Facilitating knowledge for its seekers",
+    "quote_2": "The Prophet ﷺ said: \"Allah is in the aid of a servant as long as the servant is in the aid of his brother.\"",
+    "body_2": "Do not leave your references and study equipment to gather dust. Share them with other students of knowledge and make them a means of benefit long after you are done with them.",
+    "badge_2": "Exchanging resources, strengthening knowledge",
+    "quote_3": "The Prophet ﷺ said: \"When a person dies, his deeds cease except three: ongoing charity, or knowledge that benefits...\"",
+    "body_3": "Write useful articles and share your academic expertise as an ongoing charity whose reward and benefit continue.",
+    "badge_3": "Knowledge that benefits"
   },
   "auth": {
     "login": "Login",
@@ -55,7 +64,11 @@
     "sign_up_success": "Account created successfully",
     "logout_success": "Logged out successfully",
     "network_error": "Please check your internet connection",
-    "generic_error": "An unexpected error occurred, please try again"
+    "generic_error": "An unexpected error occurred, please try again",
+    "cache_error": "Could not read local data",
+    "network_timeout": "Connection timed out. Please check your internet connection.",
+    "no_internet": "No internet connection",
+    "server_error": "Server error. Please try again."
   },
   "home": {
     "welcome_back": "Welcome back",
@@ -114,7 +127,13 @@
     "error_auth": "Please sign in first",
     "dua_title": "Article Published",
     "dua_message": "بارك الله في علمك ونفعنا وإياك به",
-    "dua_done": "Done"
+    "dua_done": "Done",
+    "updated_success": "Article updated successfully",
+    "delete_success": "Article deleted successfully",
+    "delete_title": "Delete Article",
+    "delete_message": "Are you sure you want to delete this article? This cannot be undone.",
+    "edit_title": "Edit Article",
+    "save_changes": "Save Changes"
   },
   "tool": {
     "available": "Available",
@@ -158,7 +177,15 @@
     "error_duplicate": "A material with this title already exists",
     "error_permission": "You don't have permission to offer materials",
     "error_auth": "Please sign in first",
-    "error_offline": "No internet connection"
+    "error_offline": "No internet connection",
+    "delete_title": "Delete Tool",
+    "delete_message": "Are you sure you want to delete this tool? This cannot be undone.",
+    "edit_title": "Edit Study Material",
+    "save_changes": "Save Changes",
+    "take_action": "I Took the Tool",
+    "take_confirm_title": "Confirm Taking the Tool",
+    "take_confirm_message": "Are you sure you want to take this tool? You will not be able to undo it after confirming.",
+    "take_confirm_yes": "Yes, take it"
   },
   "study_tools": {
     "title": "Study Materials",
@@ -177,7 +204,9 @@
     "empty_tools": "No saved tools yet",
     "empty_articles": "No favorite articles at the moment",
     "empty_lectures": "No favorite lectures at the moment",
-    "error_loading": "Could not load favorites"
+    "error_loading": "Could not load favorites",
+    "empty": "Nothing saved yet",
+    "empty_hint": "Items you save will appear here"
   },
   "search": {
     "hint": "Search lectures, articles, tools...",
@@ -271,7 +300,12 @@
     "interest_commercial": "Business",
     "interest_self_dev": "Self-Development",
     "interest_academic": "Academic",
-    "interest_sharia": "Sharia Sciences"
+    "interest_sharia": "Sharia Sciences",
+    "link_open_failed": "Could not open the linked resource",
+    "no_articles_yet": "No articles yet",
+    "no_categories": "No categories available",
+    "no_upcoming_lectures": "No upcoming lectures",
+    "not_found": "This profile could not be loaded"
   },
   "profile_guard": {
     "title": "Complete Your Profile",
@@ -317,7 +351,23 @@
     "month_october": "October",
     "month_november": "November",
     "month_december": "December",
-    "edit_title": "Edit Session"
+    "edit_title": "Edit Session",
+    "details": "Details",
+    "cancel_48h_note": "A lecture can only be cancelled up to 48 hours before it starts",
+    "quorum_full_note": "The minimum quorum has been reached! You can still book and join",
+    "quorum_min_note": "The specified number is the minimum quorum.. you can always book",
+    "delete_confirm_title": "Delete Session",
+    "delete_confirm_message": "Are you sure you want to delete this session? This action cannot be undone.",
+    "edit_locked": "Editing is locked because the session has started",
+    "cancelled": "Cancelled",
+    "ended": "Ended",
+    "quorum_reached": "Minimum quorum reached",
+    "quorum_waiting": "Awaiting the minimum quorum",
+    "completed": "Completed",
+    "awaiting": "Awaiting",
+    "open_map": "Open in map",
+    "copy_location": "Copy location",
+    "location_copied": "Location copied"
   },
   "sessions": {
     "error_loading": "Failed to load lectures",
@@ -352,7 +402,8 @@
     "error_auth": "Please sign in first to report",
     "reason_misinformation": "Misleading or incorrect information",
     "reason_plagiarism": "Plagiarized or copied content",
-    "reason_condition": "Item condition poor or not matching description"
+    "reason_condition": "Item condition poor or not matching description",
+    "success": "Report submitted successfully"
   },
   "edit": {
     "title_label": "Session Title",
@@ -375,7 +426,19 @@
     "booked_success": "Your seat has been booked successfully",
     "book_seat": "Book a Seat",
     "booked": "Booked",
-    "booking": "Booking..."
+    "booking": "Booking...",
+    "session_full": "This session has no seats left",
+    "already_booked": "You have already booked this session",
+    "session_started": "This session has already started or ended",
+    "session_not_active": "This session has been cancelled",
+    "session_not_found": "Session not found",
+    "own_session": "You cannot book your own session",
+    "not_allowed": "You are not allowed to book this session",
+    "account_restricted": "Your account is currently suspended",
+    "not_authenticated": "Please sign in first",
+    "cancel_window_passed": "The cancellation window has passed (24 hours before the session)",
+    "booking_not_found": "There is no confirmed booking to cancel",
+    "cancel_failed": "Could not cancel the session, please try again"
   },
   "create": {
     "session_title": "Create New Session",
@@ -412,7 +475,21 @@
     "success": "Session created successfully",
     "error_publish": "Could not create session, please try again",
     "error_offline": "No internet connection",
-    "error_auth": "Please sign in first"
+    "error_auth": "Please sign in first",
+    "city_label": "City",
+    "city_hint": "Choose the city",
+    "city_required": "Please choose the city",
+    "confirm_location": "Confirm Location",
+    "location_prompt": "Set the lecture location",
+    "date_past": "The date must be in the future",
+    "form_invalid": "Please correct the highlighted fields",
+    "location_hint": "Set the lecture location on the map",
+    "location_required": "Please set the lecture location on the map",
+    "location_set": "Location set (tap to edit)",
+    "location_too_far": "The selected location is far from {city} ({distance} km). Please check the location.",
+    "save_changes": "Save Changes",
+    "seats_less_than_booked": "Seats cannot be fewer than the current bookings ({count})",
+    "timeout": "The request timed out. Check your connection and try again"
   },
   "delete": {
     "title": "Delete Session",
@@ -427,5 +504,52 @@
     "network_timeout": "Connection timed out. Please check your internet connection.",
     "network_error": "Network error. Please try again.",
     "unexpected": "An unexpected error occurred. Please try again."
+  },
+  "common": {
+    "cancel": "Cancel",
+    "close": "Close",
+    "delete": "Delete",
+    "edit": "Edit",
+    "retry": "Retry"
+  },
+  "content": {
+    "title": "Publish Your Academic Charity",
+    "subtitle": "Choose the content type",
+    "session_title": "Lecture / Knowledge Session",
+    "session_desc": "Set the place and seats",
+    "article_title": "Beneficial Article",
+    "article_desc": "Share your knowledge as ongoing charity",
+    "tool_title": "Study Tool or Material",
+    "tool_desc": "Free tools and books"
+  },
+  "notifications": {
+    "action_failed": "The action failed. {error}",
+    "channel_name": "Session Alerts",
+    "channel_description": "Session reminders and the dua after they end",
+    "days_ago": "{count} days ago",
+    "details_coming_soon": "This details page is under development",
+    "dua_body": "The session \"{title}\" has ended; may God benefit you from your knowledge",
+    "dua_title": "May God bless your knowledge",
+    "empty": "No notifications",
+    "empty_hint": "New notifications will appear here",
+    "error_network": "Could not connect to the internet. Check your network and try again.",
+    "error_permission": "You do not have permission to view these notifications.",
+    "error_server": "A server error occurred. Please try again shortly.",
+    "error_unauthenticated": "Your session has expired. Please sign in again.",
+    "error_unknown": "An unexpected error occurred.",
+    "hours_ago": "{count} hours ago",
+    "load_failed": "Failed to load notifications",
+    "mark_all_read": "Mark all as read",
+    "minutes_ago": "{count} minutes ago",
+    "now": "Now",
+    "reminder_body": "The session \"{title}\" starts soon",
+    "reminder_title": "Session reminder",
+    "stale": "Failed to refresh notifications. What is shown is only what is saved on your device.\n{error}",
+    "yesterday": "Yesterday"
+  },
+  "success": {
+    "title": "Published successfully",
+    "message": "May God bless your knowledge, benefit us and you with it, and this is an ongoing charity by His permission",
+    "done": "Done"
   }
 }

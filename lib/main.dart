@@ -10,6 +10,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'app/app.dart';
 import 'app/router/app_router.dart';
+import 'core/constants/app_keys.dart';
 import 'core/di/injection_container.dart';
 import 'core/theme/theme_cubit.dart';
 import 'core/utils/bloc_observer.dart';
@@ -35,7 +36,9 @@ Future<void> main() async {
   // Hive: التهيئة ثم الـ Adapters، وقبل أي openBox
   await Hive.initFlutter();
   Hive.registerAdapter(FavoriteItemModelAdapter());
-  final favoritesBox = await Hive.openBox<FavoriteItemModel>('favorites_v2');
+  final favoritesBox = await Hive.openBox<FavoriteItemModel>(
+    AppKeys.FAVORITES_V2,
+  );
 
   // Localization
   await EasyLocalization.ensureInitialized();

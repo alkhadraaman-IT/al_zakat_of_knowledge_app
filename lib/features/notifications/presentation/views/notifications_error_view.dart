@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../app/theme/app_typography.dart';
@@ -25,7 +26,7 @@ class NotificationsErrorView extends StatelessWidget {
             Icon(kind.icon, color: cs.error, size: 44),
             SizedBox(height: AppSpacing.md),
             Text(
-              'فشل تحميل الإشعارات',
+              'notifications.load_failed'.tr(),
               style: AppTypography.arabicTitle(color: cs.onSurface, fontSize: 17),
               textAlign: TextAlign.center,
             ),
@@ -41,7 +42,7 @@ class NotificationsErrorView extends StatelessWidget {
                 onPressed: onRetry,
                 icon: const Icon(Icons.refresh),
                 label: Text(
-                  'إعادة المحاولة',
+                  'common.retry'.tr(),
                   style: AppTypography.arabicLabel(color: cs.onPrimary, fontSize: 13),
                 ),
               ),

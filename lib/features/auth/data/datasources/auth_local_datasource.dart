@@ -1,7 +1,7 @@
 import 'package:hive_ce/hive_ce.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../../../core/constants/app_constants.dart';
+import '../../../../core/constants/app_keys.dart';
 import '../models/profile_model.dart';
 import '../models/user_model.dart';
 
@@ -53,14 +53,14 @@ class AuthLocalDataSourceImpl implements AuthLocalDataSource {
   @override
   Future<void> cacheUser(UserModel user) async {
     print('<<<<<<<<<<<[cacheUser]>>>>>>>>>>>>>');
-    await userBox.put('current_user', user.toHive());
-    await authBox.put(AppConstants.keyIsLoggedIn, true);
+    await userBox.put(AppKeys.CURRENT_USER, user.toHive());
+    await authBox.put(AppKeys.IS_LOGGED_IN, true);
   }
 
   @override
   Future<UserModel?> getCachedUser() async {
     print('<<<<<<<<<<<[getCachedUser]>>>>>>>>>>>>>');
-    final userData = userBox.get('current_user');
+    final userData = userBox.get(AppKeys.CURRENT_USER);
     if (userData == null) return null;
     return UserModel.fromHive(Map<dynamic, dynamic>.from(userData));
   }
@@ -68,20 +68,20 @@ class AuthLocalDataSourceImpl implements AuthLocalDataSource {
   @override
   Future<void> clearCachedUser() async {
     print('<<<<<<<<<<<[clearCachedUser]>>>>>>>>>>>>>');
-    await userBox.delete('current_user');
-    await authBox.put(AppConstants.keyIsLoggedIn, false);
+    await userBox.delete(AppKeys.CURRENT_USER);
+    await authBox.put(AppKeys.IS_LOGGED_IN, false);
   }
 
   @override
   Future<void> cacheProfile(ProfileModel profile) async {
     print('<<<<<<<<<<<[cacheProfile]>>>>>>>>>>>>>');
-    await userBox.put('current_profile', profile.toHive());
+    await userBox.put(AppKeys.CURRENT_PROFILE, profile.toHive());
   }
 
   @override
   Future<ProfileModel?> getCachedProfile() async {
     print('<<<<<<<<<<<[getCachedProfile]>>>>>>>>>>>>>');
-    final profileData = userBox.get('current_profile');
+    final profileData = userBox.get(AppKeys.CURRENT_PROFILE);
     if (profileData == null) return null;
     return ProfileModel.fromHive(Map<dynamic, dynamic>.from(profileData));
   }
@@ -89,30 +89,30 @@ class AuthLocalDataSourceImpl implements AuthLocalDataSource {
   @override
   Future<void> clearCachedProfile() async {
     print('<<<<<<<<<<<[clearCachedProfile]>>>>>>>>>>>>>');
-    await userBox.delete('current_profile');
+    await userBox.delete(AppKeys.CURRENT_PROFILE);
   }
 
   @override
   Future<bool> isOnboardingCompleted() async {
     print('<<<<<<<<<<<[isOnboardingCompleted]>>>>>>>>>>>>>');
-    return sharedPreferences.getBool(AppConstants.keyOnboardingCompleted) ?? false;
+    return sharedPreferences.getBool(AppKeys.ONBOARDING_COMPLETED) ?? false;
   }
 
   @override
   Future<void> setOnboardingCompleted(bool value) async {
     print('<<<<<<<<<<<[setOnboardingCompleted]>>>>>>>>>>>>>');
-    await sharedPreferences.setBool(AppConstants.keyOnboardingCompleted, value);
+    await sharedPreferences.setBool(AppKeys.ONBOARDING_COMPLETED, value);
   }
 
   @override
   Future<bool> isLoggedIn() async {
     print('<<<<<<<<<<<[isLoggedIn]>>>>>>>>>>>>>');
-    return authBox.get(AppConstants.keyIsLoggedIn) ?? false;
+    return authBox.get(AppKeys.IS_LOGGED_IN) ?? false;
   }
 
   @override
   Future<void> setLoggedIn(bool value) async {
     print('<<<<<<<<<<<[setLoggedIn]>>>>>>>>>>>>>');
-    await authBox.put(AppConstants.keyIsLoggedIn, value);
+    await authBox.put(AppKeys.IS_LOGGED_IN, value);
   }
 }

@@ -82,11 +82,11 @@ class SessionEntityCard extends StatelessWidget {
         seatsLabel: '$booked/$maxSeats',
         isFavorite: isFavorite,
         onFavoriteToggle: onToggle,
-        ctaLabel: 'تفاصيل',
+        ctaLabel: 'session.details'.tr(),
         // ⬇️ الملاحظة الجديدة ⬇️
         noteLabel: session.bookedCount >= session.maxSeats
-            ? 'اكتمل النصاب الأدنى! لا يزال بإمكانك الحجز والانضمام'
-            : 'العدد المحدد هو النصاب الأدنى.. يمكنك الحجز دائماً',
+            ? 'session.quorum_full_note'.tr()
+            : 'session.quorum_min_note'.tr(),
         noteColor: Theme.of(context).colorScheme.secondary, // لون إيجابي
         noteIcon: Icons.stars, // أيقونة تشجيعية
         // ⬆️ نهاية الملاحظة ⬆️

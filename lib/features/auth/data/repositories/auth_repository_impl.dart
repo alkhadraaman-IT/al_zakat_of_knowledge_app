@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 import '../../../../core/errors/failures.dart';
 import '../../../../core/network/network_info.dart';
@@ -50,14 +51,14 @@ class AuthRepositoryImpl implements AuthRepository {
     } on SupabaseTimeoutException catch (e) {
       print('🔴 [signIn] Timeout: ${e.operationName} after ${e.timeout.inSeconds}s');
       return Left(NetworkFailure(
-        message: 'Network request timed out. Please check your connection.',
+        message: 'messages.network_timeout'.tr(),
       ));
     } on SupabaseSocketException catch (e) {
       print('🟠 [signIn] SocketException: ${e.message}');
-      return Left(NetworkFailure(message: 'Network error'));
+      return Left(NetworkFailure(message: 'messages.network_error'.tr()));
     } catch (e) {
       print('⚫ [signIn] Unknown error: $e');
-      return Left(ServerFailure(message: 'Server error'));
+      return Left(ServerFailure(message: 'messages.server_error'.tr()));
     }
   }
 
@@ -85,14 +86,14 @@ class AuthRepositoryImpl implements AuthRepository {
     } on SupabaseTimeoutException catch (e) {
       print('🔴 [signUp] Timeout: ${e.operationName} after ${e.timeout.inSeconds}s');
       return Left(NetworkFailure(
-        message: 'Network request timed out. Please check your connection.',
+        message: 'messages.network_timeout'.tr(),
       ));
     } on SupabaseSocketException catch (e) {
       print('🟠 [signUp] SocketException: ${e.message}');
-      return Left(NetworkFailure(message: 'Network error'));
+      return Left(NetworkFailure(message: 'messages.network_error'.tr()));
     } catch (e) {
       print('⚫ [signUp] Unknown error: $e');
-      return Left(ServerFailure(message: 'Server error'));
+      return Left(ServerFailure(message: 'messages.server_error'.tr()));
     }
   }
 
@@ -111,7 +112,7 @@ class AuthRepositoryImpl implements AuthRepository {
       return const Right(null);
     } catch (e) {
       print('⚫ [signOut] Error: $e');
-      return const Left(ServerFailure(message: 'Server error'));
+      return Left(ServerFailure(message: 'messages.server_error'.tr()));
     }
   }
 
@@ -121,7 +122,7 @@ class AuthRepositoryImpl implements AuthRepository {
   ) async {
     print('<<<<<<<<<<<[updateProfile]>>>>>>>>>>>>>');
     if (!await networkInfo.isConnected) {
-      return const Left(NetworkFailure(message: 'No internet connection'));
+      return Left(NetworkFailure(message: 'messages.no_internet'.tr()));
     }
 
     try {
@@ -136,14 +137,14 @@ class AuthRepositoryImpl implements AuthRepository {
     } on SupabaseTimeoutException catch (e) {
       print('🔴 [updateProfile] Timeout: ${e.operationName}');
       return Left(NetworkFailure(
-        message: 'Network request timed out. Please check your connection.',
+        message: 'messages.network_timeout'.tr(),
       ));
     } on SupabaseSocketException catch (e) {
       print('🟠 [updateProfile] SocketException: ${e.message}');
-      return Left(NetworkFailure(message: 'Network error'));
+      return Left(NetworkFailure(message: 'messages.network_error'.tr()));
     } catch (e) {
       print('⚫ [updateProfile] Unknown error: $e');
-      return Left(ServerFailure(message: 'Server error'));
+      return Left(ServerFailure(message: 'messages.server_error'.tr()));
     }
   }
 
@@ -200,7 +201,7 @@ class AuthRepositoryImpl implements AuthRepository {
       return Right(localUser);
     } catch (e) {
       print('⚫ [getCurrentUser] Error: $e');
-      return Left(CacheFailure(message: 'Cache error'));
+      return Left(CacheFailure(message: 'messages.cache_error'.tr()));
     }
   }
 
@@ -215,7 +216,7 @@ class AuthRepositoryImpl implements AuthRepository {
       return Right(isLoggedIn);
     } catch (e) {
       print('⚫ [isAuthenticated] Error: $e');
-      return Left(CacheFailure(message: 'Cache error'));
+      return Left(CacheFailure(message: 'messages.cache_error'.tr()));
     }
   }
 
@@ -231,14 +232,14 @@ class AuthRepositoryImpl implements AuthRepository {
     } on SupabaseTimeoutException catch (e) {
       print('🔴 [resetPassword] Timeout: ${e.operationName}');
       return Left(NetworkFailure(
-        message: 'Network request timed out. Please check your connection.',
+        message: 'messages.network_timeout'.tr(),
       ));
     } on SupabaseSocketException catch (e) {
       print('🟠 [resetPassword] SocketException: ${e.message}');
-      return Left(NetworkFailure(message: 'Network error'));
+      return Left(NetworkFailure(message: 'messages.network_error'.tr()));
     } catch (e) {
       print('⚫ [resetPassword] Unknown error: $e');
-      return Left(ServerFailure(message: 'Server error'));
+      return Left(ServerFailure(message: 'messages.server_error'.tr()));
     }
   }
 

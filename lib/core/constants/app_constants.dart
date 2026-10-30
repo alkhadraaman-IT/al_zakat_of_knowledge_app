@@ -32,19 +32,8 @@ class AppConstants {
     defaultValue: 'io.supabase.zakatalilm://login-callback',
   );
 
-  // Hive Box Names
-  static const String authBoxName = 'auth_box';
-  static const String userBoxName = 'user_box';
-  static const String onboardingBoxName = 'onboarding_box';
-  static const String favoritesBoxName = 'favorites_box';
-  static const String favoriteSessionsBoxName = 'favorite_sessions_box';
-  static const String favoriteToolsBoxName = 'favorite_tools_box';
-
-  // Shared Preferences Keys
-  static const String keyOnboardingCompleted = 'onboarding_completed';
-  static const String keyIsLoggedIn = 'is_logged_in';
-  static const String keyAuthToken = 'auth_token';
-  static const String keyUserId = 'user_id';
+  // Hive box names, Hive entry keys and SharedPreferences keys are centralized
+  // in [AppKeys] (see core/constants/app_keys.dart).
 
   // Animation Durations
   static const Duration splashDuration = Duration(seconds: 3);

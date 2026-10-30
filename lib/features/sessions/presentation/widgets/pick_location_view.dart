@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -42,7 +43,7 @@ class _PickLocationPageState extends State<PickLocationPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'حدّد موقع المحاضرة',
+          'create.location_prompt'.tr(),
           style: AppTypography.arabicBody(color: cs.onSurface, fontSize: 18),
         ),
       ),
@@ -110,7 +111,7 @@ class _PickLocationPageState extends State<PickLocationPage> {
                       padding: EdgeInsets.symmetric(vertical: 16.h),
                       child: Center(
                         child: Text(
-                          'تأكيد الموقع',
+                          'create.confirm_location'.tr(),
                           style: AppTypography.arabicBody(
                             color: cs.onPrimary,
                             fontSize: 16,

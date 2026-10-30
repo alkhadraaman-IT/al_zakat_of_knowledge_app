@@ -121,7 +121,7 @@ class _EditArticleSheetState extends State<_EditArticleSheet> {
                   children: [
                     Expanded(
                       child: Text(
-                        'تعديل المقالة',
+                        'article.edit_title'.tr(),
                         style: AppTypography.arabicHeadline(
                           color: cs.onSurface,
                           fontSize: 20,
@@ -216,7 +216,7 @@ class _EditArticleSheetState extends State<_EditArticleSheet> {
                                 ),
                               )
                             : Text(
-                                'حفظ التعديلات',
+                                'article.save_changes'.tr(),
                                 style: AppTypography.arabicTitle(
                                   color: cs.onPrimary,
                                   fontSize: 18,

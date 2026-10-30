@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -31,12 +32,12 @@ class NotificationsEmptyState extends StatelessWidget {
             ),
             SizedBox(height: AppSpacing.lg),
             Text(
-              'لا توجد إشعارات',
+              'notifications.empty'.tr(),
               style: AppTypography.arabicTitle(color: cs.onSurface, fontSize: 18),
             ),
             SizedBox(height: AppSpacing.sm),
             Text(
-              'عندما تصلك إشعارات جديدة ستظهر هنا',
+              'notifications.empty_hint'.tr(),
               style: AppTypography.arabicBody(
                 color: cs.onSurfaceVariant,
                 fontSize: 14,

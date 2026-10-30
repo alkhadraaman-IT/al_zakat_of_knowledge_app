@@ -206,7 +206,7 @@ class AppStudyToolCard extends StatelessWidget {
           ),
           SizedBox(width: 6.w),
           Text(
-            available ? 'متاحة' : 'تم الأخذ',
+            available ? 'tool.available'.tr() : 'tool.taken'.tr(),
             style: AppTypography.arabicCaption(
               color: available ? cs.primary : cs.onSurfaceVariant,
               fontSize: 11,
@@ -228,7 +228,7 @@ class AppStudyToolCard extends StatelessWidget {
           Expanded(
             child: _actionButton(
               cs: cs,
-              label: 'تعديل',
+              label: 'common.edit'.tr(),
               icon: Icons.edit_outlined,
               background: cs.primary,
               foreground: cs.onPrimary,
@@ -239,7 +239,7 @@ class AppStudyToolCard extends StatelessWidget {
           Expanded(
             child: _actionButton(
               cs: cs,
-              label: 'حذف',
+              label: 'common.delete'.tr(),
               icon: Icons.delete_outline,
               background: cs.error.withValues(alpha: 0.12),
               foreground: cs.error,
@@ -309,15 +309,14 @@ class AppStudyToolCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(16.r),
                     ),
                     title: Text(
-                      'تأكيد أخذ الأداة',
+                      'tool.take_confirm_title'.tr(),
                       style: AppTypography.arabicTitle(
                         color: cs.onSurface,
                         fontSize: 17,
                       ),
                     ),
                     content: Text(
-                      'هل أنت متأكد من رغبتك في أخذ هذه الأداة؟ '
-                      'لن تتمكن من التراجع بعد التأكيد.',
+                      'tool.take_confirm_message'.tr(),
                       style: AppTypography.arabicBody(
                         color: cs.onSurfaceVariant,
                         fontSize: 14,
@@ -327,7 +326,7 @@ class AppStudyToolCard extends StatelessWidget {
                       TextButton(
                         onPressed: () => Navigator.pop(ctx, false),
                         child: Text(
-                          'إلغاء',
+                          'common.cancel'.tr(),
                           style: AppTypography.arabicLabel(
                             color: cs.onSurfaceVariant,
                             fontSize: 14,
@@ -337,7 +336,7 @@ class AppStudyToolCard extends StatelessWidget {
                       TextButton(
                         onPressed: () => Navigator.pop(ctx, true),
                         child: Text(
-                          'نعم، أخذ',
+                          'tool.take_confirm_yes'.tr(),
                           style: AppTypography.arabicLabel(
                             color: cs.primary,
                             fontSize: 14,
@@ -358,7 +357,7 @@ class AppStudyToolCard extends StatelessWidget {
                   color: cs.onPrimary, size: 18.w),
               SizedBox(width: 8.w),
               Text(
-                'أخذت الأداة',
+                'tool.take_action'.tr(),
                 style: AppTypography.arabicTitle(
                   color: cs.onPrimary,
                   fontSize: 14,
@@ -385,7 +384,7 @@ class AppStudyToolCard extends StatelessWidget {
               color: cs.onSurfaceVariant, size: 18.w),
           SizedBox(width: 8.w),
           Text(
-            'تم الأخذ',
+            'tool.taken'.tr(),
             style: AppTypography.arabicLabel(
               color: cs.onSurfaceVariant,
               fontSize: 14,

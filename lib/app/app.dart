@@ -47,7 +47,7 @@ class ZakatAlIlmApp extends StatelessWidget {
             return BlocBuilder<ThemeCubit, ThemeModeState>(
               builder: (context, themeState) {
                 return MaterialApp.router(
-                  title: 'زكاة العلم',
+                  title: 'app.name'.tr(),
                   debugShowCheckedModeBanner: false,
                   // ── Theme driven by ThemeCubit ──────────────────
                   theme: AppTheme.lightTheme,
