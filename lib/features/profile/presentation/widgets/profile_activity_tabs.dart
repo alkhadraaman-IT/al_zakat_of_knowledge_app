@@ -14,6 +14,9 @@ import '../../../../shared/widgets/study_tool_entity_card.dart';
 import '../../../articles/domain/entities/article_entity.dart';
 import '../../../articles/presentation/bloc/article_cubit.dart';
 import '../../../articles/presentation/bloc/article_state.dart';
+import '../../../favorites/domain/entities/favorite_item_entity.dart';
+import '../../../favorites/presentation/widgets/favorite_builder.dart';
+import '../../../favorites/presentation/widgets/favorite_mappers.dart';
 import '../../../sessions/domain/entities/booking_entity.dart';
 import '../../../sessions/domain/entities/session_entity.dart';
 import '../../../study_tools/domain/entities/study_tool_entity.dart';
@@ -219,26 +222,36 @@ class _ProfileActivityTabsState extends State<ProfileActivityTabs> {
           '${hour > 12 ? hour - 12 : (hour == 0 ? 12 : hour)}:${minute.toString().padLeft(2, '0')} ${hour >= 12 ? 'session.pm'.tr() : 'session.am'.tr()}';
     }
 
-    return AppSessionCard(
-      sessionId: session.id,
-      title: session.title,
-      lecturerName: lecturer.isNotEmpty ? lecturer : 'session.unspecified'.tr(),
-      lecturerInitial: lecturer.isNotEmpty ? lecturer[0] : ' — ',
-      dateLabel: dateLabel,
-      timeLabel: timeLabel,
-      locationLabel: location.isNotEmpty
-          ? location
-          : 'session.unspecified'.tr(),
-      mapPillLabel: location.isNotEmpty ? location : 'session.unspecified'.tr(),
-      capacityFactor: factor,
-      percentLabel: '$percent%',
-      seatsLabel: '$bookedCount/$maxSeats',
-      lat: session.lat,
-      lng: session.lng,
-      ctaLabel: 'session.details'.tr(),
-      noteLabel: 'session.cancel_48h_note'.tr(),
-      onTap: () =>
-          context.push('/session-details/${session.id}?isPublisher=true'),
+    // ✅ ربط زر المفضلة عبر FavoriteBuilder
+    return FavoriteBuilder(
+      type: FavoriteType.lecture,
+      id: session.id,
+      toFavorite: session.toFavorite,
+      builder: (context, isFavorite, onToggle) => AppSessionCard(
+        sessionId: session.id,
+        title: session.title,
+        lecturerName:
+            lecturer.isNotEmpty ? lecturer : 'session.unspecified'.tr(),
+        lecturerInitial: lecturer.isNotEmpty ? lecturer[0] : ' — ',
+        dateLabel: dateLabel,
+        timeLabel: timeLabel,
+        locationLabel: location.isNotEmpty
+            ? location
+            : 'session.unspecified'.tr(),
+        mapPillLabel:
+            location.isNotEmpty ? location : 'session.unspecified'.tr(),
+        capacityFactor: factor,
+        percentLabel: '$percent%',
+        seatsLabel: '$bookedCount/$maxSeats',
+        lat: session.lat,
+        lng: session.lng,
+        ctaLabel: 'session.details'.tr(),
+        noteLabel: 'session.cancel_48h_note'.tr(),
+        isFavorite: isFavorite,
+        onFavoriteToggle: onToggle,
+        onTap: () =>
+            context.push('/session-details/${session.id}?isPublisher=true'),
+      ),
     );
   }
 
@@ -437,21 +450,29 @@ class _ProfileActivityTabsState extends State<ProfileActivityTabs> {
           '${hour > 12 ? hour - 12 : hour}:${minute.toString().padLeft(2, '0')} ${hour >= 12 ? 'session.pm'.tr() : 'session.am'.tr()}';
     }
 
-    return AppSessionCard(
-      sessionId: session.id,
-      title: session.title,
-      lecturerName: lecturer,
-      lecturerInitial: lecturer.isNotEmpty ? lecturer[0] : ' — ',
-      dateLabel: dateLabel,
-      timeLabel: timeLabel,
-      locationLabel: location,
-      mapPillLabel: location,
-      capacityFactor: factor,
-      percentLabel: '$percent%',
-      seatsLabel: '$bookedCount/$maxSeats',
-      ctaLabel: 'booking.booked'.tr(),
-      lat: session.lat,
-      lng: session.lng,
+    // ✅ ربط زر المفضلة عبر FavoriteBuilder
+    return FavoriteBuilder(
+      type: FavoriteType.lecture,
+      id: session.id,
+      toFavorite: session.toFavorite,
+      builder: (context, isFavorite, onToggle) => AppSessionCard(
+        sessionId: session.id,
+        title: session.title,
+        lecturerName: lecturer,
+        lecturerInitial: lecturer.isNotEmpty ? lecturer[0] : ' — ',
+        dateLabel: dateLabel,
+        timeLabel: timeLabel,
+        locationLabel: location,
+        mapPillLabel: location,
+        capacityFactor: factor,
+        percentLabel: '$percent%',
+        seatsLabel: '$bookedCount/$maxSeats',
+        ctaLabel: 'booking.booked'.tr(),
+        lat: session.lat,
+        lng: session.lng,
+        isFavorite: isFavorite,
+        onFavoriteToggle: onToggle,
+      ),
     );
   }
 
@@ -520,22 +541,32 @@ class _ProfileActivityTabsState extends State<ProfileActivityTabs> {
           '${hour > 12 ? hour - 12 : (hour == 0 ? 12 : hour)}:${minute.toString().padLeft(2, '0')} ${hour >= 12 ? 'session.pm'.tr() : 'session.am'.tr()}';
     }
 
-    return AppSessionCard(
-      sessionId: session.id,
-      title: session.title,
-      lecturerName: lecturer.isNotEmpty ? lecturer : 'session.unspecified'.tr(),
-      lecturerInitial: lecturer.isNotEmpty ? lecturer[0] : ' — ',
-      dateLabel: dateLabel,
-      timeLabel: timeLabel,
-      locationLabel: location.isNotEmpty
-          ? location
-          : 'session.unspecified'.tr(),
-      mapPillLabel: location.isNotEmpty ? location : 'session.unspecified'.tr(),
-      capacityFactor: factor,
-      percentLabel: '$percent%',
-      seatsLabel: '$bookedCount/$maxSeats',
-      lat: session.lat,
-      lng: session.lng,
+    // ✅ ربط زر المفضلة عبر FavoriteBuilder
+    return FavoriteBuilder(
+      type: FavoriteType.lecture,
+      id: session.id,
+      toFavorite: session.toFavorite,
+      builder: (context, isFavorite, onToggle) => AppSessionCard(
+        sessionId: session.id,
+        title: session.title,
+        lecturerName:
+            lecturer.isNotEmpty ? lecturer : 'session.unspecified'.tr(),
+        lecturerInitial: lecturer.isNotEmpty ? lecturer[0] : ' — ',
+        dateLabel: dateLabel,
+        timeLabel: timeLabel,
+        locationLabel: location.isNotEmpty
+            ? location
+            : 'session.unspecified'.tr(),
+        mapPillLabel:
+            location.isNotEmpty ? location : 'session.unspecified'.tr(),
+        capacityFactor: factor,
+        percentLabel: '$percent%',
+        seatsLabel: '$bookedCount/$maxSeats',
+        lat: session.lat,
+        lng: session.lng,
+        isFavorite: isFavorite,
+        onFavoriteToggle: onToggle,
+      ),
     );
   }
 

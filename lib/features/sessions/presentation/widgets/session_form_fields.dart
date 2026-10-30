@@ -7,6 +7,7 @@ import 'package:latlong2/latlong.dart';
 
 import '../../../../app/theme/app_typography.dart';
 import '../../../../core/constants/syrian_cities.dart';
+import '../../../../core/utils/directional_icons.dart';
 import '../../../articles/domain/entities/category_entity.dart';
 import '../../../articles/presentation/cubit/categories_cubit.dart';
 
@@ -282,7 +283,7 @@ class SessionLocationPicker extends StatelessWidget {
                 ),
               ),
             ),
-            Icon(Icons.chevron_left, color: cs.onSurfaceVariant),
+            Icon(DirectionalIcons.forward(context), color: cs.onSurfaceVariant),
           ],
         ),
       ),

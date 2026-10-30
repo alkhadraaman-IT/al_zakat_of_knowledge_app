@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
-import 'package:supabase_flutter/supabase_flutter.dart' hide AuthState; // 1. أضف مكتبة سوبابيس
+import 'package:supabase_flutter/supabase_flutter.dart'
+    hide AuthState; // 1. أضف مكتبة سوبابيس
 
 import '../../../../app/theme/app_typography.dart';
 import '../../../articles/presentation/bloc/article_cubit.dart';
@@ -23,15 +24,12 @@ class MainShell extends StatefulWidget {
 
 class _MainShellState extends State<MainShell> {
   int _currentIndex = 0;
-  
+
   // متغيرات لتخزين بيانات البروفايل (الاسم والصورة من جدول profiles مباشرة)
   String? _profileName;
   String? _profilePhotoUrl;
 
-  final List<Widget> _screens = const [
-    HomeView(),
-    FavoritesView(),
-  ];
+  final List<Widget> _screens = const [HomeView(), FavoritesView()];
 
   @override
   void initState() {
@@ -74,15 +72,9 @@ class _MainShellState extends State<MainShell> {
         backgroundColor: Theme.of(context).colorScheme.surface,
         appBar: PreferredSize(
           preferredSize: Size.fromHeight(64.h),
-          child: SafeArea(
-            bottom: false,
-            child: _buildTopHeader(context),
-          ),
+          child: SafeArea(bottom: false, child: _buildTopHeader(context)),
         ),
-        body: IndexedStack(
-          index: _currentIndex,
-          children: _screens,
-        ),
+        body: IndexedStack(index: _currentIndex, children: _screens),
         bottomNavigationBar: _buildBottomNavDock(context),
       ),
     );
@@ -98,8 +90,9 @@ class _MainShellState extends State<MainShell> {
     }
 
     final displayName = _profileName ?? fallbackName;
-    final String userInitial = (displayName != null && displayName.trim().isNotEmpty) 
-        ? displayName.trim()[0] 
+    final String userInitial =
+        (displayName != null && displayName.trim().isNotEmpty)
+        ? displayName.trim()[0]
         : 'م';
 
     return AppTopHeader(
@@ -113,38 +106,20 @@ class _MainShellState extends State<MainShell> {
               width: 40.w,
               height: 40.w,
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surfaceContainerHigh.withValues(alpha: 0.8),
+                color: Theme.of(context).colorScheme.surfaceContainerHigh
+                    .withValues(alpha: 0.8),
                 borderRadius: BorderRadius.circular(12.r),
                 border: Border.all(
-                  color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.6),
+                  color: Theme.of(context).colorScheme.outline
+                      .withValues(alpha: 0.6),
                 ),
               ),
-              child: Stack(
-                children: [
-                  Center(
-                    child: Icon(
-                      Icons.notifications_outlined,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      size: 20.w,
-                    ),
-                  ),
-                  Positioned(
-                    top: 8.h,
-                    right: 8.w,
-                    child: Container(
-                      width: 10.w,
-                      height: 10.w,
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primary,
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: Theme.of(context).colorScheme.surface,
-                          width: 2,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+              child: Center(
+                child: Icon(
+                  Icons.notifications_outlined,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  size: 20.w,
+                ),
               ),
             ),
           ),
@@ -159,21 +134,26 @@ class _MainShellState extends State<MainShell> {
               width: 40.w,
               height: 40.w,
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15),
+                color: Theme.of(context).colorScheme.primary
+                    .withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(12.r),
                 border: Border.all(
-                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+                  color: Theme.of(context).colorScheme.primary
+                      .withValues(alpha: 0.3),
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+                    color: Theme.of(context).colorScheme.primary
+                        .withValues(alpha: 0.2),
                     blurRadius: 12.r,
                   ),
                 ],
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(12.r),
-                child: (_profilePhotoUrl != null && _profilePhotoUrl!.trim().isNotEmpty)
+                child:
+                    (_profilePhotoUrl != null &&
+                        _profilePhotoUrl!.trim().isNotEmpty)
                     ? Image.network(
                         _profilePhotoUrl!,
                         fit: BoxFit.cover,
@@ -206,19 +186,18 @@ class _MainShellState extends State<MainShell> {
 
   Widget _buildBottomNavDock(BuildContext context) {
     return Container(
-      margin: EdgeInsets.only(
-        left: 20.w,
-        right: 20.w,
-        bottom: 24.h,
-      ),
+      margin: EdgeInsets.only(left: 20.w, right: 20.w, bottom: 24.h),
       padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 10.h),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.92),
         borderRadius: BorderRadius.circular(30.r),
-        border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3)),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+        ),
         boxShadow: [
           BoxShadow(
-            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15),
+            color: Theme.of(context).colorScheme.primary
+                .withValues(alpha: 0.15),
             blurRadius: 20.r,
             spreadRadius: 0,
           ),
@@ -254,12 +233,16 @@ class _MainShellState extends State<MainShell> {
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5),
+                        color: Theme.of(context).colorScheme.primary
+                            .withValues(alpha: 0.5),
                         blurRadius: 20.r,
                         spreadRadius: 0,
                       ),
                     ],
-                    border: Border.all(color: Theme.of(context).colorScheme.surface, width: 4),
+                    border: Border.all(
+                      color: Theme.of(context).colorScheme.surface,
+                      width: 4,
+                    ),
                   ),
                   child: Icon(
                     Icons.add,
@@ -308,7 +291,10 @@ class _NavItem extends StatelessWidget {
               : Colors.transparent,
           borderRadius: BorderRadius.circular(16.r),
           border: isActive
-              ? Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.6))
+              ? Border.all(
+                  color: Theme.of(context).colorScheme.primary
+                      .withValues(alpha: 0.6),
+                )
               : null,
         ),
         child: Row(
@@ -316,7 +302,9 @@ class _NavItem extends StatelessWidget {
           children: [
             Icon(
               icon,
-              color: isActive ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurfaceVariant,
+              color: isActive
+                  ? Theme.of(context).colorScheme.primary
+                  : Theme.of(context).colorScheme.onSurfaceVariant,
               size: 22.w,
             ),
             if (isActive) ...[

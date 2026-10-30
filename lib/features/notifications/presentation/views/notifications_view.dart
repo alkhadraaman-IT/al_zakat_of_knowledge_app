@@ -77,6 +77,7 @@ class NotificationsView extends StatelessWidget {
                             context.read<NotificationsCubit>().markAllAsRead(),
                         child: Text(
                           'notifications.mark_all_read'.tr(),
+                          overflow: TextOverflow.ellipsis, // التصحيح هنا
                           style: AppTypography.arabicLabel(
                             color: cs.primary,
                             fontSize: 13,
@@ -186,15 +187,10 @@ class _NotificationsList extends StatelessWidget {
           return Dismissible(
             key: ValueKey(n.id),
             direction: DismissDirection.horizontal,
-            onDismissed: (_) =>
-                context.read<NotificationsCubit>().delete(n.id),
+            onDismissed: (_) => context.read<NotificationsCubit>().delete(n.id),
             background: _deleteBg(cs, AlignmentDirectional.centerStart),
-            secondaryBackground:
-                _deleteBg(cs, AlignmentDirectional.centerEnd),
-            child: NotificationCard(
-              notification: n,
-              onTap: () => onTap(n),
-            ),
+            secondaryBackground: _deleteBg(cs, AlignmentDirectional.centerEnd),
+            child: NotificationCard(notification: n, onTap: () => onTap(n)),
           );
         },
       ),
@@ -202,12 +198,12 @@ class _NotificationsList extends StatelessWidget {
   }
 
   Widget _deleteBg(ColorScheme cs, AlignmentGeometry alignment) => Container(
-        decoration: BoxDecoration(
-          color: cs.errorContainer,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        alignment: alignment,
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: Icon(Icons.delete_outline, color: cs.onErrorContainer),
-      );
+    decoration: BoxDecoration(
+      color: cs.errorContainer,
+      borderRadius: BorderRadius.circular(16),
+    ),
+    alignment: alignment,
+    padding: const EdgeInsets.symmetric(horizontal: 20),
+    child: Icon(Icons.delete_outline, color: cs.onErrorContainer),
+  );
 }

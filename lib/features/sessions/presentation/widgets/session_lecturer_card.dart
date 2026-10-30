@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../app/theme/app_typography.dart';
 import '../../../../core/constants/app_spacing.dart';
+import '../../../../core/utils/directional_icons.dart';
 import '../../domain/entities/session_with_profile.dart';
 
 class SessionLecturerCard extends StatelessWidget {
@@ -105,7 +106,7 @@ class SessionLecturerCard extends StatelessWidget {
                   ],
                 ),
               ),
-              Icon(Icons.chevron_left, color: cs.onSurfaceVariant, size: 20.w),
+              Icon(DirectionalIcons.forward(context), color: cs.onSurfaceVariant, size: 20.w),
             ],
           ),
         ),

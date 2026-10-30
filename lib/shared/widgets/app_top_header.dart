@@ -4,13 +4,14 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../app/theme/app_typography.dart';
 import '../../core/constants/app_spacing.dart';
+import '../../core/utils/directional_icons.dart';
 
 /// المكون الموحد للشريط العلوي — متوافق مع كافة الاستدعاءات في المشروع
 class AppTopHeader extends StatelessWidget {
   final BuildContext context;
   final VoidCallback? onBack;
   final Widget? trailing;
-  
+
   // بيانات المستخدم الاختيارية لاستخراج الحرف الأول الحقيقي بدلاً من "ع"
   final String? userName;
 
@@ -63,7 +64,7 @@ class AppTopHeader extends StatelessWidget {
             ),
           ),
           SizedBox(width: 10.w),
-          
+
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -83,14 +84,12 @@ class AppTopHeader extends StatelessWidget {
               ),
             ],
           ),
-          
+
           const Spacer(),
-          
+
           // 2. العناصر الجانبية (Trailing) إن وجدت (مثل الإشعارات والملف الشخصي في الرئيسية)
-          if (trailing != null) ...[
-            trailing!,
-          ],
-          
+          if (trailing != null) ...[trailing!],
+
           // 3. زر الرجوع إن وجد (في الواجهات الفرعية)
           if (onBack != null) ...[
             if (trailing != null) SizedBox(width: 8.w),
@@ -103,10 +102,9 @@ class AppTopHeader extends StatelessWidget {
                 child: SizedBox(
                   width: 40.w,
                   height: 40.w,
-                  child: Icon(
-                    Icons.arrow_back_ios_new,
+                  child: Icon(DirectionalIcons.forward(context),
                     color: cs.onSurface,
-                    size: 18.w,
+                    size: 24.w,
                   ),
                 ),
               ),

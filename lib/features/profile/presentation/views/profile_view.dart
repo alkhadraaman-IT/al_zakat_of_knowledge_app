@@ -10,6 +10,7 @@ import '../../../articles/presentation/bloc/article_cubit.dart';
 import '../../../articles/presentation/cubit/categories_cubit.dart';
 import '../../../auth/presentation/bloc/auth_cubit.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
+import '../../../favorites/presentation/cubit/favorites_cubit.dart';
 import '../../../study_tools/presentation/cubit/study_tool_cubit.dart';
 import '../cubit/profile_cubit.dart';
 import '../cubit/profile_state.dart';
@@ -27,6 +28,7 @@ class ProfileView extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
+        BlocProvider.value(value: sl<FavoritesCubit>()), // ✅ أضف هذا
         BlocProvider.value(value: sl<StudyToolCubit>()),
         BlocProvider.value(value: sl<ArticleCubit>()),
         BlocProvider.value(value: sl<CategoriesCubit>()),
@@ -55,8 +57,11 @@ class _ProfileViewBody extends StatelessWidget {
     return null;
   }
 
-  Future<void> _openUrl(BuildContext context, String urlString,
-      {bool isPdf = false}) async {
+  Future<void> _openUrl(
+    BuildContext context,
+    String urlString, {
+    bool isPdf = false,
+  }) async {
     String formattedUrl = urlString.trim();
     if (!formattedUrl.startsWith('http://') &&
         !formattedUrl.startsWith('https://')) {
@@ -73,9 +78,9 @@ class _ProfileViewBody extends StatelessWidget {
       }
     } catch (_) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('profile.link_open_failed'.tr())),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('profile.link_open_failed'.tr())));
     }
   }
 

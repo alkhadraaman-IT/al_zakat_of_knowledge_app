@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/router/app_router.dart';
 import '../../../../app/theme/app_typography.dart';
 import '../../../../core/constants/app_spacing.dart';
+import '../../../../core/utils/directional_icons.dart';
 import '../bloc/auth_cubit.dart';
 import '../bloc/auth_state.dart';
 import '../widgets/auth_button.dart';
@@ -27,7 +28,7 @@ class _RegisterViewState extends State<RegisterView> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  
+
   final _fullNameFocusNode = FocusNode();
   final _universityFocusNode = FocusNode();
   final _emailFocusNode = FocusNode();
@@ -57,11 +58,11 @@ class _RegisterViewState extends State<RegisterView> {
     if (_formKey.currentState?.validate() ?? false) {
       if (_acceptedTerms) {
         context.read<AuthCubit>().signUp(
-              email: _emailController.text.trim(),
-              password: _passwordController.text,
-              fullName: _fullNameController.text.trim(),
-              university: _universityController.text.trim(),
-            );
+          email: _emailController.text.trim(),
+          password: _passwordController.text,
+          fullName: _fullNameController.text.trim(),
+          university: _universityController.text.trim(),
+        );
       }
     }
   }
@@ -113,7 +114,10 @@ class _RegisterViewState extends State<RegisterView> {
                           alignment: AlignmentDirectional.centerStart,
                           child: IconButton(
                             onPressed: () => context.pop(),
-                            icon: Icon(Icons.arrow_back, color: cs.onSurface),
+                            icon: Icon(
+                              DirectionalIcons.forward(context),
+                              color: cs.onSurface,
+                            ),
                             style: IconButton.styleFrom(
                               backgroundColor: cs.surfaceContainerLow,
                               shape: RoundedRectangleBorder(
@@ -177,7 +181,9 @@ class _RegisterViewState extends State<RegisterView> {
             controller: _fullNameController,
             focusNode: _fullNameFocusNode,
             prefixIcon: Icons.person_outline,
-            validator: (v) => (v == null || v.isEmpty) ? 'validation.required'.tr() : (v.length < 3 ? 'validation.name_short'.tr() : null),
+            validator: (v) => (v == null || v.isEmpty)
+                ? 'validation.required'.tr()
+                : (v.length < 3 ? 'validation.name_short'.tr() : null),
           ),
           SizedBox(height: AppSpacing.md),
           AuthTextField(
@@ -186,7 +192,9 @@ class _RegisterViewState extends State<RegisterView> {
             controller: _universityController,
             focusNode: _universityFocusNode,
             prefixIcon: Icons.account_balance_outlined,
-            validator: (v) => (v == null || v.isEmpty) ? 'validation.university_required'.tr() : null,
+            validator: (v) => (v == null || v.isEmpty)
+                ? 'validation.university_required'.tr()
+                : null,
           ),
           SizedBox(height: AppSpacing.md),
           AuthTextField(
@@ -197,8 +205,10 @@ class _RegisterViewState extends State<RegisterView> {
             keyboardType: TextInputType.emailAddress,
             prefixIcon: Icons.email_outlined,
             validator: (value) {
-              if (value == null || value.isEmpty) return 'validation.required'.tr();
-              if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) return 'validation.invalid_email'.tr();
+              if (value == null || value.isEmpty)
+                return 'validation.required'.tr();
+              if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value))
+                return 'validation.invalid_email'.tr();
               return null;
             },
           ),
@@ -210,7 +220,9 @@ class _RegisterViewState extends State<RegisterView> {
             focusNode: _passwordFocusNode,
             isPassword: true,
             prefixIcon: Icons.lock_outline,
-            validator: (value) => (value == null || value.length < 8) ? 'validation.password_short'.tr() : null,
+            validator: (value) => (value == null || value.length < 8)
+                ? 'validation.password_short'.tr()
+                : null,
           ),
           SizedBox(height: AppSpacing.md),
           AuthTextField(
@@ -222,8 +234,10 @@ class _RegisterViewState extends State<RegisterView> {
             prefixIcon: Icons.lock_outline,
             textInputAction: TextInputAction.done,
             validator: (value) {
-              if (value == null || value.isEmpty) return 'validation.required'.tr();
-              if (value != _passwordController.text) return 'validation.password_mismatch'.tr();
+              if (value == null || value.isEmpty)
+                return 'validation.required'.tr();
+              if (value != _passwordController.text)
+                return 'validation.password_mismatch'.tr();
               return null;
             },
           ),
@@ -235,22 +249,35 @@ class _RegisterViewState extends State<RegisterView> {
   Widget _buildTermsCharter(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return GestureDetector(
-      onTap: () => setState(() { _acceptedTerms = !_acceptedTerms; _termsError = false; }),
+      onTap: () => setState(() {
+        _acceptedTerms = !_acceptedTerms;
+        _termsError = false;
+      }),
       child: Container(
         padding: EdgeInsets.all(AppSpacing.md),
         decoration: BoxDecoration(
-          color: _acceptedTerms ? cs.primary.withValues(alpha: 0.05) : cs.surfaceContainerLow,
+          color: _acceptedTerms
+              ? cs.primary.withValues(alpha: 0.05)
+              : cs.surfaceContainerLow,
           borderRadius: BorderRadius.circular(12.r),
-          border: Border.all(color: _termsError ? cs.error : (_acceptedTerms ? cs.primary : cs.outline)),
+          border: Border.all(
+            color: _termsError
+                ? cs.error
+                : (_acceptedTerms ? cs.primary : cs.outline),
+          ),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             SizedBox(
-              width: 24.w, height: 24.w,
+              width: 24.w,
+              height: 24.w,
               child: Checkbox(
                 value: _acceptedTerms,
-                onChanged: (v) => setState(() { _acceptedTerms = v ?? false; _termsError = false; }),
+                onChanged: (v) => setState(() {
+                  _acceptedTerms = v ?? false;
+                  _termsError = false;
+                }),
               ),
             ),
             SizedBox(width: AppSpacing.sm),
@@ -258,9 +285,21 @@ class _RegisterViewState extends State<RegisterView> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('auth.terms_agreement'.tr(), style: AppTypography.arabicLabel(color: cs.onSurface, fontSize: 14)),
+                  Text(
+                    'auth.terms_agreement'.tr(),
+                    style: AppTypography.arabicLabel(
+                      color: cs.onSurface,
+                      fontSize: 14,
+                    ),
+                  ),
                   SizedBox(height: AppSpacing.xs),
-                  Text('auth.terms_description'.tr(), style: AppTypography.arabicCaption(color: cs.onSurfaceVariant, fontSize: 12)),
+                  Text(
+                    'auth.terms_description'.tr(),
+                    style: AppTypography.arabicCaption(
+                      color: cs.onSurfaceVariant,
+                      fontSize: 12,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -275,10 +314,16 @@ class _RegisterViewState extends State<RegisterView> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Text('auth.has_account'.tr(), style: AppTypography.arabicBody(color: cs.onSurfaceVariant)),
+        Text(
+          'auth.has_account'.tr(),
+          style: AppTypography.arabicBody(color: cs.onSurfaceVariant),
+        ),
         TextButton(
           onPressed: () => context.pop(),
-          child: Text('auth.already_have_account'.tr(), style: AppTypography.arabicLabel(color: cs.primary, fontSize: 14)),
+          child: Text(
+            'auth.already_have_account'.tr(),
+            style: AppTypography.arabicLabel(color: cs.primary, fontSize: 14),
+          ),
         ),
       ],
     );
