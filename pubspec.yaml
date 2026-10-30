@@ -139,19 +139,5 @@ flutter:
         - asset: assets/fonts/Thmanyah/thmanyahsans-Black.otf
           weight: 900
 
-    - family: Inter
-      fonts:
-        # Declared as the shipped static weights rather than the variable font:
-        # Flutter picks font files by weight/style, so a single variable file
-        # (no weight entries) always renders at 400 and bold never applies.
-        - asset: assets/fonts/Inter/static/Inter_18pt-Regular.ttf
-          weight: 400
-        - asset: assets/fonts/Inter/static/Inter_18pt-Medium.ttf
-          weight: 500
-        - asset: assets/fonts/Inter/static/Inter_18pt-SemiBold.ttf
-          weight: 600
-        - asset: assets/fonts/Inter/static/Inter_18pt-Bold.ttf
-          weight: 700
-        - asset: assets/fonts/Inter/static/Inter_18pt-Italic.ttf
-          weight: 400
-          style: italic
+    # Latin text and numbers use IBM Plex Mono; there is no separate Latin
+    # family. (assets/fonts/Inter/ is no longer declared, so it is not bundled.)

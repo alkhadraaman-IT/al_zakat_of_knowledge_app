@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/router/app_router.dart';
 import '../../../../app/theme/app_typography.dart';
 import '../../../../core/constants/app_spacing.dart';
+import '../../../../core/utils/directional_icons.dart';
 import '../bloc/auth_cubit.dart';
 import '../bloc/auth_state.dart';
 import '../widgets/auth_button.dart';
@@ -113,7 +114,10 @@ class _RegisterViewState extends State<RegisterView> {
                           alignment: AlignmentDirectional.centerStart,
                           child: IconButton(
                             onPressed: () => context.pop(),
-                            icon: Icon(Icons.arrow_back, color: cs.onSurface),
+                            icon: Icon(
+                              DirectionalIcons.back(context),
+                              color: cs.onSurface,
+                            ),
                             style: IconButton.styleFrom(
                               backgroundColor: cs.surfaceContainerLow,
                               shape: RoundedRectangleBorder(

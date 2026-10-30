@@ -5,6 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../../app/theme/app_typography.dart';
 import '../../../../core/utils/app_refresh.dart';
+import '../../../../core/utils/directional_icons.dart';
 import '../../../articles/presentation/widgets/create_article_sheet.dart';
 import '../../../study_tools/presentation/widgets/create_study_tool_sheet.dart';
 
@@ -153,7 +154,11 @@ class _Option extends StatelessWidget {
                   ],
                 ),
               ),
-              Icon(Icons.chevron_left, color: cs.onSurfaceVariant, size: 20.w),
+              Icon(
+                DirectionalIcons.forward(context),
+                color: cs.onSurfaceVariant,
+                size: 20.w,
+              ),
             ],
           ),
         ),

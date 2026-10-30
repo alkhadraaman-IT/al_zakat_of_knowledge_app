@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/router/app_router.dart';
 import '../../../../app/theme/app_typography.dart';
 import '../../../../core/constants/app_spacing.dart';
+import '../../../../core/utils/directional_icons.dart';
 import '../../../../core/theme/theme_cubit.dart';
 import '../../../auth/presentation/bloc/auth_cubit.dart';
 
@@ -247,7 +248,7 @@ class _SettingsItem extends StatelessWidget {
                 ),
               SizedBox(width: 8.w),
               Icon(
-                Icons.chevron_left,
+                DirectionalIcons.forward(context),
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
                 size: 20.w,
               ),

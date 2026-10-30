@@ -5,6 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../../../../app/theme/app_typography.dart';
+import '../../../../core/utils/directional_icons.dart';
 
 /// صفحة اختيار موقع المحاضرة على الخريطة.
 /// علامة ثابتة في منتصف الشاشة: يحرّك المستخدم الخريطة تحتها ثم يضغط "تأكيد".
@@ -42,6 +43,13 @@ class _PickLocationPageState extends State<PickLocationPage> {
 
     return Scaffold(
       appBar: AppBar(
+        // The automatic Material back button always points left, which is wrong
+        // for Arabic — pick the icon from the ambient direction instead.
+        leading: IconButton(
+          icon: Icon(DirectionalIcons.back(context)),
+          onPressed: () => Navigator.maybePop(context),
+          tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+        ),
         title: Text(
           'create.location_prompt'.tr(),
           style: AppTypography.arabicBody(color: cs.onSurface, fontSize: 18),

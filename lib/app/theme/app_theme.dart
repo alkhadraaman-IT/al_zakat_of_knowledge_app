@@ -287,23 +287,24 @@ class AppTheme {
   }
 
   static TextTheme _buildTextTheme() {
-    // Every entry explicitly carries the Thmanyah Arabic font family.
+    // Every entry resolves its family from AppTypography.uiFont: Thmanyah for
+    // Arabic and IBM Plex Mono for English/Latin text and numbers.
     return TextTheme(
-      displayLarge: AppTypography.arabicDisplay(color: AppColors.onSurface, fontSize: 34).copyWith(fontFamily: AppTypography.uiFont),
-      displayMedium: AppTypography.arabicDisplay(color: AppColors.onSurface, fontSize: 28).copyWith(fontFamily: AppTypography.uiFont),
-      displaySmall: AppTypography.arabicHeadline(color: AppColors.onSurface, fontSize: 24).copyWith(fontFamily: AppTypography.uiFont),
-      headlineLarge: AppTypography.arabicHeadline(color: AppColors.onSurface, fontSize: 26).copyWith(fontFamily: AppTypography.uiFont),
-      headlineMedium: AppTypography.arabicHeadline(color: AppColors.onSurface, fontSize: 20).copyWith(fontFamily: AppTypography.uiFont),
-      headlineSmall: AppTypography.arabicTitle(color: AppColors.onSurface, fontSize: 18).copyWith(fontFamily: AppTypography.uiFont),
-      titleLarge: AppTypography.arabicTitle(color: AppColors.onSurface, fontSize: 20).copyWith(fontFamily: AppTypography.uiFont),
-      titleMedium: AppTypography.arabicTitle(color: AppColors.onSurface, fontSize: 18).copyWith(fontFamily: AppTypography.uiFont),
-      titleSmall: AppTypography.arabicTitle(color: AppColors.onSurface, fontSize: 16).copyWith(fontFamily: AppTypography.uiFont),
-      bodyLarge: AppTypography.arabicBody(color: AppColors.onSurface, fontSize: 16).copyWith(fontFamily: AppTypography.uiFont),
-      bodyMedium: AppTypography.arabicBody(color: AppColors.onSurface, fontSize: 14).copyWith(fontFamily: AppTypography.uiFont),
-      bodySmall: AppTypography.arabicLabel(color: AppColors.onSurfaceVariant, fontSize: 12).copyWith(fontFamily: AppTypography.uiFont),
-      labelLarge: AppTypography.arabicLabel(color: AppColors.onSurfaceVariant, fontSize: 14).copyWith(fontFamily: AppTypography.uiFont),
-      labelMedium: AppTypography.arabicLabel(color: AppColors.onSurfaceVariant, fontSize: 12).copyWith(fontFamily: AppTypography.uiFont),
-      labelSmall: AppTypography.arabicCaption(color: AppColors.onSurfaceVariant, fontSize: 10).copyWith(fontFamily: AppTypography.uiFont),
+      displayLarge: AppTypography.arabicDisplay(color: AppColors.onSurface, fontSize: 34),
+      displayMedium: AppTypography.arabicDisplay(color: AppColors.onSurface, fontSize: 28),
+      displaySmall: AppTypography.arabicHeadline(color: AppColors.onSurface, fontSize: 24),
+      headlineLarge: AppTypography.arabicHeadline(color: AppColors.onSurface, fontSize: 26),
+      headlineMedium: AppTypography.arabicHeadline(color: AppColors.onSurface, fontSize: 20),
+      headlineSmall: AppTypography.arabicTitle(color: AppColors.onSurface, fontSize: 18),
+      titleLarge: AppTypography.arabicTitle(color: AppColors.onSurface, fontSize: 20),
+      titleMedium: AppTypography.arabicTitle(color: AppColors.onSurface, fontSize: 18),
+      titleSmall: AppTypography.arabicTitle(color: AppColors.onSurface, fontSize: 16),
+      bodyLarge: AppTypography.arabicBody(color: AppColors.onSurface, fontSize: 16),
+      bodyMedium: AppTypography.arabicBody(color: AppColors.onSurface, fontSize: 14),
+      bodySmall: AppTypography.arabicLabel(color: AppColors.onSurfaceVariant, fontSize: 12),
+      labelLarge: AppTypography.arabicLabel(color: AppColors.onSurfaceVariant, fontSize: 14),
+      labelMedium: AppTypography.arabicLabel(color: AppColors.onSurfaceVariant, fontSize: 12),
+      labelSmall: AppTypography.arabicCaption(color: AppColors.onSurfaceVariant, fontSize: 10),
     );
   }
 }

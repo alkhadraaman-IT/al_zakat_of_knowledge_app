@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../app/theme/app_typography.dart';
 import '../../core/constants/app_spacing.dart';
+import '../../core/utils/directional_icons.dart';
 
 /// المكون الموحد للشريط العلوي — متوافق مع كافة الاستدعاءات في المشروع
 class AppTopHeader extends StatelessWidget {
@@ -104,7 +105,7 @@ class AppTopHeader extends StatelessWidget {
                   width: 40.w,
                   height: 40.w,
                   child: Icon(
-                    Icons.arrow_back_ios_new,
+                    DirectionalIcons.backIos(context),
                     color: cs.onSurface,
                     size: 18.w,
                   ),

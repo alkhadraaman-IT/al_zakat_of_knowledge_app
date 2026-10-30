@@ -1,7 +1,4 @@
-// `hide TextDirection` — easy_localization re-exports package:intl,
-// which declares its own TextDirection class that shadows
-// Flutter's TextDirection enum (TextDirection.rtl).
-import 'package:easy_localization/easy_localization.dart' hide TextDirection;
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -78,7 +75,6 @@ class _AppSearchBarState extends State<AppSearchBar> {
                     vertical: 12.h,
                   ),
                 ),
-                textDirection: TextDirection.rtl,
                 onTap: widget.onTap,
               ),
             ),
