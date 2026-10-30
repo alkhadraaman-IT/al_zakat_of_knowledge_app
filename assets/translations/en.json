@@ -3,7 +3,7 @@
     "name": "Zakat Al-Ilm",
     "tagline": "Knowledge that benefits",
     "version": "v1.0.0",
-    "header_tagline": "Ongoing charity through your knowledge"
+    "header_tagline": "Ongoing charity"
   },
   "onboarding": {
     "title_1": "In-Person Lectures",
@@ -349,7 +349,10 @@
     "error_submit": "Could not submit report, please try again",
     "error_invalid_target": "The reported content is invalid",
     "error_permission": "You don't have permission to report",
-    "error_auth": "Please sign in first to report"
+    "error_auth": "Please sign in first to report",
+    "reason_misinformation": "Misleading or incorrect information",
+    "reason_plagiarism": "Plagiarized or copied content",
+    "reason_condition": "Item condition poor or not matching description"
   },
   "edit": {
     "title_label": "Session Title",
@@ -409,25 +412,7 @@
     "success": "Session created successfully",
     "error_publish": "Could not create session, please try again",
     "error_offline": "No internet connection",
-    "error_auth": "Please sign in first",
-    "location_hint": "Pick the session location on the map",
-    "location_set": "Location selected (tap to change)",
-    "location_required": "Please pick the session location on the map",
-    "location_too_far": "The selected location is far from {city} ({distance} km). Please verify.",
-    "date_past": "The session date must be in the future",
-    "seats_less_than_booked": "Seats cannot be fewer than current bookings ({count})",
-    "form_invalid": "Please correct the highlighted fields",
-    "timeout": "Timeout. Check your connection and try again",
-    "save_changes": "Save Changes",
-    "location_hint": "Pick the session location on the map",
-    "location_set": "Location selected (tap to change)",
-    "location_required": "Please pick the session location on the map",
-    "location_too_far": "The selected location is far from {city} ({distance} km). Please verify.",
-    "date_past": "The session date must be in the future",
-    "seats_less_than_booked": "Seats cannot be fewer than current bookings ({count})",
-    "form_invalid": "Please correct the highlighted fields",
-    "timeout": "Timeout. Check your connection and try again",
-    "save_changes": "Save Changes"
+    "error_auth": "Please sign in first"
   },
   "delete": {
     "title": "Delete Session",

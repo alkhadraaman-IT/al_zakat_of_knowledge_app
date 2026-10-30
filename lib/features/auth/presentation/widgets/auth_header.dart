@@ -6,13 +6,11 @@ import '../../../../app/theme/app_typography.dart';
 import '../../../../core/constants/app_spacing.dart';
 
 class AuthHeader extends StatelessWidget {
-  final IconData icon;
   final String title;
   final String subtitle;
 
   const AuthHeader({
     super.key,
-    required this.icon,
     required this.title,
     required this.subtitle,
   });
@@ -22,15 +20,13 @@ class AuthHeader extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     return Column(
       children: [
+        // الشعار (logo.png) — على خلفية بيضاء لأن اللوجو ملوّن
         Container(
           width: 88.w,
           height: 88.w,
+          padding: EdgeInsets.all(10.w),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [cs.primary, cs.primaryContainer],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
+            color: cs.primary.withAlpha(8),
             borderRadius: BorderRadius.circular(24.r),
             boxShadow: [
               BoxShadow(
@@ -40,7 +36,15 @@ class AuthHeader extends StatelessWidget {
               ),
             ],
           ),
-          child: Icon(icon, size: 44.w, color: cs.onPrimary),
+          child: Image.asset(
+            'assets/images/logo_app.png',
+            fit: BoxFit.contain,
+            errorBuilder: (context, error, stackTrace) => Icon(
+              Icons.school_outlined,
+              size: 44.w,
+              color: cs.primary,
+            ),
+          ),
         ),
         SizedBox(height: AppSpacing.lg),
         Text(

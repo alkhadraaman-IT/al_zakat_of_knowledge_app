@@ -31,6 +31,10 @@ class SupabaseSocketException implements Exception {
 /// Utility for applying strict timeouts to Supabase client calls
 /// and converting timeout/connection errors into typed exceptions
 /// that can be caught by the existing repository error handling.
+///
+/// ⚠️ قاعدة ذهبية: لا نلتقط `AuthException` هنا — نتركه يمر للـ repository
+/// ليحوّله إلى `AuthFailure` برسالة المستخدم الصحيحة (مثل
+/// "Invalid login credentials").
 extension SupabaseTimeoutExtension<T> on Future<T> {
   /// Applies a timeout and throws typed exceptions for
   /// timeout/connection errors.
@@ -49,6 +53,9 @@ extension SupabaseTimeoutExtension<T> on Future<T> {
       print('<<<<<<<<<<<[SocketException]>>>>>>>>>>>>>');
       print('Socket error: ${e.message} (OS error: ${e.osError?.errorCode})');
       throw SupabaseSocketException(e.message, osErrorCode: e.osError?.errorCode);
+    } on AuthException {
+      // 🛡️ دفاعي: لا تبتلع AuthException — مرّرها لطبقة الـ repository
+      rethrow;
     } on HttpException catch (e) {
       print('<<<<<<<<<<<[HttpException]>>>>>>>>>>>>>');
       print('HTTP error: ${e.message}');
@@ -72,6 +79,9 @@ extension SupabaseTimeoutExtension<T> on Future<T> {
       print('<<<<<<<<<<<[SocketException]>>>>>>>>>>>>>');
       print('Socket error: ${e.message} (OS error: ${e.osError?.errorCode})');
       throw SupabaseSocketException(e.message, osErrorCode: e.osError?.errorCode);
+    } on AuthException {
+      // 🛡️ دفاعي: مرّر AuthException كما هو ليصل إلى الـ repository
+      rethrow;
     } on HttpException catch (e) {
       print('<<<<<<<<<<<[HttpException]>>>>>>>>>>>>>');
       print('HTTP error: ${e.message}');
@@ -95,6 +105,9 @@ extension SupabaseTimeoutExtension<T> on Future<T> {
       print('<<<<<<<<<<<[SocketException]>>>>>>>>>>>>>');
       print('Socket error: ${e.message} (OS error: ${e.osError?.errorCode})');
       throw SupabaseSocketException(e.message, osErrorCode: e.osError?.errorCode);
+    } on AuthException {
+      // 🛡️ دفاعي
+      rethrow;
     } on HttpException catch (e) {
       print('<<<<<<<<<<<[HttpException]>>>>>>>>>>>>>');
       print('HTTP error: ${e.message}');
@@ -121,6 +134,9 @@ extension PostgrestTransformTimeoutExtension on PostgrestTransformBuilder {
       print('<<<<<<<<<<<[SocketException]>>>>>>>>>>>>>');
       print('Socket error: ${e.message} (OS error: ${e.osError?.errorCode})');
       throw SupabaseSocketException(e.message, osErrorCode: e.osError?.errorCode);
+    } on AuthException {
+      // 🛡️ دفاعي
+      rethrow;
     } on HttpException catch (e) {
       print('<<<<<<<<<<<[HttpException]>>>>>>>>>>>>>');
       print('HTTP error: ${e.message}');

@@ -24,7 +24,9 @@ class SessionMapCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: cs.surfaceContainerLow,
         borderRadius: BorderRadius.circular(16.r),
-        border: isLight ? Border.all(color: cs.outline.withValues(alpha: 0.3)) : null,
+        border: isLight
+            ? Border.all(color: cs.outline.withValues(alpha: 0.3))
+            : null,
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
@@ -36,7 +38,11 @@ class SessionMapCard extends StatelessWidget {
               height: 176.h,
               color: cs.surfaceContainerLowest,
               child: Center(
-                child: Icon(Icons.location_off, color: cs.onSurfaceVariant, size: 40.w),
+                child: Icon(
+                  Icons.location_off,
+                  color: cs.onSurfaceVariant,
+                  size: 40.w,
+                ),
               ),
             ),
           Padding(
@@ -44,12 +50,17 @@ class SessionMapCard extends StatelessWidget {
             child: Row(
               children: [
                 Container(
-                  width: 36.w, height: 36.w,
+                  width: 36.w,
+                  height: 36.w,
                   decoration: BoxDecoration(
                     color: cs.surfaceContainerHigh,
                     borderRadius: BorderRadius.circular(12.r),
                   ),
-                  child: Icon(Icons.place_outlined, color: cs.primary, size: 20.w),
+                  child: Icon(
+                    Icons.place_outlined,
+                    color: cs.primary,
+                    size: 20.w,
+                  ),
                 ),
                 SizedBox(width: 10.w),
                 Expanded(
@@ -58,12 +69,18 @@ class SessionMapCard extends StatelessWidget {
                     children: [
                       Text(
                         session.placeName,
-                        style: AppTypography.arabicTitle(color: cs.onSurface, fontSize: 14),
+                        style: AppTypography.arabicTitle(
+                          color: cs.onSurface,
+                          fontSize: 14,
+                        ),
                         overflow: TextOverflow.ellipsis,
                       ),
                       Text(
                         session.city,
-                        style: AppTypography.arabicBody(color: cs.onSurfaceVariant, fontSize: 12),
+                        style: AppTypography.arabicBody(
+                          color: cs.onSurfaceVariant,
+                          fontSize: 12,
+                        ),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ],
@@ -81,8 +98,13 @@ class SessionMapCard extends StatelessWidget {
                           onTap: () => _copyLocation(context),
                           borderRadius: BorderRadius.circular(10.r),
                           child: SizedBox(
-                            width: 36.w, height: 36.w,
-                            child: Icon(Icons.copy_rounded, color: cs.primary, size: 17.w),
+                            width: 36.w,
+                            height: 36.w,
+                            child: Icon(
+                              Icons.copy_rounded,
+                              color: cs.primary,
+                              size: 17.w,
+                            ),
                           ),
                         ),
                       ),
@@ -101,9 +123,19 @@ class SessionMapCard extends StatelessWidget {
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Text('session.directions'.tr(), style: AppTypography.arabicLabel(color: cs.primary, fontSize: 12)),
+                                Text(
+                                  'session.directions'.tr(),
+                                  style: AppTypography.arabicLabel(
+                                    color: cs.primary,
+                                    fontSize: 12,
+                                  ),
+                                ),
                                 SizedBox(width: 4.w),
-                                Icon(Icons.directions, color: cs.primary, size: 15.w),
+                                Icon(
+                                  Icons.directions,
+                                  color: cs.primary,
+                                  size: 15.w,
+                                ),
                               ],
                             ),
                           ),
@@ -131,7 +163,9 @@ class SessionMapCard extends StatelessWidget {
             options: MapOptions(
               initialCenter: point,
               initialZoom: 15,
-              interactionOptions: const InteractionOptions(flags: InteractiveFlag.none),
+              interactionOptions: const InteractionOptions(
+                flags: InteractiveFlag.none,
+              ),
               onTap: (_, _) => _openInMaps(),
             ),
             children: [
@@ -139,27 +173,70 @@ class SessionMapCard extends StatelessWidget {
                 urlTemplate: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
                 userAgentPackageName: 'com.example.al_zakat_of_knowledge_app',
                 maxNativeZoom: 19,
+                // 👇 بديل عند فشل التحميل
+                errorTileCallback: (tile, error, stackTrace) {},
               ),
               MarkerLayer(
                 markers: [
                   Marker(
-                    point: point, width: 48.w, height: 48.w,
+                    point: point,
+                    width: 48.w,
+                    height: 48.w,
                     alignment: Alignment.topCenter,
-                    child: Icon(Icons.location_on, color: cs.primary, size: 40.w),
+                    child: Icon(
+                      Icons.location_on,
+                      color: cs.primary,
+                      size: 40.w,
+                    ),
                   ),
                 ],
               ),
             ],
           ),
+          // زر "افتح في الخرائط" فوق الخريطة لو فشل tile loading
           Positioned(
-            right: 8.w, bottom: 6.h,
+            left: 8.w,
+            top: 8.h,
+            child: Material(
+              color: cs.surface.withValues(alpha: 0.85),
+              borderRadius: BorderRadius.circular(8.r),
+              child: InkWell(
+                onTap: _openInMaps,
+                borderRadius: BorderRadius.circular(8.r),
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.open_in_new, size: 12.w, color: cs.primary),
+                      SizedBox(width: 4.w),
+                      Text(
+                        'session.open_map'.tr(),
+                        style: AppTypography.arabicLabel(
+                          color: cs.primary,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          // attribution
+          Positioned(
+            right: 8.w,
+            bottom: 6.h,
             child: Container(
               padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
               decoration: BoxDecoration(
                 color: cs.surface.withValues(alpha: 0.8),
                 borderRadius: BorderRadius.circular(6.r),
               ),
-              child: Text('© Esri', style: TextStyle(fontSize: 10.sp, color: cs.onSurfaceVariant)),
+              child: Text(
+                '© Esri',
+                style: TextStyle(fontSize: 10.sp, color: cs.onSurfaceVariant),
+              ),
             ),
           ),
         ],
@@ -170,11 +247,16 @@ class SessionMapCard extends StatelessWidget {
   Future<void> _openInMaps() async {
     String url;
     if (session.lat != null && session.lng != null) {
-      url = 'https://www.google.com/maps/dir/?api=1&destination=${session.lat},${session.lng}';
+      url =
+          'https://www.google.com/maps/dir/?api=1&destination=${session.lat},${session.lng}';
     } else {
-      final query = [session.placeName, session.city].where((e) => e.isNotEmpty).join(' ');
+      final query = [
+        session.placeName,
+        session.city,
+      ].where((e) => e.isNotEmpty).join(' ');
       if (query.isEmpty) return;
-      url = 'https://www.google.com/maps/dir/?api=1&destination=${Uri.encodeComponent(query)}';
+      url =
+          'https://www.google.com/maps/dir/?api=1&destination=${Uri.encodeComponent(query)}';
     }
     try {
       await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
@@ -182,12 +264,17 @@ class SessionMapCard extends StatelessWidget {
   }
 
   Future<void> _copyLocation(BuildContext context) async {
-    final label = [session.placeName, session.city].where((e) => e.isNotEmpty).join('، ');
+    final label = [
+      session.placeName,
+      session.city,
+    ].where((e) => e.isNotEmpty).join('، ');
     String? url;
     if (session.lat != null && session.lng != null) {
-      url = 'https://www.google.com/maps/search/?api=1&query=${session.lat},${session.lng}';
+      url =
+          'https://www.google.com/maps/search/?api=1&query=${session.lat},${session.lng}';
     } else if (label.isNotEmpty) {
-      url = 'https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(label)}';
+      url =
+          'https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(label)}';
     }
     if (url == null) return;
 

@@ -39,9 +39,9 @@ class _LoginViewState extends State<LoginView> {
   void _onLogin() {
     if (_formKey.currentState?.validate() ?? false) {
       context.read<AuthCubit>().signInWithEmail(
-            email: _emailController.text.trim(),
-            password: _passwordController.text,
-          );
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+      );
     }
   }
 
@@ -57,10 +57,7 @@ class _LoginViewState extends State<LoginView> {
             context.go(AppRoutes.home);
           } else if (state is AuthError) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                backgroundColor: cs.error,
-              ),
+              SnackBar(content: Text(state.message), backgroundColor: cs.error),
             );
           }
         },
@@ -76,10 +73,7 @@ class _LoginViewState extends State<LoginView> {
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
-                      colors: [
-                        cs.surface,
-                        cs.primary.withValues(alpha: 0.05),
-                      ],
+                      colors: [cs.surface, cs.primary.withValues(alpha: 0.05)],
                     ),
                   ),
                 ),
@@ -97,7 +91,6 @@ class _LoginViewState extends State<LoginView> {
                       children: [
                         SizedBox(height: AppSpacing.xl.h),
                         const AuthHeader(
-                          icon: Icons.school_outlined,
                           title: 'auth.login',
                           subtitle: 'auth.login_subtitle',
                         ),
@@ -148,8 +141,10 @@ class _LoginViewState extends State<LoginView> {
             prefixIcon: Icons.email_outlined,
             textInputAction: TextInputAction.next,
             validator: (value) {
-              if (value == null || value.isEmpty) return 'validation.required'.tr();
-              if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+              if (value == null || value.isEmpty)
+                return 'validation.required'.tr();
+              if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
+                  .hasMatch(value)) {
                 return 'validation.invalid_email'.tr();
               }
               return null;
@@ -165,7 +160,8 @@ class _LoginViewState extends State<LoginView> {
             prefixIcon: Icons.lock_outline,
             textInputAction: TextInputAction.done,
             validator: (value) {
-              if (value == null || value.isEmpty) return 'validation.required'.tr();
+              if (value == null || value.isEmpty)
+                return 'validation.required'.tr();
               if (value.length < 8) return 'validation.password_short'.tr();
               return null;
             },
@@ -189,7 +185,10 @@ class _LoginViewState extends State<LoginView> {
         Expanded(child: Divider(color: cs.outline)),
         Padding(
           padding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
-          child: Text('auth.or'.tr(), style: AppTypography.arabicCaption(color: cs.onSurfaceVariant)),
+          child: Text(
+            'auth.or'.tr(),
+            style: AppTypography.arabicCaption(color: cs.onSurfaceVariant),
+          ),
         ),
         Expanded(child: Divider(color: cs.outline)),
       ],

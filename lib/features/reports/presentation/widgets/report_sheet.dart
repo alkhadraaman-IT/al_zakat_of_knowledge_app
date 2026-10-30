@@ -11,7 +11,6 @@ import '../../../auth/presentation/bloc/auth_state.dart';
 import '../cubit/report_cubit.dart';
 import '../cubit/report_state.dart';
 
-/// يعرض رسالة SnackBar بلون النجاح (أخضر).
 void _showSuccess(BuildContext context, String message) {
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(
@@ -21,14 +20,36 @@ void _showSuccess(BuildContext context, String message) {
   );
 }
 
-/// يعرض رسالة SnackBar بلون الخطأ (أحمر).
-void _showError(BuildContext context, String message) {
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text(message),
-      backgroundColor: Theme.of(context).colorScheme.error,
-    ),
-  );
+/// أسباب الإبلاغ تختلف حسب نوع الهدف.
+List<String> _reasonKeysFor(String targetType) {
+  switch (targetType) {
+    case 'session':
+      return [
+        'report.reason_content',
+        'report.reason_schedule',
+        'report.reason_inaccurate',
+        'report.reason_other',
+      ];
+    case 'article':
+      return [
+        'report.reason_content',
+        'report.reason_misinformation',
+        'report.reason_plagiarism',
+        'report.reason_other',
+      ];
+    case 'study_tool':
+      return [
+        'report.reason_content',
+        'report.reason_condition',
+        'report.reason_misinformation',
+        'report.reason_other',
+      ];
+    default:
+      return [
+        'report.reason_content',
+        'report.reason_other',
+      ];
+  }
 }
 
 Future<bool> showReportSheet({
@@ -49,7 +70,6 @@ Future<bool> showReportSheet({
   if (reported == true && context.mounted) {
     _showSuccess(context, 'report.success'.tr());
   }
-
   return reported ?? false;
 }
 
@@ -67,13 +87,7 @@ class _ReportSheet extends StatefulWidget {
 }
 
 class _ReportSheetState extends State<_ReportSheet> {
-  static const List<String> _reasonKeys = [
-    'report.reason_content',
-    'report.reason_schedule',
-    'report.reason_inaccurate',
-    'report.reason_other',
-  ];
-
+  late final List<String> _reasonKeys = _reasonKeysFor(widget.targetType);
   String? _selectedReasonKey;
   final _detailsController = TextEditingController();
   String? _formError;
@@ -138,12 +152,9 @@ class _ReportSheetState extends State<_ReportSheet> {
         if (state is ReportSuccess) {
           Navigator.pop(ctx, true);
         } else if (state is ReportError) {
-          // استخراج الأخطاء عبر Failure
-          final failure = ServerFailure(
-            message: state.message,
-            code: state.code,
-          );
-          setState(() => _formError = _friendlyError(failure));
+          setState(() => _formError = _friendlyError(
+                ServerFailure(message: state.message, code: state.code),
+              ));
         }
       },
       builder: (ctx, state) {
@@ -191,7 +202,6 @@ class _ReportSheetState extends State<_ReportSheet> {
                     ),
                   ),
                   SizedBox(height: 12.h),
-
                   RadioGroup<String>(
                     groupValue: _selectedReasonKey,
                     onChanged: isSubmitting
@@ -219,7 +229,6 @@ class _ReportSheetState extends State<_ReportSheet> {
                       }).toList(),
                     ),
                   ),
-
                   if (_selectedReasonKey == 'report.reason_other')
                     Padding(
                       padding: EdgeInsets.only(top: 12.h),
@@ -247,7 +256,6 @@ class _ReportSheetState extends State<_ReportSheet> {
                         ),
                       ),
                     ),
-
                   if (_formError != null) ...[
                     SizedBox(height: 12.h),
                     Container(
@@ -265,9 +273,7 @@ class _ReportSheetState extends State<_ReportSheet> {
                       ),
                     ),
                   ],
-
                   SizedBox(height: 20.h),
-
                   Material(
                     color: isSubmitting
                         ? cs.surfaceContainerHighest

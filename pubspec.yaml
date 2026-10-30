@@ -70,14 +70,15 @@ dev_dependencies:
   mocktail: ^1.0.5
   hive_ce_generator: ^1.11.1
   bloc_test: ^10.0.0
+  rename: ^3.1.0
 
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "assets/images/logo.png"
-  image_path_ios: "assets/images/logo.png"
-  adaptive_icon_background: "#FFFFFF"
-  adaptive_icon_foreground: "assets/images/logo.png"
+  image_path: "assets/images/logo_app.png"
+  image_path_ios: "assets/images/logo_app.png"
+  adaptive_icon_background: "#102c3a"
+  adaptive_icon_foreground: "assets/images/logo_app.png"
   remove_alpha_ios: true
 
 flutter:

@@ -278,15 +278,27 @@ class _EditSessionSheetState extends State<_EditSessionSheet> {
                         ),
                       ),
                     ),
-                    Text(
-                      'session.edit_title'.tr(),
-                      style: AppTypography.arabicHeadline(
-                        color: cs.onSurface,
-                        fontSize: 20,
-                      ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'session.edit_title'.tr(),
+                            style: AppTypography.arabicHeadline(
+                              color: cs.onSurface,
+                              fontSize: 20,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          tooltip: 'common.close'.tr(),
+                          icon: Icon(Icons.close, color: cs.onSurfaceVariant),
+                          onPressed: _isSubmitting
+                              ? null
+                              : () => Navigator.pop(context, false),
+                        ),
+                      ],
                     ),
                     SizedBox(height: 20.h),
-
                     SessionFormTextField(
                       label: 'create.title_label'.tr(),
                       hint: 'create.title_hint'.tr(),

@@ -84,11 +84,9 @@ class _CreateSessionSheetState extends State<_CreateSessionSheet> {
     }
     final initial = _pickedLocation ?? SyrianCities.centerOf(_selectedCity);
     final result = await Navigator.of(context).push<LatLng>(
-      MaterialPageRoute(
-        builder: (_) => PickLocationPage(initial: initial),
-      ),
+      MaterialPageRoute(builder: (_) => PickLocationPage(initial: initial)),
     );
-    if (!mounted) return;  // ✅ إصلاح use_build_context_synchronously
+    if (!mounted) return; // ✅ إصلاح use_build_context_synchronously
     if (result != null) {
       setState(() {
         _pickedLocation = result;
@@ -106,7 +104,7 @@ class _CreateSessionSheetState extends State<_CreateSessionSheet> {
     if (mounted) setState(() => _formError = null);
 
     final isConnected = await sl<NetworkInfo>().isConnected;
-    if (!mounted) return;  // ✅ إصلاح use_build_context_synchronously
+    if (!mounted) return; // ✅ إصلاح use_build_context_synchronously
     if (!isConnected) {
       _showMessage('create.error_offline'.tr());
       return;
@@ -145,10 +143,12 @@ class _CreateSessionSheetState extends State<_CreateSessionSheet> {
       );
       if (distance > 100) {
         _showMessage(
-          'create.location_too_far'.tr(namedArgs: {
-            'city': _selectedCity!,
-            'distance': distance.toStringAsFixed(0),
-          }),
+          'create.location_too_far'.tr(
+            namedArgs: {
+              'city': _selectedCity!,
+              'distance': distance.toStringAsFixed(0),
+            },
+          ),
         );
         return;
       }
@@ -177,19 +177,18 @@ class _CreateSessionSheetState extends State<_CreateSessionSheet> {
     });
 
     context.read<SessionCubit>().createSession(
-          publisherId: authState.user.id,
-          title: _titleController.text.trim(),
-          description: _descriptionController.text.trim(),
-          categoryId: _selectedCategoryId!,
-          city: _selectedCity!,
-          placeName: _placeController.text.trim(),
-          startsAt: startLocal.toUtc().toIso8601String(),
-          durationMinutes:
-              int.tryParse(_durationController.text.trim()) ?? 90,
-          maxSeats: int.tryParse(_seatsController.text.trim()) ?? 30,
-          lat: _pickedLocation!.latitude,
-          lng: _pickedLocation!.longitude,
-        );
+      publisherId: authState.user.id,
+      title: _titleController.text.trim(),
+      description: _descriptionController.text.trim(),
+      categoryId: _selectedCategoryId!,
+      city: _selectedCity!,
+      placeName: _placeController.text.trim(),
+      startsAt: startLocal.toUtc().toIso8601String(),
+      durationMinutes: int.tryParse(_durationController.text.trim()) ?? 90,
+      maxSeats: int.tryParse(_seatsController.text.trim()) ?? 30,
+      lat: _pickedLocation!.latitude,
+      lng: _pickedLocation!.longitude,
+    );
   }
 
   @override
@@ -207,8 +206,9 @@ class _CreateSessionSheetState extends State<_CreateSessionSheet> {
       },
       builder: (context, state) {
         return Padding(
-          padding:
-              EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
           child: Container(
             decoration: BoxDecoration(
               color: cs.surface,
@@ -233,12 +233,25 @@ class _CreateSessionSheetState extends State<_CreateSessionSheet> {
                         ),
                       ),
                     ),
-                    Text(
-                      'create.session_title'.tr(),
-                      style: AppTypography.arabicHeadline(
-                        color: cs.onSurface,
-                        fontSize: 20,
-                      ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'create.session_title'.tr(),
+                            style: AppTypography.arabicHeadline(
+                              color: cs.onSurface,
+                              fontSize: 20,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          tooltip: 'common.close'.tr(),
+                          icon: Icon(Icons.close, color: cs.onSurfaceVariant),
+                          onPressed: _isSubmitting
+                              ? null
+                              : () => Navigator.pop(context, false),
+                        ),
+                      ],
                     ),
                     SizedBox(height: 20.h),
 
@@ -264,10 +277,9 @@ class _CreateSessionSheetState extends State<_CreateSessionSheet> {
                       hint: 'create.description_hint'.tr(),
                       controller: _descriptionController,
                       maxLines: 3,
-                      validator: (v) =>
-                          (v == null || v.trim().isEmpty)
-                              ? 'create.description_required'.tr()
-                              : null,
+                      validator: (v) => (v == null || v.trim().isEmpty)
+                          ? 'create.description_required'.tr()
+                          : null,
                     ),
                     SizedBox(height: 12.h),
 
@@ -292,8 +304,7 @@ class _CreateSessionSheetState extends State<_CreateSessionSheet> {
 
                     SessionCityDropdown(
                       selectedCity: _selectedCity,
-                      onChanged: (v) =>
-                          setState(() => _selectedCity = v),
+                      onChanged: (v) => setState(() => _selectedCity = v),
                     ),
                     SizedBox(height: 12.h),
 
@@ -301,10 +312,9 @@ class _CreateSessionSheetState extends State<_CreateSessionSheet> {
                       label: 'create.place_label'.tr(),
                       hint: 'create.place_hint'.tr(),
                       controller: _placeController,
-                      validator: (v) =>
-                          (v == null || v.trim().isEmpty)
-                              ? 'create.place_required'.tr()
-                              : null,
+                      validator: (v) => (v == null || v.trim().isEmpty)
+                          ? 'create.place_required'.tr()
+                          : null,
                     ),
                     SizedBox(height: 12.h),
 
@@ -336,17 +346,14 @@ class _CreateSessionSheetState extends State<_CreateSessionSheet> {
                     SessionDateTimePicker(
                       selectedDate: _selectedDate,
                       selectedTime: _selectedTime,
-                      onDateChanged: (d) =>
-                          setState(() => _selectedDate = d),
-                      onTimeChanged: (t) =>
-                          setState(() => _selectedTime = t),
+                      onDateChanged: (d) => setState(() => _selectedDate = d),
+                      onTimeChanged: (t) => setState(() => _selectedTime = t),
                     ),
                     SizedBox(height: 12.h),
 
                     SessionCategoryDropdown(
                       selectedCategoryId: _selectedCategoryId,
-                      onChanged: (v) =>
-                          setState(() => _selectedCategoryId = v),
+                      onChanged: (v) => setState(() => _selectedCategoryId = v),
                     ),
 
                     if (_formError != null) ...[

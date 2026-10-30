@@ -50,7 +50,7 @@ class AppTopHeader extends StatelessWidget {
             child: ClipRRect(
               borderRadius: BorderRadius.circular(12.r),
               child: Image.asset(
-                'assets/images/logo.png', // تأكد من مسار شعار التطبيق لديك
+                'assets/images/logo_app.png', // تأكد من مسار شعار التطبيق لديك
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) {
                   return Icon(

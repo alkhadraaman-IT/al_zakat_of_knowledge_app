@@ -13,6 +13,12 @@ import '../models/profile_model.dart';
 import '../models/user_model.dart';
 
 /// Implementation of [AuthRepository] using Supabase remote + Hive local.
+///
+/// ملاحظة: لا نعتمد على `networkInfo.isConnected` كفحص مسبق لعمليات
+/// المصادقة، لأن `connectivity_plus` قد يُرجع `false` مؤقتًا فيَمنع
+/// إظهار الخطأ الحقيقي (بيانات دخول خاطئة). الطلب الفعلي سيرمي
+/// `SocketException`/`TimeoutException` إن لم يوجد اتصال فعلاً،
+/// ونعالج ذلك في الـ catch.
 class AuthRepositoryImpl implements AuthRepository {
   final AuthRemoteDataSource remoteDataSource;
   final AuthLocalDataSource localDataSource;
@@ -30,10 +36,6 @@ class AuthRepositoryImpl implements AuthRepository {
     required String password,
   }) async {
     print('<<<<<<<<<<<[signInWithEmailAndPassword]>>>>>>>>>>>>>');
-    if (!await networkInfo.isConnected) {
-      return const Left(NetworkFailure(message: 'No internet connection'));
-    }
-
     try {
       final user = await remoteDataSource.signInWithEmailAndPassword(
         email: email,
@@ -43,14 +45,18 @@ class AuthRepositoryImpl implements AuthRepository {
       await _syncProfile(user.id);
       return Right(user);
     } on AuthException catch (e) {
+      print('🟢 [signIn] AuthException: ${e.message} (code: ${e.statusCode})');
       return Left(AuthFailure(message: e.message, code: e.statusCode));
-    } on SupabaseTimeoutException catch (_) {
-      print('<<<<<<<<<<<[signInWithEmailAndPassword Timeout]>>>>>>>>>>>>>');
-      return Left(NetworkFailure(message: 'Network request timed out. Please check your connection.'));
-    } on SupabaseSocketException catch (_) {
-      print('<<<<<<<<<<<[signInWithEmailAndPassword SocketException]>>>>>>>>>>>>>');
+    } on SupabaseTimeoutException catch (e) {
+      print('🔴 [signIn] Timeout: ${e.operationName} after ${e.timeout.inSeconds}s');
+      return Left(NetworkFailure(
+        message: 'Network request timed out. Please check your connection.',
+      ));
+    } on SupabaseSocketException catch (e) {
+      print('🟠 [signIn] SocketException: ${e.message}');
       return Left(NetworkFailure(message: 'Network error'));
-    } catch (_) {
+    } catch (e) {
+      print('⚫ [signIn] Unknown error: $e');
       return Left(ServerFailure(message: 'Server error'));
     }
   }
@@ -63,10 +69,6 @@ class AuthRepositoryImpl implements AuthRepository {
     required String university,
   }) async {
     print('<<<<<<<<<<<[signUpWithEmailAndPassword]>>>>>>>>>>>>>');
-    if (!await networkInfo.isConnected) {
-      return const Left(NetworkFailure(message: 'No internet connection'));
-    }
-
     try {
       final user = await remoteDataSource.signUpWithEmailAndPassword(
         email: email,
@@ -78,57 +80,40 @@ class AuthRepositoryImpl implements AuthRepository {
       await _syncProfile(user.id);
       return Right(user);
     } on AuthException catch (e) {
+      print('🟢 [signUp] AuthException: ${e.message} (code: ${e.statusCode})');
       return Left(AuthFailure(message: e.message, code: e.statusCode));
-    } on SupabaseTimeoutException catch (_) {
-      print('<<<<<<<<<<<[signUpWithEmailAndPassword Timeout]>>>>>>>>>>>>>');
-      return Left(NetworkFailure(message: 'Network request timed out. Please check your connection.'));
-    } on SupabaseSocketException catch (_) {
-      print('<<<<<<<<<<<[signUpWithEmailAndPassword SocketException]>>>>>>>>>>>>>');
+    } on SupabaseTimeoutException catch (e) {
+      print('🔴 [signUp] Timeout: ${e.operationName} after ${e.timeout.inSeconds}s');
+      return Left(NetworkFailure(
+        message: 'Network request timed out. Please check your connection.',
+      ));
+    } on SupabaseSocketException catch (e) {
+      print('🟠 [signUp] SocketException: ${e.message}');
       return Left(NetworkFailure(message: 'Network error'));
-    } catch (_) {
+    } catch (e) {
+      print('⚫ [signUp] Unknown error: $e');
       return Left(ServerFailure(message: 'Server error'));
     }
   }
 
   // @override
-  // Future<Either<Failure, UserEntity>> signInWithGoogle() async {
-  //   print('<<<<<<<<<<<[signInWithGoogle]>>>>>>>>>>>>>');
-  //   if (!await networkInfo.isConnected) {
-  //     return const Left(NetworkFailure(message: 'No internet connection'));
-  //   }
-
-  //   try {
-  //     final user = await remoteDataSource.signInWithGoogle();
-  //     await localDataSource.cacheUser(UserModel.fromSupabase(user.toJson()));
-  //     await _syncProfile(user.id);
-  //     return Right(user);
-  //   } on AuthException catch (e) {
-  //     return Left(AuthFailure(message: e.message, code: e.statusCode));
-  //   } on SupabaseTimeoutException catch (_) {
-  //     print('<<<<<<<<<<<[signInWithGoogle Timeout]>>>>>>>>>>>>>');
-  //     return Left(NetworkFailure(message: 'Network request timed out. Please check your connection.'));
-  //   } on SupabaseSocketException catch (_) {
-  //     print('<<<<<<<<<<<[signInWithGoogle SocketException]>>>>>>>>>>>>>');
-  //     return Left(NetworkFailure(message: 'Network error'));
-  //   } catch (_) {
-  //     return Left(ServerFailure(message: 'Server error'));
-  //   }
-  // }
+  // Future<Either<Failure, UserEntity>> signInWithGoogle() async { ... }
 
   @override
-Future<Either<Failure, void>> signOut() async {
-  try {
-    // 👈 لا ننتظر حذف الجهاز (يفضل أن يكون في الخلفية لتسريع الخروج)
-    remoteDataSource.deleteDeviceRow().ignore(); 
-    
-    await remoteDataSource.signOut();
-    await localDataSource.clearCachedUser();
-    await localDataSource.clearCachedProfile();
-    return const Right(null);
-  } catch (_) {
-    return const Left(ServerFailure(message: 'Server error'));
+  Future<Either<Failure, void>> signOut() async {
+    try {
+      // لا ننتظر حذف صف الجهاز — يفعل في الخلفية لتسريع الخروج
+      remoteDataSource.deleteDeviceRow().ignore();
+
+      await remoteDataSource.signOut();
+      await localDataSource.clearCachedUser();
+      await localDataSource.clearCachedProfile();
+      return const Right(null);
+    } catch (e) {
+      print('⚫ [signOut] Error: $e');
+      return const Left(ServerFailure(message: 'Server error'));
+    }
   }
-}
 
   @override
   Future<Either<Failure, ProfileEntity>> updateProfile(
@@ -146,14 +131,18 @@ Future<Either<Failure, void>> signOut() async {
       await localDataSource.cacheProfile(updated);
       return Right(updated);
     } on AuthException catch (e) {
+      print('🟢 [updateProfile] AuthException: ${e.message}');
       return Left(AuthFailure(message: e.message, code: e.statusCode));
-    } on SupabaseTimeoutException catch (_) {
-      print('<<<<<<<<<<<[updateProfile Timeout]>>>>>>>>>>>>>');
-      return Left(NetworkFailure(message: 'Network request timed out. Please check your connection.'));
-    } on SupabaseSocketException catch (_) {
-      print('<<<<<<<<<<<[updateProfile SocketException]>>>>>>>>>>>>>');
+    } on SupabaseTimeoutException catch (e) {
+      print('🔴 [updateProfile] Timeout: ${e.operationName}');
+      return Left(NetworkFailure(
+        message: 'Network request timed out. Please check your connection.',
+      ));
+    } on SupabaseSocketException catch (e) {
+      print('🟠 [updateProfile] SocketException: ${e.message}');
       return Left(NetworkFailure(message: 'Network error'));
-    } catch (_) {
+    } catch (e) {
+      print('⚫ [updateProfile] Unknown error: $e');
       return Left(ServerFailure(message: 'Server error'));
     }
   }
@@ -167,13 +156,12 @@ Future<Either<Failure, void>> signOut() async {
         return Right(await localDataSource.getCachedProfile());
       }
 
-      // Fresh fetch — fall back to the cached row
-      // when offline or the row does not exist yet.
       try {
         final profile = await remoteDataSource.fetchProfile(remoteUser.id);
         await localDataSource.cacheProfile(profile);
         return Right(profile);
       } catch (e) {
+        print('🟠 [getCurrentProfile] fetch failed, fallback to cache: $e');
         return Right(await localDataSource.getCachedProfile());
       }
     } catch (e) {
@@ -181,11 +169,9 @@ Future<Either<Failure, void>> signOut() async {
     }
   }
 
-  /// Best-effort sync of the logged-in user's `profiles` row.
-  ///
-  /// A missing profile row (e.g. one created asynchronously by a
-  /// database trigger) must never fail the sign-in flow — the sync
-  /// is skipped in that case and the cached profile stays absent.
+  /// مزامنة صف `profiles` للمستخدم الحالي (أفضل جهد ممكن).
+  /// فشل المزامنة (مثلاً الصف لم يُنشأ بعد بواسطة trigger) لا يجب أن
+  /// يفشل تسجيل الدخول — يُتجاهل الخطأ.
   Future<void> _syncProfile(String userId) async {
     print('<<<<<<<<<<<[_syncProfile]>>>>>>>>>>>>>');
     try {
@@ -193,12 +179,10 @@ Future<Either<Failure, void>> signOut() async {
       await localDataSource.cacheProfile(profile);
     } on SupabaseTimeoutException catch (_) {
       print('<<<<<<<<<<<[_syncProfile Timeout]>>>>>>>>>>>>>');
-      // Non-fatal: the profile row may not exist yet or network timed out.
     } on SupabaseSocketException catch (_) {
       print('<<<<<<<<<<<[_syncProfile SocketException]>>>>>>>>>>>>>');
-      // Non-fatal: network error.
-    } catch (_) {
-      // Non-fatal: the profile row may not exist yet.
+    } catch (e) {
+      print('<<<<<<<<<<<[_syncProfile Error: $e]>>>>>>>>>>>>>');
     }
   }
 
@@ -206,21 +190,16 @@ Future<Either<Failure, void>> signOut() async {
   Future<Either<Failure, UserEntity?>> getCurrentUser() async {
     print('<<<<<<<<<<<[getCurrentUser]>>>>>>>>>>>>>');
     try {
-      // Try remote first
       final remoteUser = remoteDataSource.getCurrentSupabaseUser();
       if (remoteUser != null) {
-        // Keep the Hive cache in sync with the live session: a
-        // cold-start deep link restores the session without
-        // running a sign-in use case, so the cache would
-        // otherwise stay empty until the next sign-in.
         await localDataSource.cacheUser(remoteUser);
         return Right(remoteUser);
       }
 
-      // Fallback to local cache
       final localUser = await localDataSource.getCachedUser();
       return Right(localUser);
-    } catch (_) {
+    } catch (e) {
+      print('⚫ [getCurrentUser] Error: $e');
       return Left(CacheFailure(message: 'Cache error'));
     }
   }
@@ -230,13 +209,12 @@ Future<Either<Failure, void>> signOut() async {
     print('<<<<<<<<<<<[isAuthenticated]>>>>>>>>>>>>>');
     try {
       final remoteUser = remoteDataSource.getCurrentSupabaseUser();
-      if (remoteUser != null) {
-        return const Right(true);
-      }
+      if (remoteUser != null) return const Right(true);
 
       final isLoggedIn = await localDataSource.isLoggedIn();
       return Right(isLoggedIn);
-    } catch (_) {
+    } catch (e) {
+      print('⚫ [isAuthenticated] Error: $e');
       return Left(CacheFailure(message: 'Cache error'));
     }
   }
@@ -244,20 +222,22 @@ Future<Either<Failure, void>> signOut() async {
   @override
   Future<Either<Failure, void>> resetPassword({required String email}) async {
     print('<<<<<<<<<<<[resetPassword]>>>>>>>>>>>>>');
-    if (!await networkInfo.isConnected) {
-      return const Left(NetworkFailure(message: 'No internet connection'));
-    }
-
     try {
       await remoteDataSource.resetPassword(email: email);
       return const Right(null);
-    } on SupabaseTimeoutException catch (_) {
-      print('<<<<<<<<<<<[resetPassword Timeout]>>>>>>>>>>>>>');
-      return Left(NetworkFailure(message: 'Network request timed out. Please check your connection.'));
-    } on SupabaseSocketException catch (_) {
-      print('<<<<<<<<<<<[resetPassword SocketException]>>>>>>>>>>>>>');
+    } on AuthException catch (e) {
+      print('🟢 [resetPassword] AuthException: ${e.message}');
+      return Left(AuthFailure(message: e.message, code: e.statusCode));
+    } on SupabaseTimeoutException catch (e) {
+      print('🔴 [resetPassword] Timeout: ${e.operationName}');
+      return Left(NetworkFailure(
+        message: 'Network request timed out. Please check your connection.',
+      ));
+    } on SupabaseSocketException catch (e) {
+      print('🟠 [resetPassword] SocketException: ${e.message}');
       return Left(NetworkFailure(message: 'Network error'));
-    } catch (_) {
+    } catch (e) {
+      print('⚫ [resetPassword] Unknown error: $e');
       return Left(ServerFailure(message: 'Server error'));
     }
   }
@@ -271,6 +251,4 @@ Future<Either<Failure, void>> signOut() async {
       return UserModel.fromSupabase(user.toJson());
     });
   }
-
-
 }

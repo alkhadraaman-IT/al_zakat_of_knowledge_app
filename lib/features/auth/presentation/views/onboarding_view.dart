@@ -54,7 +54,6 @@ class _OnboardingViewState extends State<OnboardingView> {
   void _onPageChanged(int page) => setState(() => _currentPage = page);
 
   Future<void> _completeOnboarding() async {
-    // ✅ نستخدم AuthLocalDataSource (نفس الـ key الذي يفحصه Splash)
     await sl<AuthLocalDataSource>().setOnboardingCompleted(true);
     if (!mounted) return;
     context.go(AppRoutes.login);
@@ -97,12 +96,27 @@ class _OnboardingViewState extends State<OnboardingView> {
       ),
       child: Row(
         children: [
-          Icon(
-            Icons.lightbulb_outline_rounded,
-            color: cs.primary,
-            size: 26.w,
+          // 👇 الشعار (logo.png) بدل الأيقونة
+          Container(
+            width: 36.w,
+            height: 36.w,
+            padding: EdgeInsets.all(4.w),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(10.r),
+              border: Border.all(color: cs.outline.withValues(alpha: 0.2)),
+            ),
+            child: Image.asset(
+              'assets/images/logo_app.png',
+              fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) => Icon(
+                Icons.lightbulb_outline_rounded,
+                color: cs.primary,
+                size: 20.w,
+              ),
+            ),
           ),
-          SizedBox(width: 8.w),
+          SizedBox(width: 10.w),
           Text(
             'زكاة العلم',
             style: AppTypography.arabicTitle(

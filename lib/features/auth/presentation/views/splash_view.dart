@@ -165,10 +165,10 @@ class _SplashViewState extends State<SplashView>
             child: Padding(
               padding: EdgeInsets.all(14.w),
               child: Image.asset(
-                'assets/images/logo_white.png',
+                'assets/images/logo_app_white.png',
                 fit: BoxFit.contain,
                 errorBuilder: (context, error, stackTrace) => Icon(
-                  Icons.school_outlined,
+                  Icons.lightbulb_outline_rounded,
                   size: 54.w,
                   color: Colors.white,
                 ),

@@ -4,11 +4,9 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../../app/theme/app_typography.dart';
 import '../../../../core/utils/app_refresh.dart';
+import '../../../articles/presentation/widgets/create_article_sheet.dart';
 import '../../../study_tools/presentation/widgets/create_study_tool_sheet.dart';
 
-/// Content type selector bottom sheet.
-/// Optional [onArticleCreated] callback is invoked after a
-/// successful article publication (dua dialog dismissed).
 void showContentTypeSelector(
   BuildContext context, {
   VoidCallback? onArticleCreated,
@@ -61,7 +59,6 @@ void showContentTypeSelector(
               onTap: () async {
                 Navigator.pop(sheetContext);
                 final created = await showCreateSessionSheet(context);
-                // بعد النجاح تُعاد المحاضرات تلقائياً في الرئيسية.
                 if (created) AppRefresh.refreshSessions();
               },
             ),
@@ -73,7 +70,7 @@ void showContentTypeSelector(
               cs: cs,
               onTap: () {
                 Navigator.pop(sheetContext);
-                showCreateToolSheet(context); // ✅
+                showCreateArticleSheet(context, onSuccess: onArticleCreated);  // 👈 التصحيح
               },
             ),
             SizedBox(height: 12.h),

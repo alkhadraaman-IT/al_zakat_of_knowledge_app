@@ -271,7 +271,7 @@ class SearchCubit extends Cubit<SearchState> {
           _norm(t.pickupPlace).contains(q) ||
           _norm(t.pickupNotes).contains(q);
       final matchesAvailability =
-          _isAvailable == null || t.isTaken == _isAvailable;
+    _isAvailable == null || t.isTaken != _isAvailable;
       final matchesCategory =
           categoryFilter == null || t.categoryId == categoryFilter;
       return matchesQuery && matchesAvailability && matchesCategory;

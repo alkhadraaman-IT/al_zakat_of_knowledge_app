@@ -124,7 +124,6 @@ class _RegisterViewState extends State<RegisterView> {
                         ),
                         SizedBox(height: AppSpacing.lg),
                         const AuthHeader(
-                          icon: Icons.person_add_outlined,
                           title: 'auth.sign_up',
                           subtitle: 'auth.create_new_account',
                         ),

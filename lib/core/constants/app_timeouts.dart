@@ -15,7 +15,7 @@ class AppTimeouts {
 
   /// Per-call timeout for Supabase PostgREST / Storage / Auth requests.
   /// Matches the HTTP client connection timeout to avoid race conditions.
-  static const Duration call = Duration(seconds: 10);
+  static const Duration call = Duration(seconds: 20);
 
   /// Timeout for storage uploads (larger files may need more time).
   static const Duration storageUpload = Duration(seconds: 30);
