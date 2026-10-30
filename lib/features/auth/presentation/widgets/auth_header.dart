@@ -22,8 +22,8 @@ class AuthHeader extends StatelessWidget {
       children: [
         // الشعار (logo.png) — على خلفية بيضاء لأن اللوجو ملوّن
         Container(
-          width: 88.w,
-          height: 88.w,
+          width: 100.w,
+          height: 100.w,
           padding: EdgeInsets.all(10.w),
           decoration: BoxDecoration(
             color: cs.primary.withAlpha(8),

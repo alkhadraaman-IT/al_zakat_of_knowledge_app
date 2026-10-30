@@ -9,6 +9,7 @@ import '../../../../app/theme/app_typography.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/theme/theme_cubit.dart';
 import '../../../auth/presentation/bloc/auth_cubit.dart';
+import '../../../auth/presentation/widgets/logout_confirmation_dialog.dart';
 
 class ProfileSettingsSection extends StatelessWidget {
   const ProfileSettingsSection({super.key});
@@ -43,9 +44,14 @@ class ProfileSettingsSection extends StatelessWidget {
                       return Switch.adaptive(
                         value: themeState == ThemeModeState.dark,
                         activeThumbColor: Theme.of(context).colorScheme.primary,
-                        activeTrackColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
-                        inactiveThumbColor: Theme.of(context).colorScheme.onSurfaceVariant,
-                        inactiveTrackColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                        activeTrackColor: Theme.of(context).colorScheme.primary
+                            .withValues(alpha: 0.3),
+                        inactiveThumbColor: Theme.of(context)
+                            .colorScheme
+                            .onSurfaceVariant,
+                        inactiveTrackColor: Theme.of(context)
+                            .colorScheme
+                            .surfaceContainerHighest,
                         onChanged: (_) {
                           context.read<ThemeCubit>().toggleTheme();
                         },
@@ -54,7 +60,8 @@ class ProfileSettingsSection extends StatelessWidget {
                   ),
                 ),
                 Divider(
-                  color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+                  color: Theme.of(context).colorScheme.outline
+                      .withValues(alpha: 0.3),
                   height: 1,
                   indent: 56.w,
                 ),
@@ -67,7 +74,8 @@ class ProfileSettingsSection extends StatelessWidget {
                   onTap: () => _showLanguageSheet(context),
                 ),
                 Divider(
-                  color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+                  color: Theme.of(context).colorScheme.outline
+                      .withValues(alpha: 0.3),
                   height: 1,
                   indent: 56.w,
                 ),
@@ -188,13 +196,16 @@ class ProfileSettingsSection extends StatelessWidget {
           fontSize: 15,
         ),
       ),
-      trailing: isSelected ? Icon(Icons.check, color: cs.primary, size: 22.w) : null,
+      trailing: isSelected
+          ? Icon(Icons.check, color: cs.primary, size: 22.w)
+          : null,
     );
   }
 
-  void _handleLogout(BuildContext context) {
-    context.read<AuthCubit>().signOut();
-    // context.go(AppRoutes.login);
+  Future<void> _handleLogout(BuildContext context) async {
+    final confirmed = await showLogoutConfirmation(context);
+    if (!confirmed || !context.mounted) return;
+    await context.read<AuthCubit>().signOut();
   }
 }
 
@@ -233,7 +244,8 @@ class _SettingsItem extends StatelessWidget {
           fontSize: 16,
         ),
       ),
-      trailing: trailing ??
+      trailing:
+          trailing ??
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [

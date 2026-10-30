@@ -25,13 +25,13 @@ class FcmService {
     required NotificationScheduler scheduler,
     required PendingMessagesDataSource pending,
     required String? Function() currentUserId,
-  })  : _token = token,
-        _foreground = foreground,
-        _drainer = drainer,
-        _topics = topics,
-        _scheduler = scheduler,
-        _pending = pending,
-        _currentUserId = currentUserId;
+  }) : _token = token,
+       _foreground = foreground,
+       _drainer = drainer,
+       _topics = topics,
+       _scheduler = scheduler,
+       _pending = pending,
+       _currentUserId = currentUserId;
 
   /// تفعيل الإشعارات (تسجيل الدخول).
   /// [followedCategoryIds] == null يعني فشل جلبها: لا نلمس الاشتراكات
@@ -49,12 +49,16 @@ class FcmService {
 
   /// إيقاف الإشعارات (تسجيل الخروج): استدعِها قبل signOut.
   Future<void> stop() async {
+    // 🔒 أولاً وقبل أي شيء: عطّل معالج الخلفية فوراً.
+    // حتى لو استغرق حذف التوكن ثوانٍ على شبكة بطيئة،
+    // أي رسالة FCM تصل بعد هذه اللحظة تُتجاهل بلا عرض.
+    await _pending.setCurrentUserId(null);
+
     await _foreground.stop();
     _drainer.stop();
     await guarded('unsubscribe topics', () => _topics(const {}));
     await _token.deactivate();
-    await guarded('clear topics', _topics.clear); // الاشتراكات ضاعت مع التوكن
+    await guarded('clear topics', _topics.clear);
     await guarded('cancel alarms', _scheduler.cancelAll);
-    await _pending.setCurrentUserId(null);
   }
 }

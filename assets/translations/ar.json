@@ -49,7 +49,9 @@
     "password_hint": "أدخل كلمة المرور",
     "full_name_hint": "أدخل اسمك الكامل",
     "university_hint": "اسم الجامعة أو الجهة",
-    "confirm_password_hint": "أعد إدخال كلمة المرور"
+    "confirm_password_hint": "أعد إدخال كلمة المرور",
+    "logout_confirm_title": "تسجيل الخروج",
+    "logout_confirm_message": "هل أنت متأكد من رغبتك في تسجيل الخروج من حسابك؟"
   },
   "validation": {
     "required": "هذا الحقل مطلوب",
