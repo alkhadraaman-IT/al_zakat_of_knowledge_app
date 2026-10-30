@@ -43,7 +43,7 @@ class ProfileInterestsSection extends StatelessWidget {
               ? const Center(child: CircularProgressIndicator())
               : categories.isEmpty
                   ? Text(
-                      'لا توجد تصنيفات متاحة',
+                      'profile.no_categories'.tr(),
                       style: AppTypography.arabicBody(
                         color: colorScheme.onSurfaceVariant,
                         fontSize: 14,

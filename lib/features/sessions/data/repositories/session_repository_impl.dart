@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 import '../../../../core/errors/failures.dart';
 import '../../../../core/network/network_info.dart';
@@ -26,7 +27,7 @@ class SessionRepositoryImpl implements SessionRepository {
     String userId,
   ) async {
     if (!await networkInfo.isConnected) {
-      return const Left(NetworkFailure(message: 'No internet connection'));
+      return Left(NetworkFailure(message: 'messages.no_internet'.tr()));
     }
     try {
       final bookings = await remoteDataSource.getUserBookings(userId);
@@ -34,20 +35,20 @@ class SessionRepositoryImpl implements SessionRepository {
     } on PostgrestException catch (e) {
       return Left(ServerFailure(message: e.message, code: e.code));
     } on SupabaseTimeoutException catch (_) {
-      return const Left(NetworkFailure(
-        message: 'Network request timed out. Please check your connection.',
+      return Left(NetworkFailure(
+        message: 'messages.network_timeout'.tr(),
       ));
     } on SupabaseSocketException catch (_) {
-      return const Left(NetworkFailure(message: 'Network error'));
+      return Left(NetworkFailure(message: 'messages.network_error'.tr()));
     } catch (_) {
-      return const Left(ServerFailure(message: 'Server error'));
+      return Left(ServerFailure(message: 'messages.server_error'.tr()));
     }
   }
 
   @override
   Future<Either<Failure, List<SessionEntity>>> getSessions() async {
     if (!await networkInfo.isConnected) {
-      return const Left(NetworkFailure(message: 'No internet connection'));
+      return Left(NetworkFailure(message: 'messages.no_internet'.tr()));
     }
     try {
       final sessions = await remoteDataSource.getSessions();
@@ -55,13 +56,13 @@ class SessionRepositoryImpl implements SessionRepository {
     } on PostgrestException catch (e) {
       return Left(ServerFailure(message: e.message, code: e.code));
     } on SupabaseTimeoutException catch (_) {
-      return const Left(NetworkFailure(
-        message: 'Network request timed out. Please check your connection.',
+      return Left(NetworkFailure(
+        message: 'messages.network_timeout'.tr(),
       ));
     } on SupabaseSocketException catch (_) {
-      return const Left(NetworkFailure(message: 'Network error'));
+      return Left(NetworkFailure(message: 'messages.network_error'.tr()));
     } catch (_) {
-      return const Left(ServerFailure(message: 'Server error'));
+      return Left(ServerFailure(message: 'messages.server_error'.tr()));
     }
   }
 
@@ -70,7 +71,7 @@ class SessionRepositoryImpl implements SessionRepository {
     String publisherId,
   ) async {
     if (!await networkInfo.isConnected) {
-      return const Left(NetworkFailure(message: 'No internet connection'));
+      return Left(NetworkFailure(message: 'messages.no_internet'.tr()));
     }
     try {
       final sessions =
@@ -79,13 +80,13 @@ class SessionRepositoryImpl implements SessionRepository {
     } on PostgrestException catch (e) {
       return Left(ServerFailure(message: e.message, code: e.code));
     } on SupabaseTimeoutException catch (_) {
-      return const Left(NetworkFailure(
-        message: 'Network request timed out. Please check your connection.',
+      return Left(NetworkFailure(
+        message: 'messages.network_timeout'.tr(),
       ));
     } on SupabaseSocketException catch (_) {
-      return const Left(NetworkFailure(message: 'Network error'));
+      return Left(NetworkFailure(message: 'messages.network_error'.tr()));
     } catch (_) {
-      return const Left(ServerFailure(message: 'Server error'));
+      return Left(ServerFailure(message: 'messages.server_error'.tr()));
     }
   }
 
@@ -94,7 +95,7 @@ class SessionRepositoryImpl implements SessionRepository {
     String sessionId,
   ) async {
     if (!await networkInfo.isConnected) {
-      return const Left(NetworkFailure(message: 'No internet connection'));
+      return Left(NetworkFailure(message: 'messages.no_internet'.tr()));
     }
     try {
       final details = await remoteDataSource.getSessionById(sessionId);
@@ -102,13 +103,13 @@ class SessionRepositoryImpl implements SessionRepository {
     } on PostgrestException catch (e) {
       return Left(ServerFailure(message: e.message, code: e.code));
     } on SupabaseTimeoutException catch (_) {
-      return const Left(NetworkFailure(
-        message: 'Network request timed out. Please check your connection.',
+      return Left(NetworkFailure(
+        message: 'messages.network_timeout'.tr(),
       ));
     } on SupabaseSocketException catch (_) {
-      return const Left(NetworkFailure(message: 'Network error'));
+      return Left(NetworkFailure(message: 'messages.network_error'.tr()));
     } catch (_) {
-      return const Left(ServerFailure(message: 'Server error'));
+      return Left(ServerFailure(message: 'messages.server_error'.tr()));
     }
   }
 
@@ -128,7 +129,7 @@ class SessionRepositoryImpl implements SessionRepository {
     required double lng,
   }) async {
     if (!await networkInfo.isConnected) {
-      return const Left(NetworkFailure(message: 'No internet connection'));
+      return Left(NetworkFailure(message: 'messages.no_internet'.tr()));
     }
     try {
       final session = await remoteDataSource.createSession(
@@ -148,13 +149,13 @@ class SessionRepositoryImpl implements SessionRepository {
     } on PostgrestException catch (e) {
       return Left(ServerFailure(message: e.message, code: e.code));
     } on SupabaseTimeoutException catch (_) {
-      return const Left(NetworkFailure(
-        message: 'Network request timed out. Please check your connection.',
+      return Left(NetworkFailure(
+        message: 'messages.network_timeout'.tr(),
       ));
     } on SupabaseSocketException catch (_) {
-      return const Left(NetworkFailure(message: 'Network error'));
+      return Left(NetworkFailure(message: 'messages.network_error'.tr()));
     } catch (_) {
-      return const Left(ServerFailure(message: 'Server error'));
+      return Left(ServerFailure(message: 'messages.server_error'.tr()));
     }
   }
 
@@ -173,7 +174,7 @@ class SessionRepositoryImpl implements SessionRepository {
     required double lng,
   }) async {
     if (!await networkInfo.isConnected) {
-      return const Left(NetworkFailure(message: 'No internet connection'));
+      return Left(NetworkFailure(message: 'messages.no_internet'.tr()));
     }
     try {
       final session = await remoteDataSource.updateSession(
@@ -193,13 +194,13 @@ class SessionRepositoryImpl implements SessionRepository {
     } on PostgrestException catch (e) {
       return Left(ServerFailure(message: e.message, code: e.code));
     } on SupabaseTimeoutException catch (_) {
-      return const Left(NetworkFailure(
-        message: 'Network request timed out. Please check your connection.',
+      return Left(NetworkFailure(
+        message: 'messages.network_timeout'.tr(),
       ));
     } on SupabaseSocketException catch (_) {
-      return const Left(NetworkFailure(message: 'Network error'));
+      return Left(NetworkFailure(message: 'messages.network_error'.tr()));
     } catch (_) {
-      return const Left(ServerFailure(message: 'Server error'));
+      return Left(ServerFailure(message: 'messages.server_error'.tr()));
     }
   }
 
@@ -208,7 +209,7 @@ class SessionRepositoryImpl implements SessionRepository {
     required String sessionId,
   }) async {
     if (!await networkInfo.isConnected) {
-      return const Left(NetworkFailure(message: 'No internet connection'));
+      return Left(NetworkFailure(message: 'messages.no_internet'.tr()));
     }
     try {
       await remoteDataSource.bookSession(sessionId: sessionId);
@@ -216,13 +217,13 @@ class SessionRepositoryImpl implements SessionRepository {
     } on PostgrestException catch (e) {
       return Left(ServerFailure(message: e.message, code: e.code));
     } on SupabaseTimeoutException catch (_) {
-      return const Left(NetworkFailure(
-        message: 'Network request timed out. Please check your connection.',
+      return Left(NetworkFailure(
+        message: 'messages.network_timeout'.tr(),
       ));
     } on SupabaseSocketException catch (_) {
-      return const Left(NetworkFailure(message: 'Network error'));
+      return Left(NetworkFailure(message: 'messages.network_error'.tr()));
     } catch (_) {
-      return const Left(ServerFailure(message: 'Server error'));
+      return Left(ServerFailure(message: 'messages.server_error'.tr()));
     }
   }
 
@@ -231,7 +232,7 @@ class SessionRepositoryImpl implements SessionRepository {
     required String sessionId,
   }) async {
     if (!await networkInfo.isConnected) {
-      return const Left(NetworkFailure(message: 'No internet connection'));
+      return Left(NetworkFailure(message: 'messages.no_internet'.tr()));
     }
     try {
       await remoteDataSource.cancelBooking(sessionId: sessionId);
@@ -239,13 +240,13 @@ class SessionRepositoryImpl implements SessionRepository {
     } on PostgrestException catch (e) {
       return Left(ServerFailure(message: e.message, code: e.code));
     } on SupabaseTimeoutException catch (_) {
-      return const Left(NetworkFailure(
-        message: 'Network request timed out. Please check your connection.',
+      return Left(NetworkFailure(
+        message: 'messages.network_timeout'.tr(),
       ));
     } on SupabaseSocketException catch (_) {
-      return const Left(NetworkFailure(message: 'Network error'));
+      return Left(NetworkFailure(message: 'messages.network_error'.tr()));
     } catch (_) {
-      return const Left(ServerFailure(message: 'Server error'));
+      return Left(ServerFailure(message: 'messages.server_error'.tr()));
     }
   }
 }

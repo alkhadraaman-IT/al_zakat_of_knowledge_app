@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../constants/app_keys.dart';
+
 /// Theme state — tracks whether dark mode is active.
 enum ThemeModeState { light, dark }
 
 /// ThemeCubit — manages application theme state with SharedPreferences persistence.
 class ThemeCubit extends Cubit<ThemeModeState> {
-  static const String _keyIsDarkMode = 'is_dark_mode';
+  static const String _keyIsDarkMode = AppKeys.IS_DARK_MODE;
 
   final SharedPreferences _prefs;
 

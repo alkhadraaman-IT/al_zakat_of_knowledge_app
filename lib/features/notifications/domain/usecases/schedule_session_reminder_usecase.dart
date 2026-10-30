@@ -1,3 +1,5 @@
+import 'package:easy_localization/easy_localization.dart';
+
 import '../entities/app_notification.dart';
 import '../entities/notification_target.dart';
 import '../entities/notification_type.dart';
@@ -22,8 +24,10 @@ class ScheduleSessionReminderUseCase {
     if (!when.isAfter(DateTime.now())) return;
 
     final key = keyFor(s.sessionId);
-    const title = 'تذكير بالجلسة';
-    final body = 'تبدأ جلسة «${s.title}» قريباً';
+    final title = 'notifications.reminder_title'.tr();
+    final body = 'notifications.reminder_body'.tr(
+      namedArgs: {'title': s.title},
+    );
 
     await _scheduler.schedule(
       key: key,

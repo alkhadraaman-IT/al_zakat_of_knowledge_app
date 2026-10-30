@@ -1,3 +1,5 @@
+import 'package:easy_localization/easy_localization.dart';
+
 import '../entities/app_notification.dart';
 import '../entities/notification_target.dart';
 import '../entities/notification_type.dart';
@@ -17,8 +19,10 @@ class ScheduleSessionDuaUseCase {
     if (!s.endsAt.isAfter(DateTime.now())) return;
 
     final key = keyFor(s.sessionId);
-    const title = 'بارك الله في علمك';
-    final body = 'انتهت جلسة «${s.title}»، نفعك الله بعلمك ونفع بك';
+    final title = 'notifications.dua_title'.tr();
+    final body = 'notifications.dua_body'.tr(
+      namedArgs: {'title': s.title},
+    );
 
     await _scheduler.schedule(
       key: key,

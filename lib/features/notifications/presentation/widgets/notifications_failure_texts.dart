@@ -1,19 +1,21 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 import '../../domain/entities/notification_failure.dart';
 
-/// نصوص مفهومة للمستخدم لكل نوع فشل (لاحقاً انقلها لملفات الترجمة).
+/// نصوص مفهومة للمستخدم لكل نوع فشل.
 extension NotificationsFailureTexts on NotificationsFailureKind {
   String get message => switch (this) {
         NotificationsFailureKind.network =>
-          'تعذّر الاتصال بالإنترنت. تحقق من الشبكة ثم أعد المحاولة.',
+          'notifications.error_network'.tr(),
         NotificationsFailureKind.unauthenticated =>
-          'انتهت جلسة الدخول. سجّل الدخول من جديد.',
+          'notifications.error_unauthenticated'.tr(),
         NotificationsFailureKind.permissionDenied =>
-          'ليست لديك صلاحية لعرض هذه الإشعارات.',
+          'notifications.error_permission'.tr(),
         NotificationsFailureKind.server =>
-          'حدث خطأ في الخادم. حاول مرة أخرى بعد قليل.',
-        NotificationsFailureKind.unknown => 'حدث خطأ غير متوقع.',
+          'notifications.error_server'.tr(),
+        NotificationsFailureKind.unknown =>
+          'notifications.error_unknown'.tr(),
       };
 
   IconData get icon => switch (this) {

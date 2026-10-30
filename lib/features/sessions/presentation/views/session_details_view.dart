@@ -183,18 +183,18 @@ class _SessionDetailsContent extends StatelessWidget {
   }
 
   String _bookingErrorMessage(String raw) {
-    const messages = {
-      'session_full': 'اكتملت مقاعد هذه الجلسة',
-      'already_booked': 'أنت حاجز لهذه الجلسة مسبقاً',
-      'session_started': 'بدأت هذه الجلسة أو انتهت',
-      'session_not_active': 'هذه الجلسة ملغاة',
-      'session_not_found': 'الجلسة غير موجودة',
-      'own_session': 'لا يمكنك حجز جلستك',
-      'not_allowed': 'غير مسموح لك بحجز هذه الجلسة',
-      'account_restricted': 'حسابك موقوف حالياً',
-      'not_authenticated': 'سجّل الدخول أولاً',
-      'cancel_window_passed': 'انتهت مهلة الإلغاء (قبل الموعد بـ 24 ساعة)',
-      'booking_not_found': 'لا يوجد حجز مؤكد لإلغائه',
+    final messages = {
+      'session_full': 'booking.session_full'.tr(),
+      'already_booked': 'booking.already_booked'.tr(),
+      'session_started': 'booking.session_started'.tr(),
+      'session_not_active': 'booking.session_not_active'.tr(),
+      'session_not_found': 'booking.session_not_found'.tr(),
+      'own_session': 'booking.own_session'.tr(),
+      'not_allowed': 'booking.not_allowed'.tr(),
+      'account_restricted': 'booking.account_restricted'.tr(),
+      'not_authenticated': 'booking.not_authenticated'.tr(),
+      'cancel_window_passed': 'booking.cancel_window_passed'.tr(),
+      'booking_not_found': 'booking.booking_not_found'.tr(),
     };
     for (final entry in messages.entries) {
       if (raw.contains(entry.key)) return entry.value;
@@ -398,7 +398,7 @@ class _SessionDetailsBody extends StatelessWidget {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: const Text('تعذّر إلغاء الجلسة، حاول مرة أخرى'),
+              content: Text('booking.cancel_failed'.tr()),
               backgroundColor: cs.error,
             ),
           );

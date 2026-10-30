@@ -110,14 +110,14 @@ class AppArticleCard extends StatelessWidget {
           if (state is ArticleUpdateSuccess) {
             ScaffoldMessenger.of(ctx).showSnackBar(
               SnackBar(
-                content: const Text('تم تحديث المقالة'),
+                content: Text('article.updated_success'.tr()),
                 backgroundColor: cs.primary,
               ),
             );
           } else if (state is ArticleDeleteSuccess) {
             ScaffoldMessenger.of(ctx).showSnackBar(
               SnackBar(
-                content: const Text('تم حذف المقالة'),
+                content: Text('article.delete_success'.tr()),
                 backgroundColor: cs.primary,
               ),
             );
@@ -209,7 +209,7 @@ class AppArticleCard extends StatelessWidget {
                 Icon(Icons.edit_outlined, size: 18.w, color: cs.primary),
                 SizedBox(width: 10.w),
                 Text(
-                  'تعديل',
+                  'common.edit'.tr(),
                   style: AppTypography.arabicBody(
                     color: cs.onSurface,
                     fontSize: 14,
@@ -225,7 +225,7 @@ class AppArticleCard extends StatelessWidget {
                 Icon(Icons.delete_outline, size: 18.w, color: cs.error),
                 SizedBox(width: 10.w),
                 Text(
-                  'حذف',
+                  'common.delete'.tr(),
                   style: AppTypography.arabicBody(
                     color: cs.error,
                     fontSize: 14,
@@ -299,11 +299,11 @@ class AppArticleCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(16.r),
         ),
         title: Text(
-          'حذف المقالة',
+          'article.delete_title'.tr(),
           style: AppTypography.arabicTitle(color: cs.onSurface, fontSize: 17),
         ),
         content: Text(
-          'هل أنت متأكد من حذف هذه المقالة؟ لا يمكن التراجع.',
+          'article.delete_message'.tr(),
           style: AppTypography.arabicBody(
             color: cs.onSurfaceVariant,
             fontSize: 14,
@@ -313,7 +313,7 @@ class AppArticleCard extends StatelessWidget {
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
             child: Text(
-              'إلغاء',
+              'common.cancel'.tr(),
               style: AppTypography.arabicLabel(
                 color: cs.onSurfaceVariant,
                 fontSize: 14,
@@ -323,7 +323,7 @@ class AppArticleCard extends StatelessWidget {
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
             child: Text(
-              'حذف',
+              'common.delete'.tr(),
               style: AppTypography.arabicLabel(color: cs.error, fontSize: 14),
             ),
           ),

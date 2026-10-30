@@ -105,6 +105,7 @@ import '../../features/study_tools/domain/usecases/update_study_tool_usecase.dar
 import '../../core/services/profile_media_service.dart';
 import '../../features/study_tools/presentation/cubit/study_tool_cubit.dart';
 import '../constants/app_constants.dart';
+import '../constants/app_keys.dart';
 import '../constants/app_timeouts.dart';
 import '../network/network_info.dart';
 import '../theme/theme_cubit.dart';
@@ -129,16 +130,16 @@ Future<void> initDependencies() async {
   // External
   final sharedPreferences = await SharedPreferences.getInstance();
   await Hive.initFlutter();
-  final authBox = await Hive.openBox(AppConstants.authBoxName);
-  final userBox = await Hive.openBox(AppConstants.userBoxName);
+  final authBox = await Hive.openBox(AppKeys.AUTH_BOX);
+  final userBox = await Hive.openBox(AppKeys.USER_BOX);
   final favoritesBox = await Hive.openBox<FavoriteItemModel>(
-    AppConstants.favoritesBoxName,
+    AppKeys.FAVORITES_BOX,
   );
   final favoriteSessionsBox = await Hive.openBox<String>(
-    AppConstants.favoriteSessionsBoxName,
+    AppKeys.FAVORITE_SESSIONS_BOX,
   );
   final favoriteToolsBox = await Hive.openBox<String>(
-    AppConstants.favoriteToolsBoxName,
+    AppKeys.FAVORITE_TOOLS_BOX,
   );
 
   // Validate Supabase configuration before initialization
@@ -168,19 +169,22 @@ Future<void> initDependencies() async {
   // Session Cubit
 
   sl.registerLazySingleton<SharedPreferences>(() => sharedPreferences);
-  sl.registerLazySingleton<Box>(() => authBox, instanceName: 'authBox');
-  sl.registerLazySingleton<Box>(() => userBox, instanceName: 'userBox');
+  sl.registerLazySingleton<Box>(
+    () => authBox,
+    instanceName: AppKeys.AUTH_BOX,
+  );
+  sl.registerLazySingleton<Box>(() => userBox, instanceName: AppKeys.USER_BOX);
   sl.registerLazySingleton<Box<FavoriteItemModel>>(
     () => favoritesBox,
-    instanceName: 'favoritesBox',
+    instanceName: AppKeys.FAVORITES_BOX,
   );
   sl.registerLazySingleton<Box<String>>(
     () => favoriteSessionsBox,
-    instanceName: 'favoriteSessionsBox',
+    instanceName: AppKeys.FAVORITE_SESSIONS_BOX,
   );
   sl.registerLazySingleton<Box<String>>(
     () => favoriteToolsBox,
-    instanceName: 'favoriteToolsBox',
+    instanceName: AppKeys.FAVORITE_TOOLS_BOX,
   );
   sl.registerLazySingleton<SupabaseClient>(() => supabase.client);
   sl.registerLazySingleton<InternetConnectionChecker>(
@@ -204,8 +208,8 @@ Future<void> initDependencies() async {
   );
   sl.registerLazySingleton<AuthLocalDataSource>(
     () => AuthLocalDataSourceImpl(
-      authBox: sl<Box>(instanceName: 'authBox'),
-      userBox: sl<Box>(instanceName: 'userBox'),
+      authBox: sl<Box>(instanceName: AppKeys.AUTH_BOX),
+      userBox: sl<Box>(instanceName: AppKeys.USER_BOX),
       sharedPreferences: sl<SharedPreferences>(),
     ),
   );
@@ -223,7 +227,9 @@ Future<void> initDependencies() async {
   );
   sl.registerLazySingleton<FavoritesLocalDataSource>(
     () => FavoritesLocalDataSourceImpl(
-      favoritesBox: sl<Box<FavoriteItemModel>>(instanceName: 'favoritesBox'),
+      favoritesBox: sl<Box<FavoriteItemModel>>(
+        instanceName: AppKeys.FAVORITES_BOX,
+      ),
     ),
   );
   sl.registerLazySingleton<SessionRemoteDataSource>(
@@ -438,8 +444,8 @@ Future<void> initDependencies() async {
 // 👇 تم فصل دالة initNotifications لتصبح دالة مستقلة (Top-level)
 Future<void> initNotifications(GetIt sl) async {
   final client = Supabase.instance.client;
-  final box = await Hive.openBox<String>('notifications_local');
-  final metaBox = await Hive.openBox<String>('notifications_meta');
+  final box = await Hive.openBox<String>(AppKeys.NOTIFICATIONS_LOCAL);
+  final metaBox = await Hive.openBox<String>(AppKeys.NOTIFICATIONS_META);
   String? currentUserId() => client.auth.currentUser?.id;
 
   sl

@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -88,11 +89,11 @@ class StudyToolEntityCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(16.r),
         ),
         title: Text(
-          'حذف الأداة',
+          'tool.delete_title'.tr(),
           style: AppTypography.arabicTitle(color: cs.onSurface, fontSize: 17),
         ),
         content: Text(
-          'هل أنت متأكد من حذف هذه الأداة؟ لا يمكن التراجع.',
+          'tool.delete_message'.tr(),
           style: AppTypography.arabicBody(
             color: cs.onSurfaceVariant,
             fontSize: 14,
@@ -102,7 +103,7 @@ class StudyToolEntityCard extends StatelessWidget {
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
             child: Text(
-              'إلغاء',
+              'common.cancel'.tr(),
               style: AppTypography.arabicLabel(
                 color: cs.onSurfaceVariant,
                 fontSize: 14,
@@ -112,7 +113,7 @@ class StudyToolEntityCard extends StatelessWidget {
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
             child: Text(
-              'حذف',
+              'common.delete'.tr(),
               style: AppTypography.arabicLabel(color: cs.error, fontSize: 14),
             ),
           ),

@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
@@ -21,27 +22,24 @@ class _OnboardingViewState extends State<OnboardingView> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
 
-  final List<OnboardingPageData> _pages = const [
+  final List<OnboardingPageData> _pages = [
     OnboardingPageData(
       imagePath: 'assets/images/onboarding_teach.png',
-      title: 'قال رسول الله ﷺ: «خَيْرُ النَّاسِ أَنْفَعُهُمْ لِلنَّاسِ»',
-      description:
-          'نظّم وأعلن عن لقاءات تجمع طلاب العلم في الجامعة أو المعهد أو أي مكان آخر، وشارك المعرفة النافعة لوجه الله تعالى واجعل علمك يثمر أجراً.',
-      badge: 'تيسير العلم لطلابه',
+      title: 'onboarding.quote_1'.tr(),
+      description: 'onboarding.body_1'.tr(),
+      badge: 'onboarding.badge_1'.tr(),
     ),
     OnboardingPageData(
       imagePath: 'assets/images/onboarding_tools.png',
-      title: 'قال رسول الله ﷺ: «وَاللهُ فِي عَوْنِ الْعَبْدِ مَا كَانَ الْعَبْدُ فِي عَوْنِ أَخِيهِ»',
-      description:
-          'لا تترك مراجعك ومعداتك الدراسية عرضة للغبار. شاركها مع طلاب علم آخرين، واجعلها وسيلة للنفع بعد انتهائك منها.',
-      badge: 'تبادل الموارد، تعزيز المعرفة',
+      title: 'onboarding.quote_2'.tr(),
+      description: 'onboarding.body_2'.tr(),
+      badge: 'onboarding.badge_2'.tr(),
     ),
     OnboardingPageData(
       imagePath: 'assets/images/onboarding_articles.png',
-      title: 'قال رسول الله ﷺ: «إِذَا مَاتَ الْإِنْسَانُ انْقَطَعَ عَنْهُ عَمَلُهُ إِلا مِنْ ثَلاثَةٍ: إِلا مِنْ صَدَقَةٍ جَارِيَةٍ، أَوْ عِلْمٍ يُنْتَفَعُ بِهِ...»',
-      description:
-          'اكتب مقالات نافعة وشارك خبراتك العلمية لتكون لك صدقة جارية يستمر أجرها ونفعها.',
-      badge: 'عِلْمٌ يُنْتَفَعُ بِهِ',
+      title: 'onboarding.quote_3'.tr(),
+      description: 'onboarding.body_3'.tr(),
+      badge: 'onboarding.badge_3'.tr(),
     ),
   ];
 
@@ -118,7 +116,7 @@ class _OnboardingViewState extends State<OnboardingView> {
           ),
           SizedBox(width: 10.w),
           Text(
-            'زكاة العلم',
+            'app.name'.tr(),
             style: AppTypography.arabicTitle(
               color: cs.onSurface,
               fontSize: 18,
@@ -135,7 +133,7 @@ class _OnboardingViewState extends State<OnboardingView> {
                 border: Border.all(color: cs.outline.withValues(alpha: 0.3)),
               ),
               child: Text(
-                'تخطي',
+                'onboarding.skip'.tr(),
                 style: AppTypography.arabicLabel(
                   color: cs.onSurfaceVariant,
                   fontSize: 13,
@@ -194,7 +192,9 @@ class _OnboardingViewState extends State<OnboardingView> {
           ),
           child: Center(
             child: Text(
-              isLastPage ? 'ابدأ الآن' : 'التالي',
+              isLastPage
+                  ? 'onboarding.get_started'.tr()
+                  : 'onboarding.next'.tr(),
               style: AppTypography.arabicHeadline(
                 color: cs.onPrimary,
                 fontSize: 18,

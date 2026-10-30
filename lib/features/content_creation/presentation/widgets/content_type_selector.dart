@@ -1,4 +1,5 @@
 import 'package:al_zakat_of_knowledge_app/features/sessions/presentation/widgets/create_session_sheet.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -36,7 +37,7 @@ void showContentTypeSelector(
               ),
             ),
             Text(
-              'انشر صدقتك العلمية',
+              'content.title'.tr(),
               style: AppTypography.arabicHeadline(
                 color: cs.onSurface,
                 fontSize: 20,
@@ -44,7 +45,7 @@ void showContentTypeSelector(
             ),
             SizedBox(height: 8.h),
             Text(
-              'اختر نوع المحتوى',
+              'content.subtitle'.tr(),
               style: AppTypography.arabicBody(
                 color: cs.onSurfaceVariant,
                 fontSize: 14,
@@ -53,8 +54,8 @@ void showContentTypeSelector(
             SizedBox(height: 24.h),
             _Option(
               icon: Icons.groups_3,
-              title: 'محاضرة / جلسة علمية',
-              description: 'حدد المكان والمقاعد',
+              title: 'content.session_title'.tr(),
+              description: 'content.session_desc'.tr(),
               cs: cs,
               onTap: () async {
                 Navigator.pop(sheetContext);
@@ -65,8 +66,8 @@ void showContentTypeSelector(
             SizedBox(height: 12.h),
             _Option(
               icon: Icons.article_outlined,
-              title: 'مقالة نافعة',
-              description: 'شارك علمك كصدقة جارية',
+              title: 'content.article_title'.tr(),
+              description: 'content.article_desc'.tr(),
               cs: cs,
               onTap: () {
                 Navigator.pop(sheetContext);
@@ -76,8 +77,8 @@ void showContentTypeSelector(
             SizedBox(height: 12.h),
             _Option(
               icon: Icons.inventory_2_outlined,
-              title: 'أداة أو مادة دراسية',
-              description: 'أدوات وكتب مجانية',
+              title: 'content.tool_title'.tr(),
+              description: 'content.tool_desc'.tr(),
               cs: cs,
               onTap: () {
                 Navigator.pop(sheetContext);

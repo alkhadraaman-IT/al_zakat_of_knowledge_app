@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:hive_ce/hive.dart';
 
+import '../../../../core/constants/app_keys.dart';
 import '../../domain/repositories/category_topics_repository.dart';
 import '../datasources/fcm_data_source.dart';
 
@@ -10,7 +11,7 @@ class CategoryTopicsRepositoryImpl implements CategoryTopicsRepository {
   final Box<String> _meta;
   CategoryTopicsRepositoryImpl(this._fcm, this._meta);
 
-  static const _key = 'subscribed_topics';
+  static const _key = AppKeys.SUBSCRIBED_TOPICS;
 
   /// أسماء الـ topics: أحرف وأرقام و - _ . ~ % فقط (UUID مناسب).
   static String topicFor(String categoryId) => 'category_$categoryId';

@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -37,7 +38,7 @@ Future<void> showSuccessDialog(
             ),
             SizedBox(height: 20.h),
             Text(
-              title ?? 'تم النشر بنجاح',
+              title ?? 'success.title'.tr(),
               style: AppTypography.arabicHeadline(
                 color: cs.onSurface,
                 fontSize: 22,
@@ -46,7 +47,7 @@ Future<void> showSuccessDialog(
             ),
             SizedBox(height: 12.h),
             Text(
-              'بارك الله في علمك ونفعنا وإياك به، وهذه صدقة جارية بإذن الله',
+              'success.message'.tr(),
               style: AppTypography.arabicBody(
                 color: cs.onSurfaceVariant,
                 fontSize: 14,
@@ -66,7 +67,7 @@ Future<void> showSuccessDialog(
                     padding: EdgeInsets.symmetric(vertical: 14.h),
                     child: Center(
                       child: Text(
-                        'تم',
+                        'success.done'.tr(),
                         style: AppTypography.arabicTitle(
                           color: cs.onPrimary,
                           fontSize: 16,

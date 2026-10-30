@@ -29,7 +29,7 @@ class ReportRepositoryImpl implements ReportRepository {
   }) async {
     print('<<<<<<<<<<<[createReport]>>>>>>>>>>>>>');
     if (!await networkInfo.isConnected) {
-      return const Left(NetworkFailure(message: 'No internet connection'));
+      return Left(NetworkFailure(message: 'messages.no_internet'.tr()));
     }
 
     try {
@@ -47,10 +47,10 @@ class ReportRepositoryImpl implements ReportRepository {
       return Left(ServerFailure(message: e.message, code: e.code));
     } on SupabaseTimeoutException catch (_) {
       print('<<<<<<<<<<<[createReport Timeout]>>>>>>>>>>>>>');
-      return Left(NetworkFailure(message: 'Network request timed out. Please check your connection.'));
+      return Left(NetworkFailure(message: 'messages.network_timeout'.tr()));
     } on SupabaseSocketException catch (_) {
       print('<<<<<<<<<<<[createReport SocketException]>>>>>>>>>>>>>');
-      return Left(NetworkFailure(message: 'Network error'));
+      return Left(NetworkFailure(message: 'messages.network_error'.tr()));
     } catch (e) {
       // Handle reporter ID mismatch — Supabase throws Exception when owner != reporterId
       if (e.toString().contains('Reporter ID mismatch')) {
@@ -59,7 +59,7 @@ class ReportRepositoryImpl implements ReportRepository {
           code: '42501',
         ));
       }
-      return Left(ServerFailure(message: 'Server error'));
+      return Left(ServerFailure(message: 'messages.server_error'.tr()));
     }
   }
 }
