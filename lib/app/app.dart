@@ -12,6 +12,7 @@ import '../features/notifications/presentation/widgets/in_app_notification_host.
 import '../features/notifications/services/notification_navigator.dart'; // 👈 تم إضافته
 import 'router/app_router.dart';
 import 'theme/app_theme.dart';
+import 'theme/app_typography.dart';
 
 /// Root application widget — Stitch Design System.
 /// Theme is managed via ThemeCubit for dynamic light/dark toggling.
@@ -32,6 +33,11 @@ class ZakatAlIlmApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Typography follows the active language: Thmanyah for Arabic, Inter for
+    // Latin. Reading the locale here also subscribes this widget to locale
+    // changes, so the theme is rebuilt when the user switches language.
+    AppTypography.isArabic = context.locale.languageCode == 'ar';
+
     // Create GoRouter ONCE — outside BlocBuilder to prevent navigation resets
     final router = AppRouter.createRouter(authStateStream, authStateTracker);
 
