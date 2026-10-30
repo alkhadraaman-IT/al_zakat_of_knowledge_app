@@ -6,6 +6,7 @@ import '../../../../core/utils/either.dart';
 import '../../../../core/utils/supabase_timeout.dart';
 import '../../domain/entities/booking_entity.dart';
 import '../../domain/entities/session_entity.dart';
+import '../../domain/entities/session_with_profile.dart';
 import '../../domain/repositories/session_repository.dart';
 import '../datasources/session_remote_datasource.dart';
 
@@ -88,6 +89,29 @@ class SessionRepositoryImpl implements SessionRepository {
     }
   }
 
+  @override
+  Future<Either<Failure, SessionWithProfile>> getSessionById(
+    String sessionId,
+  ) async {
+    if (!await networkInfo.isConnected) {
+      return const Left(NetworkFailure(message: 'No internet connection'));
+    }
+    try {
+      final details = await remoteDataSource.getSessionById(sessionId);
+      return Right(details);
+    } on PostgrestException catch (e) {
+      return Left(ServerFailure(message: e.message, code: e.code));
+    } on SupabaseTimeoutException catch (_) {
+      return const Left(NetworkFailure(
+        message: 'Network request timed out. Please check your connection.',
+      ));
+    } on SupabaseSocketException catch (_) {
+      return const Left(NetworkFailure(message: 'Network error'));
+    } catch (_) {
+      return const Left(ServerFailure(message: 'Server error'));
+    }
+  }
+
   // ── كتابة ─────────────────────────────────────────────
   @override
   Future<Either<Failure, SessionEntity>> createSession({
@@ -129,7 +153,7 @@ class SessionRepositoryImpl implements SessionRepository {
       ));
     } on SupabaseSocketException catch (_) {
       return const Left(NetworkFailure(message: 'Network error'));
-    } catch (e) {
+    } catch (_) {
       return const Left(ServerFailure(message: 'Server error'));
     }
   }
@@ -174,7 +198,7 @@ class SessionRepositoryImpl implements SessionRepository {
       ));
     } on SupabaseSocketException catch (_) {
       return const Left(NetworkFailure(message: 'Network error'));
-    } catch (e) {
+    } catch (_) {
       return const Left(ServerFailure(message: 'Server error'));
     }
   }

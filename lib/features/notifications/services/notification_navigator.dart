@@ -27,13 +27,15 @@ class NotificationNavigator {
       _pending = target;
       return;
     }
-    r.push(pathFor(target)); // push: زر الرجوع يعود للشاشة السابقة
+    final path = pathFor(target);
+    if (path == null) return; // المسار غير مدعوم بعد — نتجاهل بأمان
+    r.push(path); // push: زر الرجوع يعود للشاشة السابقة
   }
 
-  /// TODO: تأكد أن هذه المسارات هي مسارات الـ router عندك.
-  static String pathFor(NotificationTarget t) => switch (t.kind) {
+  /// يرجع null إن لم تكن شاشة التفاصيل مدعومة بعد.
+  static String? pathFor(NotificationTarget t) => switch (t.kind) {
         NotificationTargetKind.session => '/session-details/${t.id}',
-        NotificationTargetKind.material => '/material-details/${t.id}',
-        NotificationTargetKind.article => '/article-details/${t.id}',
+        NotificationTargetKind.material => null, // TODO: شاشة تفاصيل الأداة
+        NotificationTargetKind.article => null, // TODO: شاشة تفاصيل المقالة
       };
 }

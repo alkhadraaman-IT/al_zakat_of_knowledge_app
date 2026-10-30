@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
 import '../../../../core/di/injection_container.dart';
 import '../../../articles/domain/usecases/get_my_articles_usecase.dart';
 import '../../../auth/domain/entities/profile_entity.dart';
@@ -12,6 +13,7 @@ import 'profile_state.dart';
 class ProfileCubit extends Cubit<ProfileState> {
   final String? userId;
   bool get _isOwnerProfile => userId == null;
+  List<Map<String, dynamic>> _loadedCategories = []; // 👈 متغير لحفظ الأصناف
 
   ProfileCubit({this.userId}) : super(ProfileInitial());
 
@@ -46,8 +48,11 @@ class ProfileCubit extends Cubit<ProfileState> {
       );
     } else {
       result.fold(
-        (_) => emit(const ProfileLoaded()),
-        (profile) => emit(ProfileLoaded(profile: profile)),
+        // 👈 دمج الأصناف التي تم جلبها بمجرد تحميل الملف
+        (_) => emit(ProfileLoaded(categories: _loadedCategories)),
+        (profile) => emit(
+          ProfileLoaded(profile: profile, categories: _loadedCategories),
+        ),
       );
     }
   }
@@ -56,7 +61,9 @@ class ProfileCubit extends Cubit<ProfileState> {
     try {
       final row = await Supabase.instance.client
           .from('profiles')
-          .select('id, name, city, university, photo_url, cv_pdf_url, github_url, linkedin_url, created_at')
+          .select(
+            'id, name, city, university, photo_url, cv_pdf_url, github_url, linkedin_url, created_at',
+          )
           .eq('id', userId!)
           .maybeSingle();
 
@@ -74,7 +81,9 @@ class ProfileCubit extends Cubit<ProfileState> {
         cvPdfUrl: row['cv_pdf_url']?.toString(),
         githubUrl: row['github_url']?.toString(),
         linkedinUrl: row['linkedin_url']?.toString(),
-        createdAt: DateTime.tryParse(row['created_at']?.toString() ?? '') ?? DateTime.now(),
+        createdAt:
+            DateTime.tryParse(row['created_at']?.toString() ?? '') ??
+            DateTime.now(),
       );
 
       emit(ProfileLoaded(profile: profile));
@@ -90,11 +99,13 @@ class ProfileCubit extends Cubit<ProfileState> {
           .select()
           .order('sort_order', ascending: true);
 
+      _loadedCategories = List<Map<String, dynamic>>.from(
+        response,
+      ); // 👈 احفظها
+
       if (!isClosed && state is ProfileLoaded) {
         final current = state as ProfileLoaded;
-        emit(current.copyWith(
-          categories: List<Map<String, dynamic>>.from(response),
-        ));
+        emit(current.copyWith(categories: _loadedCategories));
       }
     } catch (_) {}
   }
@@ -123,7 +134,7 @@ class ProfileCubit extends Cubit<ProfileState> {
     if (state is! ProfileLoaded) return;
     final current = state as ProfileLoaded;
     final isSelected = current.selectedCategoryIds.contains(catId);
-    
+
     final updatedIds = Set<String>.from(current.selectedCategoryIds);
     if (isSelected) {
       updatedIds.remove(catId);
@@ -140,9 +151,10 @@ class ProfileCubit extends Cubit<ProfileState> {
             .eq('user_id', authUserId)
             .eq('category_id', catId);
       } else {
-        await Supabase.instance.client
-            .from('category_follows')
-            .insert({'user_id': authUserId, 'category_id': catId});
+        await Supabase.instance.client.from('category_follows').insert({
+          'user_id': authUserId,
+          'category_id': catId,
+        });
       }
     } catch (_) {
       emit(current);
@@ -190,16 +202,15 @@ class ProfileCubit extends Cubit<ProfileState> {
     final result = await sl<GetStudyToolsByOwnerUseCase>()(ownerId: ownerId);
     if (!isClosed && state is ProfileLoaded) {
       final current = state as ProfileLoaded;
-      result.fold(
-        (_) {},
-        (tools) => emit(current.copyWith(tools: tools)),
-      );
+      result.fold((_) {}, (tools) => emit(current.copyWith(tools: tools)));
     }
   }
 
   Future<void> loadMyLectures(String? publisherId) async {
     if (publisherId == null) return;
-    final result = await sl<GetSessionsByPublisherUseCase>()(publisherId: publisherId);
+    final result = await sl<GetSessionsByPublisherUseCase>()(
+      publisherId: publisherId,
+    );
     if (!isClosed && state is ProfileLoaded) {
       final current = state as ProfileLoaded;
       result.fold(
@@ -211,20 +222,19 @@ class ProfileCubit extends Cubit<ProfileState> {
 
   Future<void> loadPublicLectures() async {
     if (userId == null) return;
-    final result = await sl<GetSessionsByPublisherUseCase>()(publisherId: userId!);
+    final result = await sl<GetSessionsByPublisherUseCase>()(
+      publisherId: userId!,
+    );
     if (!isClosed && state is ProfileLoaded) {
       final current = state as ProfileLoaded;
       final now = DateTime.now();
-      result.fold(
-        (_) {},
-        (list) {
-          final activeLectures = list.where((s) {
-            final start = DateTime.tryParse(s.startsAt);
-            return s.status == 'active' && start != null && start.isAfter(now);
-          }).toList();
-          emit(current.copyWith(lectures: activeLectures));
-        },
-      );
+      result.fold((_) {}, (list) {
+        final activeLectures = list.where((s) {
+          final start = DateTime.tryParse(s.startsAt);
+          return s.status == 'active' && start != null && start.isAfter(now);
+        }).toList();
+        emit(current.copyWith(lectures: activeLectures));
+      });
     }
   }
 }

@@ -6,7 +6,6 @@ import 'package:supabase_flutter/supabase_flutter.dart' hide AuthState;
 import '../../data/models/user_model.dart';
 import '../../domain/usecases/get_current_user_usecase.dart';
 import '../../domain/usecases/sign_in_usecase.dart';
-import '../../domain/usecases/sign_in_with_google_usecase.dart';
 import '../../domain/usecases/sign_out_usecase.dart';
 import '../../domain/usecases/sign_up_usecase.dart';
 import 'auth_state.dart';
@@ -20,7 +19,7 @@ import 'auth_state.dart';
 class AuthCubit extends Cubit<AuthState> {
   final SignInUseCase signInUseCase;
   final SignUpUseCase signUpUseCase;
-  final SignInWithGoogleUseCase signInWithGoogleUseCase;
+  // final SignInWithGoogleUseCase signInWithGoogleUseCase;
   final SignOutUseCase signOutUseCase;
   final GetCurrentUserUseCase getCurrentUserUseCase;
   final SupabaseClient supabaseClient;
@@ -30,13 +29,14 @@ class AuthCubit extends Cubit<AuthState> {
   AuthCubit({
     required this.signInUseCase,
     required this.signUpUseCase,
-    required this.signInWithGoogleUseCase,
+    // required this.signInWithGoogleUseCase,
     required this.signOutUseCase,
     required this.getCurrentUserUseCase,
     required this.supabaseClient,
   }) : super(const AuthInitial()) {
     _listenToAuthStateChanges();
   }
+  bool _isSigningOut = false;
 
   /// Checks the persisted auth status on app start.
   Future<void> checkAuthStatus() async {
@@ -93,26 +93,32 @@ class AuthCubit extends Cubit<AuthState> {
   }
 
   /// Signs in with Google SSO via the OAuth deep-link flow.
-  Future<void> signInWithGoogle() async {
-    print('<<<<<<<<<<<[AuthCubit.signInWithGoogle]>>>>>>>>>>>>>');
-    emit(const AuthLoading());
-    final result = await signInWithGoogleUseCase();
-    result.fold(
-      (failure) =>
-          emit(AuthError(message: failure.message, code: failure.code)),
-      (user) => emit(AuthAuthenticated(user: user)),
-    );
-  }
+  // Future<void> signInWithGoogle() async {
+  //   print('<<<<<<<<<<<[AuthCubit.signInWithGoogle]>>>>>>>>>>>>>');
+  //   emit(const AuthLoading());
+  //   final result = await signInWithGoogleUseCase();
+  //   result.fold(
+  //     (failure) =>
+  //         emit(AuthError(message: failure.message, code: failure.code)),
+  //     (user) => emit(AuthAuthenticated(user: user)),
+  //   );
+  // }
 
   /// Signs out the current user.
   Future<void> signOut() async {
     print('<<<<<<<<<<<[AuthCubit.signOut]>>>>>>>>>>>>>');
+    _isSigningOut = true; // 👈
     emit(const AuthLoading());
     final result = await signOutUseCase();
     result.fold(
-      (failure) =>
-          emit(AuthError(message: failure.message, code: failure.code)),
-      (_) => emit(const AuthUnauthenticated()),
+      (failure) {
+        _isSigningOut = false; // 👈
+        emit(AuthError(message: failure.message, code: failure.code));
+      },
+      (_) {
+        _isSigningOut = false; // 👈
+        emit(const AuthUnauthenticated());
+      },
     );
   }
 
@@ -138,13 +144,12 @@ class AuthCubit extends Cubit<AuthState> {
       (authState) {
         if (isClosed) return;
 
+        // 👈 لا تطلق AuthAuthenticated إذا كنا بصدد تسجيل الخروج
+        if (_isSigningOut) return;
+
         final user = authState.session?.user;
         if (user == null) return;
 
-        // A sign-in callback: the signedIn event itself, or any
-        // session-bearing event that arrives before the cubit is
-        // already authenticated (e.g. a cold-start deep link).
-        // Refreshes on an established session are stale events.
         final isSignInCallback =
             authState.event == AuthChangeEvent.signedIn ||
             state is! AuthAuthenticated;
@@ -152,12 +157,7 @@ class AuthCubit extends Cubit<AuthState> {
 
         emit(AuthAuthenticated(user: UserModel.fromSupabase(user.toJson())));
       },
-      onError: (Object error, StackTrace stackTrace) {
-        // Errors on the auth stream (e.g. token refresh
-        // failures) are already logged by the auth client;
-        // swallow them so they do not surface as unhandled
-        // async errors.
-      },
+      onError: (Object error, StackTrace stackTrace) {},
     );
   }
 

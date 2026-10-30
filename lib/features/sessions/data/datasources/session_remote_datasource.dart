@@ -1,8 +1,10 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:al_zakat_of_knowledge_app/core/utils/supabase_timeout.dart';
 
+import '../../../auth/data/models/profile_model.dart';
 import '../../domain/entities/booking_entity.dart';
 import '../../domain/entities/session_entity.dart';
+import '../../domain/entities/session_with_profile.dart';
 
 /// مصدر بيانات الجلسات من Supabase.
 abstract class SessionRemoteDataSource {
@@ -11,6 +13,8 @@ abstract class SessionRemoteDataSource {
   Future<List<SessionEntity>> getSessions();
 
   Future<List<SessionEntity>> getSessionsByPublisher(String publisherId);
+
+  Future<SessionWithProfile> getSessionById(String sessionId);
 
   Future<SessionEntity> createSession({
     required String publisherId,
@@ -60,6 +64,52 @@ class SessionRemoteDataSourceImpl implements SessionRemoteDataSource {
   }
 
   // ── قراءة ─────────────────────────────────────────────
+  @override
+  Future<SessionWithProfile> getSessionById(String sessionId) async {
+    final data = await supabaseClient
+        .from('sessions')
+        .select(
+          '*, publisher:profiles!publisher_id(*), category:categories(name_ar, name_en)',
+        )
+        .eq('id', sessionId)
+        .maybeSingle();
+
+    if (data == null) {
+      throw Exception('Session not found');
+    }
+
+    final session = SessionEntity.fromSupabase(data);
+    final publisherMap = data['publisher'] as Map<String, dynamic>?;
+    final categoryMap = data['category'] as Map<String, dynamic>?;
+
+    final userId = supabaseClient.auth.currentUser?.id;
+    bool isBooked = false;
+    if (userId != null) {
+      try {
+        final bookingResp = await supabaseClient
+            .from('bookings')
+            .select('id')
+            .eq('session_id', sessionId)
+            .eq('user_id', userId)
+            .eq('status', 'confirmed');
+        isBooked = bookingResp.isNotEmpty;
+      } catch (_) {
+        isBooked = false;
+      }
+    }
+
+    return SessionWithProfile(
+      session: session,
+      publisher: publisherMap != null
+          ? ProfileModel.fromSupabase(publisherMap)
+          : null,
+      categoryNameAr: categoryMap?['name_ar'] as String?,
+      categoryNameEn: categoryMap?['name_en'] as String?,
+      isBooked: isBooked,
+      isPublisher: userId != null && userId == session.publisherId,
+    );
+  }
+
   @override
   Future<List<SessionEntity>> getSessions() async {
     final data = await supabaseClient

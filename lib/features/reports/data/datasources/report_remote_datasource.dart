@@ -62,7 +62,7 @@ class ReportRemoteDataSourceImpl implements ReportRemoteDataSource {
         throw Exception('Report creation returned no row');
       }
 
-      return ReportEntity.fromSupabase(response);
+      return ReportEntity.fromMap(response);
     } on PostgrestException catch (e) {
       // Detailed logging — exposes the exact Postgrest error (code, message, details, hint) for tracing.
       print('<<<<<<<<<<<[createReport PostgrestException]>>>>>>>>>>>>>');

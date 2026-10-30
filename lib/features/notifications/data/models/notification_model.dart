@@ -13,7 +13,6 @@ class NotificationModel extends AppNotification {
     required super.createdAt,
   });
 
-  // الإنشاء من Map (fromMap)
   factory NotificationModel.fromMap(Map<String, dynamic> map) {
     return NotificationModel(
       id: map['id'] as String,
@@ -23,15 +22,15 @@ class NotificationModel extends AppNotification {
       body: (map['body'] as String?) ?? '',
       data: (map['data'] as Map?)?.cast<String, dynamic>(),
       isRead: (map['is_read'] as bool?) ?? false,
-      createdAt: DateTime.parse(map['created_at'] as String).toLocal(),
+      createdAt:
+          DateTime.tryParse(map['created_at']?.toString() ?? '')?.toLocal() ??
+              DateTime.now(),
     );
   }
 
-  // دعم fromJson كمرادف لـ fromMap للتوافق
-  factory NotificationModel.fromJson(Map<String, dynamic> json) => 
+  factory NotificationModel.fromJson(Map<String, dynamic> json) =>
       NotificationModel.fromMap(json);
 
-  // الإنشاء من الـ Entity (لحل مشكلة fromEntity المفقودة)
   factory NotificationModel.fromEntity(AppNotification entity) {
     return NotificationModel(
       id: entity.id,
@@ -45,12 +44,12 @@ class NotificationModel extends AppNotification {
     );
   }
 
-  // التحويل إلى Map (toMap)
+  /// ⚠️ `type.value` (snake_case) — وليس `type.name` — كي يُقرأ في `fromMap`.
   Map<String, dynamic> toMap() {
     return {
       'id': id,
       'user_id': userId,
-      'type': type.name, // تأكد من مطابقة طريقة حفظ النوع لديك (مثل استخدام .name لو كان Enum)
+      'type': type.value,
       'title': title,
       'body': body,
       'data': data,
@@ -59,9 +58,7 @@ class NotificationModel extends AppNotification {
     };
   }
 
-  // دعم toJson كمرادف لـ toMap
   Map<String, dynamic> toJson() => toMap();
 
-  // التعديل المسموح من التطبيق: is_read فقط.
   Map<String, dynamic> toUpdateJson() => {'is_read': isRead};
 }

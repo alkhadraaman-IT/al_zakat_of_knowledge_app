@@ -22,7 +22,7 @@ abstract class AuthRepository {
   });
 
   /// Signs in with Google SSO.
-  Future<Either<Failure, UserEntity>> signInWithGoogle();
+  // Future<Either<Failure, UserEntity>> signInWithGoogle();
 
   /// Signs out the current user.
   Future<Either<Failure, void>> signOut();

@@ -7,14 +7,13 @@ import '../../core/di/injection_container.dart';
 import '../../features/auth/presentation/views/login_view.dart';
 import '../../features/auth/presentation/views/register_view.dart';
 import '../../features/articles/presentation/bloc/article_cubit.dart';
-import '../../features/content_creation/presentation/views/create_session_view.dart';
 import '../../features/notifications/presentation/views/notifications_view.dart';
-import '../../features/onboarding/presentation/views/onboarding_view.dart';
+import '../../features/auth/presentation/views/onboarding_view.dart';
 import '../../features/sessions/presentation/views/session_details_view.dart';
 import '../../features/profile/presentation/views/profile_view.dart';
 import '../../features/search/presentation/views/search_view.dart';
 import '../../features/shell/presentation/views/main_shell.dart';
-import '../../features/splash/presentation/views/splash_view.dart';
+import '../../features/auth/presentation/views/splash_view.dart';
 import '../../features/notifications/services/notification_navigator.dart';
 
 class AppRoutes {

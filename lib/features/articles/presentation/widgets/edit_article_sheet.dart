@@ -6,10 +6,10 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../app/theme/app_typography.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../articles/domain/entities/article_entity.dart';
-import '../../../articles/domain/entities/category_entity.dart';
 import '../../../articles/presentation/cubit/categories_cubit.dart';
 import '../bloc/article_cubit.dart';
 import '../bloc/article_state.dart';
+import '../widgets/article_form_fields.dart'; // 👈 المكونات المشتركة
 
 Future<void> showEditArticleSheet(
   BuildContext context, {
@@ -145,7 +145,8 @@ class _EditArticleSheetState extends State<_EditArticleSheet> {
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          _field(
+                          // 👈 استخدام المكونات المشتركة
+                          ArticleTextField(
                             label: 'article.title_label'.tr(),
                             controller: _titleController,
                             validator: (v) => (v == null || v.trim().isEmpty)
@@ -153,7 +154,7 @@ class _EditArticleSheetState extends State<_EditArticleSheet> {
                                 : null,
                           ),
                           SizedBox(height: 12.h),
-                          _field(
+                          ArticleTextField(
                             label: 'article.body_label'.tr(),
                             controller: _bodyController,
                             maxLines: 6,
@@ -162,7 +163,11 @@ class _EditArticleSheetState extends State<_EditArticleSheet> {
                                 : null,
                           ),
                           SizedBox(height: 12.h),
-                          _categoryDropdown(cs),
+                          ArticleCategoryDropdown(
+                            selectedCategoryId: _selectedCategoryId,
+                            onChanged: (v) =>
+                                setState(() => _selectedCategoryId = v),
+                          ),
                           SizedBox(height: 16.h),
                         ],
                       ),
@@ -224,99 +229,6 @@ class _EditArticleSheetState extends State<_EditArticleSheet> {
               ],
             ),
           ),
-        );
-      },
-    );
-  }
-
-  Widget _field({
-    required String label,
-    required TextEditingController controller,
-    int maxLines = 1,
-    String? Function(String?)? validator,
-  }) {
-    final cs = Theme.of(context).colorScheme;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label,
-            style: AppTypography.arabicLabel(color: cs.onSurface, fontSize: 14)),
-        SizedBox(height: 8.h),
-        TextFormField(
-          controller: controller,
-          maxLines: maxLines,
-          style: AppTypography.arabicBody(color: cs.onSurface, fontSize: 16),
-          decoration: InputDecoration(
-            filled: true,
-            fillColor: cs.surfaceContainerLow,
-            contentPadding:
-                EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12.r),
-              borderSide: BorderSide(color: cs.outline),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12.r),
-              borderSide: BorderSide(color: cs.outline),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12.r),
-              borderSide: BorderSide(color: cs.primary, width: 1.5),
-            ),
-          ),
-          validator: validator,
-        ),
-      ],
-    );
-  }
-
-  Widget _categoryDropdown(ColorScheme cs) {
-    return BlocBuilder<CategoriesCubit, List<CategoryEntity>>(
-      builder: (context, categories) {
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('article.category_label'.tr(),
-                style: AppTypography.arabicLabel(
-                    color: cs.onSurface, fontSize: 14)),
-            SizedBox(height: 8.h),
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: 16.w),
-              decoration: BoxDecoration(
-                color: cs.surfaceContainerLow,
-                borderRadius: BorderRadius.circular(12.r),
-                border: Border.all(color: cs.outline),
-              ),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<int>(
-                  value: categories.any((c) => c.id == _selectedCategoryId)
-                      ? _selectedCategoryId
-                      : null,
-                  isExpanded: true,
-                  hint: Text(
-                    'article.category_hint'.tr(),
-                    style: AppTypography.arabicBody(
-                      color: cs.onSurfaceVariant.withValues(alpha: 0.5),
-                      fontSize: 16,
-                    ),
-                  ),
-                  items: categories.map((category) {
-                    return DropdownMenuItem<int>(
-                      value: category.id,
-                      child: Text(
-                        category.nameFor(context.locale.languageCode),
-                        style: AppTypography.arabicBody(
-                          color: cs.onSurface,
-                          fontSize: 16,
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                  onChanged: (v) => setState(() => _selectedCategoryId = v),
-                ),
-              ),
-            ),
-          ],
         );
       },
     );

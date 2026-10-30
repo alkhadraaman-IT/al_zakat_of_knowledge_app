@@ -4,17 +4,20 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../../app/theme/app_typography.dart';
-import '../../../../core/constants/syrian_cities.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../shared/widgets/success_dialog.dart';
-import '../../../articles/domain/entities/category_entity.dart';
 import '../../../articles/presentation/cubit/categories_cubit.dart';
 import '../../../auth/presentation/bloc/auth_cubit.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
+import '../../../profile/presentation/widgets/profile_guard.dart';
 import '../cubit/study_tool_cubit.dart';
 import '../cubit/study_tool_state.dart';
+import 'study_tool_form_fields.dart'; // 👈 جديد
 
 Future<bool> showCreateToolSheet(BuildContext context) async {
+  if (!await ensureProfileComplete(context)) return false;
+  if (!context.mounted) return false;
+
   final navigator = Navigator.of(context);
 
   final offered = await showModalBottomSheet<bool>(
@@ -46,10 +49,6 @@ class _CreateToolSheet extends StatefulWidget {
 }
 
 class _CreateToolSheetState extends State<_CreateToolSheet> {
-  static const List<String> _kinds = ['book', 'stationery', 'notes', 'other'];
-
-  
-
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _subjectController = TextEditingController();
@@ -77,7 +76,7 @@ class _CreateToolSheetState extends State<_CreateToolSheet> {
   void _onSubmitTapped() {
     setState(() => _formError = null);
     if (!(_formKey.currentState?.validate() ?? false)) {
-      setState(() => _formError = 'يرجى تصحيح الحقول المظللة');
+      setState(() => _formError = 'tool.form_invalid'.tr());
       return;
     }
     if (_selectedCategoryId == null) {
@@ -123,7 +122,9 @@ class _CreateToolSheetState extends State<_CreateToolSheet> {
         final isSubmitting = state is StudyToolSubmitting;
 
         return Padding(
-          padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(ctx).viewInsets.bottom,
+          ),
           child: Container(
             constraints: BoxConstraints(
               maxHeight: MediaQuery.of(ctx).size.height * 0.9,
@@ -180,7 +181,7 @@ class _CreateToolSheetState extends State<_CreateToolSheet> {
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          _field(
+                          StudyToolTextField(
                             label: 'tool.title_label'.tr(),
                             hint: 'tool.title_hint'.tr(),
                             controller: _titleController,
@@ -193,7 +194,7 @@ class _CreateToolSheetState extends State<_CreateToolSheet> {
                             },
                           ),
                           SizedBox(height: 12.h),
-                          _field(
+                          StudyToolTextField(
                             label: 'tool.subject_label'.tr(),
                             hint: 'tool.subject_hint'.tr(),
                             controller: _subjectController,
@@ -202,7 +203,7 @@ class _CreateToolSheetState extends State<_CreateToolSheet> {
                                 : null,
                           ),
                           SizedBox(height: 12.h),
-                          _field(
+                          StudyToolTextField(
                             label: 'tool.study_year_label'.tr(),
                             hint: 'tool.study_year_hint'.tr(),
                             controller: _studyYearController,
@@ -211,7 +212,7 @@ class _CreateToolSheetState extends State<_CreateToolSheet> {
                                 : null,
                           ),
                           SizedBox(height: 12.h),
-                          _field(
+                          StudyToolTextField(
                             label: 'tool.university_label'.tr(),
                             hint: 'tool.university_hint'.tr(),
                             controller: _universityController,
@@ -220,9 +221,13 @@ class _CreateToolSheetState extends State<_CreateToolSheet> {
                                 : null,
                           ),
                           SizedBox(height: 12.h),
-                          _cityDropdown(),
+                          StudyToolCityDropdown(
+                            selectedCity: _selectedCity,
+                            onChanged: (v) =>
+                                setState(() => _selectedCity = v),
+                          ),
                           SizedBox(height: 12.h),
-                          _field(
+                          StudyToolTextField(
                             label: 'tool.pickup_place_label'.tr(),
                             hint: 'tool.pickup_place_hint'.tr(),
                             controller: _pickupPlaceController,
@@ -231,16 +236,25 @@ class _CreateToolSheetState extends State<_CreateToolSheet> {
                                 : null,
                           ),
                           SizedBox(height: 12.h),
-                          _field(
+                          StudyToolTextField(
                             label: 'tool.pickup_notes_label'.tr(),
                             hint: 'tool.pickup_notes_hint'.tr(),
                             controller: _pickupNotesController,
                             maxLines: 3,
                           ),
                           SizedBox(height: 12.h),
-                          _categoryDropdown(cs),
+                          StudyToolCategoryDropdown(
+                            selectedCategoryId: _selectedCategoryId,
+                            onChanged: (v) =>
+                                setState(() => _selectedCategoryId = v),
+                          ),
                           SizedBox(height: 12.h),
-                          _kindDropdown(cs),
+                          StudyToolKindDropdown(
+                            selectedKind: _selectedKind,
+                            onChanged: (v) => setState(
+                              () => _selectedKind = v ?? _selectedKind,
+                            ),
+                          ),
                           SizedBox(height: 16.h),
                           if (_formError != null)
                             Container(
@@ -270,7 +284,9 @@ class _CreateToolSheetState extends State<_CreateToolSheet> {
                     decoration: BoxDecoration(
                       color: cs.surface,
                       border: Border(
-                        top: BorderSide(color: cs.outline.withValues(alpha: 0.2)),
+                        top: BorderSide(
+                          color: cs.outline.withValues(alpha: 0.2),
+                        ),
                       ),
                     ),
                     child: Material(
@@ -314,198 +330,6 @@ class _CreateToolSheetState extends State<_CreateToolSheet> {
           ),
         );
       },
-    );
-  }
-
-  Widget _field({
-    required String label,
-    required String hint,
-    required TextEditingController controller,
-    int maxLines = 1,
-    TextInputType? keyboardType,
-    String? Function(String?)? validator,
-  }) {
-    final cs = Theme.of(context).colorScheme;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label,
-            style: AppTypography.arabicLabel(color: cs.onSurface, fontSize: 14)),
-        SizedBox(height: 8.h),
-        TextFormField(
-          controller: controller,
-          maxLines: maxLines,
-          keyboardType: keyboardType,
-          style: AppTypography.arabicBody(color: cs.onSurface, fontSize: 16),
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: AppTypography.arabicBody(
-              color: cs.onSurfaceVariant.withValues(alpha: 0.5),
-              fontSize: 16,
-            ),
-            filled: true,
-            fillColor: cs.surfaceContainerLow,
-            contentPadding:
-                EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12.r),
-              borderSide: BorderSide(color: cs.outline),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12.r),
-              borderSide: BorderSide(color: cs.outline),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12.r),
-              borderSide: BorderSide(color: cs.primary, width: 1.5),
-            ),
-          ),
-          validator: validator,
-        ),
-      ],
-    );
-  }
-
-  Widget _cityDropdown() {
-    final cs = Theme.of(context).colorScheme;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'tool.city_label'.tr(),
-          style: AppTypography.arabicLabel(color: cs.onSurface, fontSize: 14),
-        ),
-        SizedBox(height: 8.h),
-        Container(
-          padding: EdgeInsets.symmetric(horizontal: 16.w),
-          decoration: BoxDecoration(
-            color: cs.surfaceContainerLow,
-            borderRadius: BorderRadius.circular(12.r),
-            border: Border.all(color: cs.outline),
-          ),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<String>(
-              value: _selectedCity,
-              isExpanded: true,
-              hint: Text(
-                'اختر المحافظة',
-                style: AppTypography.arabicBody(
-                  color: cs.onSurfaceVariant.withValues(alpha: 0.5),
-                  fontSize: 16,
-                ),
-              ),
-              items: SyrianCities.all.map((city) {
-                return DropdownMenuItem<String>(
-                  value: city,
-                  child: Text(
-                    city,
-                    style: AppTypography.arabicBody(
-                      color: cs.onSurface,
-                      fontSize: 16,
-                    ),
-                  ),
-                );
-              }).toList(),
-              onChanged: (v) => setState(() => _selectedCity = v),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _categoryDropdown(ColorScheme cs) {
-    return BlocBuilder<CategoriesCubit, List<CategoryEntity>>(
-      builder: (context, categories) {
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'tool.category_label'.tr(),
-              style: AppTypography.arabicLabel(
-                color: cs.onSurface,
-                fontSize: 14,
-              ),
-            ),
-            SizedBox(height: 8.h),
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: 16.w),
-              decoration: BoxDecoration(
-                color: cs.surfaceContainerLow,
-                borderRadius: BorderRadius.circular(12.r),
-                border: Border.all(color: cs.outline),
-              ),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<int>(
-                  value: categories.any((c) => c.id == _selectedCategoryId)
-                      ? _selectedCategoryId
-                      : null,
-                  isExpanded: true,
-                  hint: Text(
-                    'tool.category_hint'.tr(),
-                    style: AppTypography.arabicBody(
-                      color: cs.onSurfaceVariant.withValues(alpha: 0.5),
-                      fontSize: 16,
-                    ),
-                  ),
-                  items: categories.map((category) {
-                    return DropdownMenuItem<int>(
-                      value: category.id,
-                      child: Text(
-                        category.nameFor(context.locale.languageCode),
-                        style: AppTypography.arabicBody(
-                          color: cs.onSurface,
-                          fontSize: 16,
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                  onChanged: (v) => setState(() => _selectedCategoryId = v),
-                ),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _kindDropdown(ColorScheme cs) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('tool.kind_label'.tr(),
-            style: AppTypography.arabicLabel(color: cs.onSurface, fontSize: 14)),
-        SizedBox(height: 8.h),
-        Container(
-          padding: EdgeInsets.symmetric(horizontal: 16.w),
-          decoration: BoxDecoration(
-            color: cs.surfaceContainerLow,
-            borderRadius: BorderRadius.circular(12.r),
-            border: Border.all(color: cs.outline),
-          ),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<String>(
-              value: _selectedKind,
-              isExpanded: true,
-              items: _kinds.map((kind) {
-                return DropdownMenuItem<String>(
-                  value: kind,
-                  child: Text(
-                    'tool.kind_$kind'.tr(),
-                    style: AppTypography.arabicBody(
-                      color: cs.onSurface,
-                      fontSize: 16,
-                    ),
-                  ),
-                );
-              }).toList(),
-              onChanged: (v) =>
-                  setState(() => _selectedKind = v ?? _selectedKind),
-            ),
-          ),
-        ),
-      ],
     );
   }
 }

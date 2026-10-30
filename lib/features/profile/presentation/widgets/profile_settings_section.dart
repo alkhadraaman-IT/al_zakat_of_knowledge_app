@@ -71,38 +71,38 @@ class ProfileSettingsSection extends StatelessWidget {
                   height: 1,
                   indent: 56.w,
                 ),
-                _SettingsItem(
-                  icon: Icons.privacy_tip_outlined,
-                  title: 'profile.privacy'.tr(),
-                  onTap: () {},
-                ),
-                Divider(
-                  color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
-                  height: 1,
-                  indent: 56.w,
-                ),
-                _SettingsItem(
-                  icon: Icons.bug_report_outlined,
-                  title: 'profile.report_bug'.tr(),
-                  onTap: () {},
-                ),
-                Divider(
-                  color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
-                  height: 1,
-                  indent: 56.w,
-                ),
-                _SettingsItem(
-                  icon: Icons.delete_outline,
-                  title: 'profile.delete_account'.tr(),
-                  titleColor: Theme.of(context).colorScheme.error,
-                  iconColor: Theme.of(context).colorScheme.error,
-                  onTap: () {},
-                ),
-                Divider(
-                  color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
-                  height: 1,
-                  indent: 56.w,
-                ),
+                // _SettingsItem(
+                //   icon: Icons.privacy_tip_outlined,
+                //   title: 'profile.privacy'.tr(),
+                //   onTap: () {},
+                // ),
+                // Divider(
+                //   color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+                //   height: 1,
+                //   indent: 56.w,
+                // ),
+                // _SettingsItem(
+                //   icon: Icons.bug_report_outlined,
+                //   title: 'profile.report_bug'.tr(),
+                //   onTap: () {},
+                // ),
+                // Divider(
+                //   color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+                //   height: 1,
+                //   indent: 56.w,
+                // ),
+                // _SettingsItem(
+                //   icon: Icons.delete_outline,
+                //   title: 'profile.delete_account'.tr(),
+                //   titleColor: Theme.of(context).colorScheme.error,
+                //   iconColor: Theme.of(context).colorScheme.error,
+                //   onTap: () {},
+                // ),
+                // Divider(
+                //   color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+                //   height: 1,
+                //   indent: 56.w,
+                // ),
                 _SettingsItem(
                   icon: Icons.logout,
                   title: 'profile.logout'.tr(),
@@ -194,7 +194,7 @@ class ProfileSettingsSection extends StatelessWidget {
 
   void _handleLogout(BuildContext context) {
     context.read<AuthCubit>().signOut();
-    context.go(AppRoutes.login);
+    // context.go(AppRoutes.login);
   }
 }
 

@@ -9,9 +9,9 @@ import '../../../../core/constants/syrian_cities.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../shared/widgets/app_search_bar.dart';
 import '../../../../shared/widgets/app_segmented_bar.dart';
-import '../../../../shared/widgets/app_session_card.dart';
 import '../../../../shared/widgets/app_top_header.dart';
 import '../../../../shared/widgets/article_entity_card.dart';
+import '../../../../shared/widgets/session_entity_card.dart';
 import '../../../../shared/widgets/study_tool_entity_card.dart';
 import '../../../articles/domain/entities/article_entity.dart';
 import '../../../articles/presentation/bloc/article_cubit.dart';
@@ -20,10 +20,9 @@ import '../../../sessions/domain/entities/session_entity.dart';
 import '../../../study_tools/domain/entities/study_tool_entity.dart';
 import '../../../study_tools/presentation/cubit/study_tool_cubit.dart';
 import '../../../study_tools/presentation/cubit/study_tool_state.dart';
-import '../../presentation/bloc/search_cubit.dart';
-import '../../presentation/bloc/search_state.dart';
+import '../cubit/search_cubit.dart';
+import '../cubit/search_state.dart';
 
-/// Search screen — Stitch Design System with tab switching and dynamic filtering.
 class SearchView extends StatefulWidget {
   const SearchView({super.key});
 
@@ -36,14 +35,12 @@ class _SearchViewState extends State<SearchView> {
 
   @override
   void dispose() {
-    print('<<<<<<<<<<<[SearchView.dispose]>>>>>>>>>>>>>');
     _searchController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    print('<<<<<<<<<<<[SearchView.build]>>>>>>>>>>>>>');
     return MultiBlocProvider(
       providers: [
         BlocProvider(create: (_) => sl<SearchCubit>()..load()),
@@ -56,9 +53,9 @@ class _SearchViewState extends State<SearchView> {
             listenWhen: (_, curr) => curr is ArticleLoaded,
             listener: (context, state) {
               if (state is ArticleLoaded) {
-                context.read<SearchCubit>().refreshLists(
-                  articles: state.articles,
-                );
+                context
+                    .read<SearchCubit>()
+                    .refreshLists(articles: state.articles);
               }
             },
           ),
@@ -66,15 +63,18 @@ class _SearchViewState extends State<SearchView> {
             listenWhen: (_, curr) => curr is StudyToolLoaded,
             listener: (context, state) {
               if (state is StudyToolLoaded) {
-                context.read<SearchCubit>().refreshLists(tools: state.tools);
+                context
+                    .read<SearchCubit>()
+                    .refreshLists(tools: state.tools);
               }
             },
           ),
         ],
         child: Builder(
           builder: (context) {
+            final cs = Theme.of(context).colorScheme;
             return Scaffold(
-              backgroundColor: Theme.of(context).colorScheme.surface,
+              backgroundColor: cs.surface,
               body: SafeArea(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -91,14 +91,10 @@ class _SearchViewState extends State<SearchView> {
                       ),
                       child: AppSearchBar(
                         controller: _searchController,
-                        onChanged: (value) {
-                          context.read<SearchCubit>().setQuery(value);
-                        },
+                        onChanged: (value) =>
+                            context.read<SearchCubit>().setQuery(value),
                         suffixIcon: IconButton(
-                          icon: Icon(
-                            Icons.tune,
-                            color: Theme.of(context).colorScheme.onSurface,
-                          ),
+                          icon: Icon(Icons.tune, color: cs.onSurface),
                           onPressed: () => _showFilterBottomSheet(context),
                         ),
                       ),
@@ -110,9 +106,8 @@ class _SearchViewState extends State<SearchView> {
                       ),
                       child: BlocBuilder<SearchCubit, SearchState>(
                         builder: (context, state) {
-                          final selectedTab = state is SearchLoaded
-                              ? state.selectedTab
-                              : 0;
+                          final selectedTab =
+                              state is SearchLoaded ? state.selectedTab : 0;
                           return AppSegmentedBar(
                             labels: [
                               'tabs.lectures'.tr(),
@@ -120,8 +115,8 @@ class _SearchViewState extends State<SearchView> {
                               'tabs.tools'.tr(),
                             ],
                             selectedIndex: selectedTab,
-                            onTabChanged: (index) =>
-                                context.read<SearchCubit>().setTab(index),
+                            onTabChanged: (i) =>
+                                context.read<SearchCubit>().setTab(i),
                           );
                         },
                       ),
@@ -131,18 +126,14 @@ class _SearchViewState extends State<SearchView> {
                         builder: (context, state) {
                           if (state is SearchLoading) {
                             return const Center(
-                              child: CircularProgressIndicator(),
-                            );
+                                child: CircularProgressIndicator());
                           }
-
                           if (state is SearchError) {
                             return _buildErrorState(context, state);
                           }
-
                           if (state is SearchLoaded) {
-                            final isQueryEmpty = _searchController.text
-                                .trim()
-                                .isEmpty;
+                            final isQueryEmpty =
+                                _searchController.text.trim().isEmpty;
                             switch (state.selectedTab) {
                               case 0:
                                 return state.sessions.isEmpty
@@ -158,14 +149,12 @@ class _SearchViewState extends State<SearchView> {
                                     : _buildToolResults(state.tools);
                               default:
                                 return _buildEmptyState(
-                                  context,
-                                  state.selectedTab,
-                                  isQueryEmpty,
-                                );
+                                    context, state.selectedTab, isQueryEmpty);
                             }
                           }
-
-                          return const SizedBox.shrink();
+                          // SearchInitial — شاشة قصيرة قبل بدء التحميل
+                          return const Center(
+                              child: CircularProgressIndicator());
                         },
                       ),
                     ),
@@ -179,26 +168,8 @@ class _SearchViewState extends State<SearchView> {
     );
   }
 
-  Widget _buildToolResults(List<StudyToolEntity> tools) {
-    return ListView.separated(
-      padding: EdgeInsets.symmetric(
-        horizontal: AppSpacing.screenHorizontal,
-        vertical: AppSpacing.md,
-      ),
-      itemCount: tools.length,
-      separatorBuilder: (_, _) => SizedBox(height: AppSpacing.md),
-      itemBuilder: (context, index) => StudyToolEntityCard(
-        key: ValueKey(tools[index].id),
-        tool: tools[index],
-        index: index,
-      ),
-    );
-  }
-  
-
   void _showFilterBottomSheet(BuildContext context) {
     final cubit = context.read<SearchCubit>();
-
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -206,9 +177,7 @@ class _SearchViewState extends State<SearchView> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (BuildContext bottomSheetContext) {
-        return SearchFilterBottomSheet(cubit: cubit);
-      },
+      builder: (_) => SearchFilterBottomSheet(cubit: cubit),
     );
   }
 
@@ -239,10 +208,8 @@ class _SearchViewState extends State<SearchView> {
                 onTap: () => cubit.retry(),
                 borderRadius: BorderRadius.circular(12.r),
                 child: Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 24.w,
-                    vertical: 12.h,
-                  ),
+                  padding:
+                      EdgeInsets.symmetric(horizontal: 24.w, vertical: 12.h),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -267,10 +234,7 @@ class _SearchViewState extends State<SearchView> {
   }
 
   Widget _buildEmptyState(
-    BuildContext context,
-    int selectedTab,
-    bool isQueryEmpty,
-  ) {
+      BuildContext context, int selectedTab, bool isQueryEmpty) {
     String key;
     if (isQueryEmpty) {
       key = 'search.no_data_available';
@@ -312,83 +276,14 @@ class _SearchViewState extends State<SearchView> {
       ),
       itemCount: sessions.length,
       separatorBuilder: (_, _) => SizedBox(height: AppSpacing.md),
-      itemBuilder: (context, index) =>
-          _buildSessionCard(context, sessions[index]),
+      itemBuilder: (context, i) => SessionEntityCard(
+        key: ValueKey(sessions[i].id),
+        session: sessions[i],
+      ),
     );
   }
 
-  Widget _buildSessionCard(BuildContext context, SessionEntity session) {
-    final startTime = DateTime.tryParse(session.startsAt)?.toLocal();
-    final bookedCount = session.bookedCount;
-    final maxSeats = session.maxSeats > 0 ? session.maxSeats : 1;
-    final factor = (bookedCount / maxSeats).clamp(0.0, 1.0).toDouble();
-    final percent = (bookedCount / maxSeats * 100).round();
-    final lecturer = session.lecturerName;
-    final location = [
-      session.placeName,
-      session.city,
-    ].where((part) => part.isNotEmpty).join(' — ');
-
-    String dateLabel = 'session.unspecified'.tr();
-    String timeLabel = 'session.unspecified'.tr();
-    if (startTime != null) {
-      dateLabel = _formatDate(startTime);
-      final hour = startTime.hour;
-      final minute = startTime.minute;
-      timeLabel =
-          '${hour > 12 ? hour - 12 : hour}:${minute.toString().padLeft(2, '0')} '
-          '${hour >= 12 ? 'session.pm'.tr() : 'session.am'.tr()}';
-    }
-
-    return AppSessionCard(
-      sessionId: session.id,
-      title: session.title,
-      lecturerName: lecturer.isNotEmpty ? lecturer : 'session.unspecified'.tr(),
-      lecturerInitial: lecturer.isNotEmpty ? lecturer[0] : '—',
-      dateLabel: dateLabel,
-      timeLabel: timeLabel,
-      locationLabel: location.isNotEmpty
-          ? location
-          : 'session.unspecified'.tr(),
-      mapPillLabel: location.isNotEmpty ? location : 'session.unspecified'.tr(),
-      capacityFactor: factor,
-      percentLabel: '$percent%',
-      seatsLabel: '$bookedCount/$maxSeats',
-      lat: session.lat,
-      lng: session.lng,
-    );
-  }
-
-  String _formatDate(DateTime value) {
-    const weekdays = <String>[
-      'session.day_sunday',
-      'session.day_monday',
-      'session.day_tuesday',
-      'session.day_wednesday',
-      'session.day_thursday',
-      'session.day_friday',
-      'session.day_saturday',
-    ];
-    const months = <String>[
-      'session.month_january',
-      'session.month_february',
-      'session.month_march',
-      'session.month_april',
-      'session.month_may',
-      'session.month_june',
-      'session.month_july',
-      'session.month_august',
-      'session.month_september',
-      'session.month_october',
-      'session.month_november',
-      'session.month_december',
-    ];
-    final weekdayKey = weekdays[value.weekday % 7];
-    final monthKey = months[value.month - 1];
-    return '${weekdayKey.tr()} ${value.day} ${monthKey.tr()}';
-  }
-
-    Widget _buildArticleResults(List<ArticleEntity> articles) {
+  Widget _buildArticleResults(List<ArticleEntity> articles) {
     return ListView.separated(
       padding: EdgeInsets.symmetric(
         horizontal: AppSpacing.screenHorizontal,
@@ -396,18 +291,35 @@ class _SearchViewState extends State<SearchView> {
       ),
       itemCount: articles.length,
       separatorBuilder: (_, _) => SizedBox(height: AppSpacing.md),
-      itemBuilder: (context, index) => ArticleEntityCard(
-        key: ValueKey(articles[index].id),
-        article: articles[index],
+      itemBuilder: (context, i) => ArticleEntityCard(
+        key: ValueKey(articles[i].id),
+        article: articles[i],
+      ),
+    );
+  }
+
+  Widget _buildToolResults(List<StudyToolEntity> tools) {
+    return ListView.separated(
+      padding: EdgeInsets.symmetric(
+        horizontal: AppSpacing.screenHorizontal,
+        vertical: AppSpacing.md,
+      ),
+      itemCount: tools.length,
+      separatorBuilder: (_, _) => SizedBox(height: AppSpacing.md),
+      itemBuilder: (context, i) => StudyToolEntityCard(
+        key: ValueKey(tools[i].id),
+        tool: tools[i],
+        index: i,
       ),
     );
   }
 }
 
-/// Professional Filter BottomSheet with dynamic database categories and action buttons.
+// ─────────────────────────────────────────────
+// Filter Bottom Sheet
+// ─────────────────────────────────────────────
 class SearchFilterBottomSheet extends StatefulWidget {
   final SearchCubit cubit;
-
   const SearchFilterBottomSheet({super.key, required this.cubit});
 
   @override
@@ -421,8 +333,6 @@ class _SearchFilterBottomSheetState extends State<SearchFilterBottomSheet> {
   bool? _isAvailable;
   DateTime? _selectedDate;
 
-  
-
   @override
   void initState() {
     super.initState();
@@ -434,9 +344,8 @@ class _SearchFilterBottomSheetState extends State<SearchFilterBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
-    print('<<<<<<<<<<<[SearchFilterBottomSheet.build]>>>>>>>>>>>>>');
-    final selectedTab = widget.cubit.selectedTab;
     final theme = Theme.of(context);
+    final selectedTab = widget.cubit.selectedTab;
 
     return Container(
       padding: EdgeInsets.only(
@@ -478,9 +387,6 @@ class _SearchFilterBottomSheetState extends State<SearchFilterBottomSheet> {
               Expanded(
                 child: OutlinedButton(
                   onPressed: () {
-                    print(
-                      '<<<<<<<<<<<[SearchFilterBottomSheet.clearFilters]>>>>>>>>>>>>>',
-                    );
                     setState(() {
                       _selectedCategory = null;
                       _selectedLocation = null;
@@ -500,9 +406,6 @@ class _SearchFilterBottomSheetState extends State<SearchFilterBottomSheet> {
                     foregroundColor: theme.colorScheme.onPrimary,
                   ),
                   onPressed: () {
-                    print(
-                      '<<<<<<<<<<<[SearchFilterBottomSheet.applyFilters]>>>>>>>>>>>>>',
-                    );
                     widget.cubit.applyFilters(
                       category: _selectedCategory,
                       selectedDate: _selectedDate,
@@ -522,17 +425,12 @@ class _SearchFilterBottomSheetState extends State<SearchFilterBottomSheet> {
   }
 
   Widget _buildFilterContent(BuildContext context, int selectedTab) {
-    if (selectedTab == 0) {
-      return _buildSessionsFilterSheet(context);
-    } else if (selectedTab == 1) {
-      return _buildArticlesFilterSheet(context);
-    } else {
-      return _buildToolsFilterSheet(context);
-    }
+    if (selectedTab == 0) return _buildSessionsFilterSheet(context);
+    if (selectedTab == 1) return _buildArticlesFilterSheet(context);
+    return _buildToolsFilterSheet(context);
   }
 
   Widget _buildSessionsFilterSheet(BuildContext context) {
-    // Fallback to all categories if sessionCategories is empty
     final categoryIds = widget.cubit.sessionCategories.isNotEmpty
         ? widget.cubit.sessionCategories
         : widget.cubit.categories.map((c) => c.id).toList();
@@ -575,19 +473,17 @@ class _SearchFilterBottomSheetState extends State<SearchFilterBottomSheet> {
           style: AppTypography.arabicCaption(fontSize: 12),
         ),
         SizedBox(height: 6.h),
-        DropdownButtonFormField<String>(
+        DropdownButtonFormField<String?>(
           initialValue: _selectedLocation,
           isExpanded: true,
           decoration: InputDecoration(
             hintText: 'search.filter.location_hint'.tr(),
             border: const OutlineInputBorder(),
-            contentPadding: EdgeInsets.symmetric(
-              horizontal: 12.w,
-              vertical: 8.h,
-            ),
+            contentPadding:
+                EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
           ),
           items: [
-            DropdownMenuItem<String>(
+            DropdownMenuItem<String?>(
               value: null,
               child: Text(
                 'search.filter.all'.tr(),
@@ -595,9 +491,10 @@ class _SearchFilterBottomSheetState extends State<SearchFilterBottomSheet> {
               ),
             ),
             ...SyrianCities.all.map(
-              (gov) => DropdownMenuItem<String>(
+              (gov) => DropdownMenuItem<String?>(
                 value: gov,
-                child: Text(gov, style: AppTypography.arabicBody(fontSize: 14)),
+                child:
+                    Text(gov, style: AppTypography.arabicBody(fontSize: 14)),
               ),
             ),
           ],
@@ -615,17 +512,12 @@ class _SearchFilterBottomSheetState extends State<SearchFilterBottomSheet> {
             runSpacing: 4,
             children: categoryIds.map((catId) {
               final isSelected = _selectedCategory == catId.toString();
-              return _buildFilterChip(
+              return _filterChip(
                 context,
                 _categoryLabel(context, catId),
                 isSelected,
-                () {
-                  setState(
-                    () => _selectedCategory = isSelected
-                        ? null
-                        : catId.toString(),
-                  );
-                },
+                () => setState(() => _selectedCategory =
+                    isSelected ? null : catId.toString()),
               );
             }).toList(),
           ),
@@ -639,43 +531,38 @@ class _SearchFilterBottomSheetState extends State<SearchFilterBottomSheet> {
         ? widget.cubit.articleCategories
         : widget.cubit.categories.map((c) => c.id).toList();
 
+    if (categoryIds.isEmpty) {
+      return Text(
+        'search.filter.no_filters_article'.tr(),
+        style: AppTypography.arabicBody(
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+          fontSize: 14,
+        ),
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (categoryIds.isNotEmpty) ...[
-          Text(
-            'search.filter.category'.tr(),
-            style: AppTypography.arabicCaption(fontSize: 12),
-          ),
-          SizedBox(height: 8.h),
-          Wrap(
-            spacing: 8,
-            runSpacing: 4,
-            children: categoryIds.map((catId) {
-              final isSelected = _selectedCategory == catId.toString();
-              return _buildFilterChip(
-                context,
-                _categoryLabel(context, catId),
-                isSelected,
-                () {
-                  setState(
-                    () => _selectedCategory = isSelected
-                        ? null
-                        : catId.toString(),
-                  );
-                },
-              );
-            }).toList(),
-          ),
-        ] else ...[
-          Text(
-            'search.filter.no_filters_article'.tr(),
-            style: AppTypography.arabicBody(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-              fontSize: 14,
-            ),
-          ),
-        ],
+        Text(
+          'search.filter.category'.tr(),
+          style: AppTypography.arabicCaption(fontSize: 12),
+        ),
+        SizedBox(height: 8.h),
+        Wrap(
+          spacing: 8,
+          runSpacing: 4,
+          children: categoryIds.map((catId) {
+            final isSelected = _selectedCategory == catId.toString();
+            return _filterChip(
+              context,
+              _categoryLabel(context, catId),
+              isSelected,
+              () => setState(() => _selectedCategory =
+                  isSelected ? null : catId.toString()),
+            );
+          }).toList(),
+        ),
       ],
     );
   }
@@ -697,29 +584,23 @@ class _SearchFilterBottomSheetState extends State<SearchFilterBottomSheet> {
           spacing: 8,
           runSpacing: 4,
           children: [
-            _buildFilterChip(
+            _filterChip(
               context,
               'search.filter.all'.tr(),
               _isAvailable == null,
-              () {
-                setState(() => _isAvailable = null);
-              },
+              () => setState(() => _isAvailable = null),
             ),
-            _buildFilterChip(
+            _filterChip(
               context,
               'search.filter.available'.tr(),
               _isAvailable == true,
-              () {
-                setState(() => _isAvailable = true);
-              },
+              () => setState(() => _isAvailable = true),
             ),
-            _buildFilterChip(
+            _filterChip(
               context,
               'search.filter.taken'.tr(),
               _isAvailable == false,
-              () {
-                setState(() => _isAvailable = false);
-              },
+              () => setState(() => _isAvailable = false),
             ),
           ],
         ),
@@ -735,17 +616,12 @@ class _SearchFilterBottomSheetState extends State<SearchFilterBottomSheet> {
             runSpacing: 4,
             children: categoryIds.map((catId) {
               final isSelected = _selectedCategory == catId.toString();
-              return _buildFilterChip(
+              return _filterChip(
                 context,
                 _categoryLabel(context, catId),
                 isSelected,
-                () {
-                  setState(
-                    () => _selectedCategory = isSelected
-                        ? null
-                        : catId.toString(),
-                  );
-                },
+                () => setState(() => _selectedCategory =
+                    isSelected ? null : catId.toString()),
               );
             }).toList(),
           ),
@@ -754,24 +630,18 @@ class _SearchFilterBottomSheetState extends State<SearchFilterBottomSheet> {
     );
   }
 
-  Widget _buildFilterChip(
-    BuildContext context,
-    String label,
-    bool isSelected,
-    VoidCallback onTap,
-  ) {
-    final theme = Theme.of(context);
+  Widget _filterChip(
+      BuildContext context, String label, bool isSelected, VoidCallback onTap) {
+    final cs = Theme.of(context).colorScheme;
     return FilterChip(
       label: Text(label),
       selected: isSelected,
       onSelected: (_) => onTap(),
-      selectedColor: theme.colorScheme.primary.withValues(alpha: 0.1),
-      backgroundColor: theme.colorScheme.surface,
-      checkmarkColor: theme.colorScheme.primary,
+      selectedColor: cs.primary.withValues(alpha: 0.1),
+      backgroundColor: cs.surface,
+      checkmarkColor: cs.primary,
       labelStyle: AppTypography.arabicBody(
-        color: isSelected
-            ? theme.colorScheme.primary
-            : theme.colorScheme.onSurface,
+        color: isSelected ? cs.primary : cs.onSurface,
         fontSize: 12,
       ),
     );

@@ -7,7 +7,7 @@ import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../shared/widgets/app_top_header.dart';
 import '../../domain/entities/app_notification.dart';
-import '../../domain/entities/notification_failure.dart'; // تأكد من اسم الملف (مفرد أو جمع)
+import '../../domain/entities/notification_failure.dart';
 import '../cubit/notification_cubit.dart';
 import '../cubit/notification_state.dart';
 import '../widgets/notification_card.dart';
@@ -16,22 +16,19 @@ import '../widgets/notifications_failure_texts.dart';
 import '../widgets/notifications_stale_banner.dart';
 import 'notifications_error_view.dart';
 
-/// 1. هذه هي الواجهة المسؤولة عن توفير الـ Cubit
-/// يجب أن يتم استدعاؤها في ملف الـ Router (app_router.dart)
 class NotificationsPage extends StatelessWidget {
   const NotificationsPage({super.key});
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      lazy: false, // 👈 مهم جداً: يبدأ الـ Cubit بالعمل فوراً لمنع التجميد
+      lazy: false,
       create: (_) => sl<NotificationsCubit>()..start(),
       child: const NotificationsView(),
     );
   }
 }
 
-/// 2. هذه هي الواجهة التي ترسم التصميم وتقرأ البيانات من الـ Cubit
 class NotificationsView extends StatelessWidget {
   const NotificationsView({super.key});
 
@@ -39,13 +36,22 @@ class NotificationsView extends StatelessWidget {
     final cubit = context.read<NotificationsCubit>();
     if (!n.isRead) cubit.markAsRead(n.id);
 
-    // push (وليس go) ليبقى زر الرجوع يعيد لقائمة الإشعارات
+    // المحاضرات: شاشة التفاصيل موجودة
     if (n.sessionId != null) {
       context.push('/session-details/${n.sessionId}');
-    } else if (n.materialId != null) {
-      context.push('/material-details/${n.materialId}');
-    } else if (n.articleId != null) {
-      context.push('/article-details/${n.articleId}');
+      return;
+    }
+
+    // الأدوات والمقالات: الشاشات غير موجودة بعد
+    if (n.materialId != null || n.articleId != null) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(
+            content: Text('صفحة التفاصيل قيد التطوير'),
+            duration: Duration(seconds: 2),
+          ),
+        );
     }
   }
 
@@ -59,7 +65,6 @@ class NotificationsView extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // الهيدر العلوي مع زر تحديد الكل كمقروء
             BlocSelector<NotificationsCubit, NotificationsState, int>(
               selector: (s) => s.unreadCount,
               builder: (context, unread) => AppTopHeader(
@@ -81,33 +86,33 @@ class NotificationsView extends StatelessWidget {
               ),
             ),
             SizedBox(height: AppSpacing.md),
-            
-            // جسم القائمة
             Expanded(
               child: BlocConsumer<NotificationsCubit, NotificationsState>(
-                // مراقبة الفشل أثناء عرض القائمة (مثلاً فشل الحذف)
                 listenWhen: (p, c) =>
                     c.status == NotificationsStatus.failure &&
                     c.notifications.isNotEmpty &&
-                    (p.status != NotificationsStatus.failure || p.failure != c.failure),
+                    (p.status != NotificationsStatus.failure ||
+                        p.failure != c.failure),
                 listener: (context, state) {
                   final kind = state.failure!;
                   ScaffoldMessenger.of(context)
                     ..hideCurrentSnackBar()
-                    ..showSnackBar(SnackBar(
-                      content: Text('فشلت العملية. ${kind.message}'),
-                      action: kind.isRetryable
-                          ? SnackBarAction(
-                              label: 'إعادة المحاولة',
-                              onPressed: () => context.read<NotificationsCubit>().retry(),
-                            )
-                          : null,
-                    ));
+                    ..showSnackBar(
+                      SnackBar(
+                        content: Text('فشلت العملية. ${kind.message}'),
+                        action: kind.isRetryable
+                            ? SnackBarAction(
+                                label: 'إعادة المحاولة',
+                                onPressed: () =>
+                                    context.read<NotificationsCubit>().retry(),
+                              )
+                            : null,
+                      ),
+                    );
                 },
                 builder: (context, state) {
                   final cubit = context.read<NotificationsCubit>();
 
-                  // 1. حالة القائمة الفارغة
                   if (state.notifications.isEmpty) {
                     if (state.status == NotificationsStatus.loading) {
                       return const Center(child: CircularProgressIndicator());
@@ -121,7 +126,6 @@ class NotificationsView extends StatelessWidget {
                     return const NotificationsEmptyState();
                   }
 
-                  // 2. حالة وجود إشعارات
                   return _NotificationsList(
                     items: state.notifications,
                     staleFailure: state.partialFailure,
@@ -138,7 +142,6 @@ class NotificationsView extends StatelessWidget {
   }
 }
 
-/// 3. قائمة الإشعارات الداخلية
 class _NotificationsList extends StatelessWidget {
   final List<AppNotification> items;
   final NotificationsFailureKind? staleFailure;
@@ -166,26 +169,33 @@ class _NotificationsList extends StatelessWidget {
           vertical: AppSpacing.sm,
         ),
         itemCount: items.length + (hasBanner ? 1 : 0),
-        separatorBuilder: (_, __) => SizedBox(height: AppSpacing.sm),
+        separatorBuilder: (_, _) => SizedBox(height: AppSpacing.sm),
         itemBuilder: (context, i) {
           if (hasBanner && i == 0) {
-            return NotificationsStaleBanner(kind: staleFailure!, onRetry: onRetry);
+            return NotificationsStaleBanner(
+              kind: staleFailure!,
+              onRetry: onRetry,
+            );
           }
           final n = items[hasBanner ? i - 1 : i];
           return Dismissible(
             key: ValueKey(n.id),
             direction: DismissDirection.horizontal,
-            onDismissed: (_) => context.read<NotificationsCubit>().delete(n.id),
+            onDismissed: (_) =>
+                context.read<NotificationsCubit>().delete(n.id),
             background: _deleteBg(cs, AlignmentDirectional.centerStart),
-            secondaryBackground: _deleteBg(cs, AlignmentDirectional.centerEnd),
-            child: NotificationCard(notification: n, onTap: () => onTap(n)),
+            secondaryBackground:
+                _deleteBg(cs, AlignmentDirectional.centerEnd),
+            child: NotificationCard(
+              notification: n,
+              onTap: () => onTap(n),
+            ),
           );
         },
       ),
     );
   }
 
-  // خلفية السحب للحذف
   Widget _deleteBg(ColorScheme cs, AlignmentGeometry alignment) => Container(
         decoration: BoxDecoration(
           color: cs.errorContainer,

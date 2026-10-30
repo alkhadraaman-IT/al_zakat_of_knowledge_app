@@ -1,5 +1,7 @@
 import 'dart:async';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
+
 import '../../domain/entities/notification_failure.dart';
 import '../../domain/usecases/delete_notification_usecase.dart';
 import '../../domain/usecases/get_notifications_usecase.dart';
@@ -15,8 +17,8 @@ class NotificationsCubit extends Cubit<NotificationsState> {
   final MarkAllNotificationsReadUseCase _markAllRead;
   final DeleteNotificationUseCase _delete;
 
-  StreamSubscription? _sub;
-  bool _isLoading = false; // حماية من التحميل المتزامن
+  StreamSubscription<void>? _sub;
+  bool _isLoading = false;
 
   NotificationsCubit({
     required GetNotificationsUseCase getNotifications,
@@ -33,10 +35,7 @@ class NotificationsCubit extends Cubit<NotificationsState> {
 
   void start() {
     if (state.status != NotificationsStatus.initial) return;
-    _sub = _watch().listen((_) {
-      // عند حدوث تغيير في Hive، نقوم بإعادة التحميل
-      _load();
-    });
+    _sub = _watch().listen((_) => _load());
     _load();
   }
 
@@ -45,10 +44,9 @@ class NotificationsCubit extends Cubit<NotificationsState> {
   Future<void> retry() => _load();
 
   Future<void> _load() async {
-    if (_isLoading) return; // منع الدخول إذا كان هناك تحميل جاري
+    if (_isLoading) return;
     _isLoading = true;
-    
-    // إظهار حالة التحميل فقط إذا كانت القائمة فارغة
+
     if (state.notifications.isEmpty) {
       emit(state.copyWith(status: NotificationsStatus.loading));
     }
@@ -68,7 +66,7 @@ class NotificationsCubit extends Cubit<NotificationsState> {
         status: NotificationsStatus.failure,
         failure: e.kind,
       ));
-    } catch (e) {
+    } catch (_) {
       if (isClosed) return;
       emit(state.copyWith(
         status: NotificationsStatus.failure,
@@ -80,20 +78,23 @@ class NotificationsCubit extends Cubit<NotificationsState> {
   }
 
   Future<void> markAsRead(String id) async {
-    // تحديث الواجهة فوراً (Optimistic Update)
-    final updatedList = state.notifications.map((n) => n.id == id ? n.copyWith(isRead: true) : n).toList();
+    final updatedList = state.notifications
+        .map((n) => n.id == id ? n.copyWith(isRead: true) : n)
+        .toList();
     emit(state.copyWith(notifications: updatedList));
     await _markRead(id);
   }
 
   Future<void> markAllAsRead() async {
-    final updatedList = state.notifications.map((n) => n.copyWith(isRead: true)).toList();
+    final updatedList =
+        state.notifications.map((n) => n.copyWith(isRead: true)).toList();
     emit(state.copyWith(notifications: updatedList));
     await _markAllRead();
   }
 
   Future<void> delete(String id) async {
-    final updatedList = state.notifications.where((n) => n.id != id).toList();
+    final updatedList =
+        state.notifications.where((n) => n.id != id).toList();
     emit(state.copyWith(notifications: updatedList));
     await _delete(id);
   }

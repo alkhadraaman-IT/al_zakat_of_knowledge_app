@@ -90,52 +90,45 @@ class AuthRepositoryImpl implements AuthRepository {
     }
   }
 
-  @override
-  Future<Either<Failure, UserEntity>> signInWithGoogle() async {
-    print('<<<<<<<<<<<[signInWithGoogle]>>>>>>>>>>>>>');
-    if (!await networkInfo.isConnected) {
-      return const Left(NetworkFailure(message: 'No internet connection'));
-    }
+  // @override
+  // Future<Either<Failure, UserEntity>> signInWithGoogle() async {
+  //   print('<<<<<<<<<<<[signInWithGoogle]>>>>>>>>>>>>>');
+  //   if (!await networkInfo.isConnected) {
+  //     return const Left(NetworkFailure(message: 'No internet connection'));
+  //   }
 
-    try {
-      final user = await remoteDataSource.signInWithGoogle();
-      await localDataSource.cacheUser(UserModel.fromSupabase(user.toJson()));
-      await _syncProfile(user.id);
-      return Right(user);
-    } on AuthException catch (e) {
-      return Left(AuthFailure(message: e.message, code: e.statusCode));
-    } on SupabaseTimeoutException catch (_) {
-      print('<<<<<<<<<<<[signInWithGoogle Timeout]>>>>>>>>>>>>>');
-      return Left(NetworkFailure(message: 'Network request timed out. Please check your connection.'));
-    } on SupabaseSocketException catch (_) {
-      print('<<<<<<<<<<<[signInWithGoogle SocketException]>>>>>>>>>>>>>');
-      return Left(NetworkFailure(message: 'Network error'));
-    } catch (_) {
-      return Left(ServerFailure(message: 'Server error'));
-    }
-  }
+  //   try {
+  //     final user = await remoteDataSource.signInWithGoogle();
+  //     await localDataSource.cacheUser(UserModel.fromSupabase(user.toJson()));
+  //     await _syncProfile(user.id);
+  //     return Right(user);
+  //   } on AuthException catch (e) {
+  //     return Left(AuthFailure(message: e.message, code: e.statusCode));
+  //   } on SupabaseTimeoutException catch (_) {
+  //     print('<<<<<<<<<<<[signInWithGoogle Timeout]>>>>>>>>>>>>>');
+  //     return Left(NetworkFailure(message: 'Network request timed out. Please check your connection.'));
+  //   } on SupabaseSocketException catch (_) {
+  //     print('<<<<<<<<<<<[signInWithGoogle SocketException]>>>>>>>>>>>>>');
+  //     return Left(NetworkFailure(message: 'Network error'));
+  //   } catch (_) {
+  //     return Left(ServerFailure(message: 'Server error'));
+  //   }
+  // }
 
   @override
-  Future<Either<Failure, void>> signOut() async {
-    print('<<<<<<<<<<<[signOut]>>>>>>>>>>>>>');
-    try {
-      // Delete the device row from `user_devices` BEFORE signing
-      // out, as required by the backend specification.
-      await remoteDataSource.deleteDeviceRow();
-      await remoteDataSource.signOut();
-      await localDataSource.clearCachedUser();
-      await localDataSource.clearCachedProfile();
-      return const Right(null);
-    } on SupabaseTimeoutException catch (_) {
-      print('<<<<<<<<<<<[signOut Timeout]>>>>>>>>>>>>>');
-      return Left(NetworkFailure(message: 'Network request timed out. Please check your connection.'));
-    } on SupabaseSocketException catch (_) {
-      print('<<<<<<<<<<<[signOut SocketException]>>>>>>>>>>>>>');
-      return Left(NetworkFailure(message: 'Network error'));
-    } catch (_) {
-      return Left(ServerFailure(message: 'Server error'));
-    }
+Future<Either<Failure, void>> signOut() async {
+  try {
+    // 👈 لا ننتظر حذف الجهاز (يفضل أن يكون في الخلفية لتسريع الخروج)
+    remoteDataSource.deleteDeviceRow().ignore(); 
+    
+    await remoteDataSource.signOut();
+    await localDataSource.clearCachedUser();
+    await localDataSource.clearCachedProfile();
+    return const Right(null);
+  } catch (_) {
+    return const Left(ServerFailure(message: 'Server error'));
   }
+}
 
   @override
   Future<Either<Failure, ProfileEntity>> updateProfile(
@@ -278,4 +271,6 @@ class AuthRepositoryImpl implements AuthRepository {
       return UserModel.fromSupabase(user.toJson());
     });
   }
+
+
 }

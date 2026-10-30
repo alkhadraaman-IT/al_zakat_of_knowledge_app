@@ -316,7 +316,8 @@
     "month_september": "September",
     "month_october": "October",
     "month_november": "November",
-    "month_december": "December"
+    "month_december": "December",
+    "edit_title": "Edit Session"
   },
   "sessions": {
     "error_loading": "Failed to load lectures",
@@ -347,7 +348,8 @@
     "error_offline": "No internet connection",
     "error_submit": "Could not submit report, please try again",
     "error_invalid_target": "The reported content is invalid",
-    "error_permission": "You don't have permission to report"
+    "error_permission": "You don't have permission to report",
+    "error_auth": "Please sign in first to report"
   },
   "edit": {
     "title_label": "Session Title",
@@ -407,7 +409,25 @@
     "success": "Session created successfully",
     "error_publish": "Could not create session, please try again",
     "error_offline": "No internet connection",
-    "error_auth": "Please sign in first"
+    "error_auth": "Please sign in first",
+    "location_hint": "Pick the session location on the map",
+    "location_set": "Location selected (tap to change)",
+    "location_required": "Please pick the session location on the map",
+    "location_too_far": "The selected location is far from {city} ({distance} km). Please verify.",
+    "date_past": "The session date must be in the future",
+    "seats_less_than_booked": "Seats cannot be fewer than current bookings ({count})",
+    "form_invalid": "Please correct the highlighted fields",
+    "timeout": "Timeout. Check your connection and try again",
+    "save_changes": "Save Changes",
+    "location_hint": "Pick the session location on the map",
+    "location_set": "Location selected (tap to change)",
+    "location_required": "Please pick the session location on the map",
+    "location_too_far": "The selected location is far from {city} ({distance} km). Please verify.",
+    "date_past": "The session date must be in the future",
+    "seats_less_than_booked": "Seats cannot be fewer than current bookings ({count})",
+    "form_invalid": "Please correct the highlighted fields",
+    "timeout": "Timeout. Check your connection and try again",
+    "save_changes": "Save Changes"
   },
   "delete": {
     "title": "Delete Session",

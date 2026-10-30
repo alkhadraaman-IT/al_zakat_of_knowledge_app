@@ -28,7 +28,6 @@ import '../../features/auth/domain/repositories/auth_repository.dart';
 import '../../features/auth/domain/usecases/get_current_profile_usecase.dart';
 import '../../features/auth/domain/usecases/get_current_user_usecase.dart';
 import '../../features/auth/domain/usecases/sign_in_usecase.dart';
-import '../../features/auth/domain/usecases/sign_in_with_google_usecase.dart';
 import '../../features/auth/domain/usecases/sign_out_usecase.dart';
 import '../../features/auth/domain/usecases/sign_up_usecase.dart';
 import '../../features/auth/domain/usecases/update_profile_usecase.dart';
@@ -75,19 +74,21 @@ import '../../features/notifications/services/incoming_message_pipeline.dart';
 import '../../features/notifications/services/notifications_session_coordinator.dart';
 import '../../features/notifications/services/pending_messages_drainer.dart';
 
+import '../../features/reports/presentation/cubit/report_cubit.dart';
 import '../../features/sessions/data/datasources/session_remote_datasource.dart';
 import '../../features/sessions/data/repositories/session_repository_impl.dart';
 import '../../features/sessions/domain/repositories/session_repository.dart';
 import '../../features/sessions/domain/usecases/book_session_usecase.dart';
 import '../../features/sessions/domain/usecases/cancel_booking_usecase.dart';
 import '../../features/sessions/domain/usecases/create_session_usecase.dart';
+import '../../features/sessions/domain/usecases/get_session_by_id_usecase.dart';
 import '../../features/sessions/domain/usecases/get_sessions_by_publisher_usecase.dart';
 import '../../features/sessions/domain/usecases/get_sessions_usecase.dart';
 import '../../features/sessions/domain/usecases/get_user_bookings_usecase.dart';
 import '../../features/sessions/domain/usecases/update_session_usecase.dart';
 import '../../features/sessions/presentation/booking_cubit/booking_cubit.dart';
 import '../../features/sessions/presentation/session_cubit/session_cubit.dart';
-import '../../features/search/presentation/bloc/search_cubit.dart';
+import '../../features/search/presentation/cubit/search_cubit.dart';
 import '../../features/reports/data/datasources/report_remote_datasource.dart';
 import '../../features/reports/data/repositories/report_repository_impl.dart';
 import '../../features/reports/domain/repositories/report_repository.dart';
@@ -299,6 +300,9 @@ Future<void> initDependencies() async {
   sl.registerLazySingleton<GetSessionsUseCase>(
     () => GetSessionsUseCase(sl<SessionRepository>()),
   );
+  sl.registerLazySingleton<GetSessionByIdUseCase>(
+    () => GetSessionByIdUseCase(sl<SessionRepository>()),
+  );
   sl.registerLazySingleton<GetSessionsByPublisherUseCase>(
     () => GetSessionsByPublisherUseCase(sl<SessionRepository>()),
   );
@@ -345,9 +349,9 @@ Future<void> initDependencies() async {
   sl.registerLazySingleton<SignUpUseCase>(
     () => SignUpUseCase(sl<AuthRepository>()),
   );
-  sl.registerLazySingleton<SignInWithGoogleUseCase>(
-    () => SignInWithGoogleUseCase(sl<AuthRepository>()),
-  );
+  // sl.registerLazySingleton<SignInWithGoogleUseCase>(
+  //   () => SignInWithGoogleUseCase(sl<AuthRepository>()),
+  // );
   sl.registerLazySingleton<SignOutUseCase>(
     () => SignOutUseCase(sl<AuthRepository>()),
   );
@@ -369,7 +373,7 @@ Future<void> initDependencies() async {
     () => AuthCubit(
       signInUseCase: sl<SignInUseCase>(),
       signUpUseCase: sl<SignUpUseCase>(),
-      signInWithGoogleUseCase: sl<SignInWithGoogleUseCase>(),
+      // signInWithGoogleUseCase: sl<SignInWithGoogleUseCase>(),
       signOutUseCase: sl<SignOutUseCase>(),
       supabaseClient: sl<SupabaseClient>(),
       getCurrentUserUseCase: sl<GetCurrentUserUseCase>(),
@@ -408,6 +412,9 @@ Future<void> initDependencies() async {
       bookSessionUseCase: sl<BookSessionUseCase>(),
       cancelBookingUseCase: sl<CancelBookingUseCase>(),
     ),
+  );
+  sl.registerFactory<ReportCubit>(
+    () => ReportCubit(createReportUseCase: sl<CreateReportUseCase>()),
   );
   sl.registerFactory<SearchCubit>(
     () => SearchCubit(

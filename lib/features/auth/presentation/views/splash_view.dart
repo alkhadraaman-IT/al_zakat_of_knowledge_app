@@ -5,13 +5,12 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/app_router.dart';
 import '../../../../app/theme/app_colors.dart';
-import '../../../../app/theme/app_typography.dart';
-import '../../../../core/constants/app_constants.dart';
+import '../../../../core/di/injection_container.dart';
 import '../../../../core/constants/app_spacing.dart';
-import '../../../auth/presentation/bloc/auth_cubit.dart';
-import '../../../auth/presentation/bloc/auth_state.dart';
+import '../../data/datasources/auth_local_datasource.dart';
+import '../bloc/auth_cubit.dart';
+import '../bloc/auth_state.dart';
 
-/// Splash screen — Neon Emerald Gradient with Centered Logo.
 class SplashView extends StatefulWidget {
   const SplashView({super.key});
 
@@ -56,7 +55,6 @@ class _SplashViewState extends State<SplashView>
     );
 
     _animationController.forward();
-
     _animationController.addStatusListener((status) {
       if (status == AnimationStatus.completed) {
         _checkAuthAndRoute();
@@ -74,6 +72,18 @@ class _SplashViewState extends State<SplashView>
     context.read<AuthCubit>().checkAuthStatus();
   }
 
+  /// يوجّه المستخدم غير المسجّل بحسب ما إذا شاهد الـ Onboarding سابقاً.
+  Future<void> _routeUnauthenticatedUser() async {
+    final hasSeenOnboarding =
+        await sl<AuthLocalDataSource>().isOnboardingCompleted();
+    if (!mounted) return;
+    if (hasSeenOnboarding) {
+      context.go(AppRoutes.login);
+    } else {
+      context.go(AppRoutes.onboarding);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocListener<AuthCubit, AuthState>(
@@ -81,7 +91,7 @@ class _SplashViewState extends State<SplashView>
         if (state is AuthAuthenticated) {
           context.go(AppRoutes.home);
         } else if (state is AuthUnauthenticated) {
-          context.go(AppRoutes.onboarding);
+          _routeUnauthenticatedUser();
         }
       },
       child: Scaffold(
@@ -89,16 +99,8 @@ class _SplashViewState extends State<SplashView>
           animation: _animationController,
           builder: (context, child) {
             return Container(
-              // تطبيق التدرج اللوني المطلوب بالكامل للخلفية
               decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Color(0xFF00D68F),
-                    Color(0xFF00A572),
-                  ],
-                ),
+                gradient: AppColors.primaryGradient,
               ),
               child: SafeArea(
                 child: LayoutBuilder(
@@ -116,14 +118,7 @@ class _SplashViewState extends State<SplashView>
                               mainAxisAlignment: MainAxisAlignment.center,
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                // الشعار في المنتصف تماماً (يحتوي اسم التطبيق بداخله أو تحته)
                                 _buildLogo(),
-                              //   SizedBox(height: AppSpacing.xl),
-                              //   _buildAppTitle(),
-                              //   SizedBox(height: AppSpacing.sm),
-                              //   _buildTagline(),
-                              //   SizedBox(height: AppSpacing.xxl),
-                              //   _buildVersionTag(),
                               ],
                             ),
                           ),
@@ -157,7 +152,9 @@ class _SplashViewState extends State<SplashView>
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: _glowAnimation.value * 0.2),
+                color: Colors.black.withValues(
+                  alpha: _glowAnimation.value * 0.2,
+                ),
                 blurRadius: 35.r,
                 spreadRadius: 4.r,
               ),
@@ -168,7 +165,7 @@ class _SplashViewState extends State<SplashView>
             child: Padding(
               padding: EdgeInsets.all(14.w),
               child: Image.asset(
-                'assets/images/logo_white.png', // مسار الشعار الذي يحتوي اسم التطبيق
+                'assets/images/logo_white.png',
                 fit: BoxFit.contain,
                 errorBuilder: (context, error, stackTrace) => Icon(
                   Icons.school_outlined,
@@ -182,57 +179,4 @@ class _SplashViewState extends State<SplashView>
       ),
     );
   }
-
-  // Widget _buildAppTitle() {
-  //   return FadeTransition(
-  //     opacity: _fadeAnimation,
-  //     child: Text(
-  //       'زكاة العلم',
-  //       style: AppTypography.arabicDisplay(
-  //         color: Colors.white,
-  //         fontSize: 36,
-  //       ),
-  //     ),
-  //   );
-  // }
-
-  // Widget _buildTagline() {
-  //   return FadeTransition(
-  //     opacity: _fadeAnimation,
-  //     child: Text(
-  //       'صدقة جارية بعلمك',
-  //       style: AppTypography.arabicBody(
-  //         color: Colors.white.withValues(alpha: 0.85),
-  //         fontSize: 16,
-  //       ),
-  //     ),
-  //   );
-  // }
-
-  // Widget _buildVersionTag() {
-  //   return FadeTransition(
-  //     opacity: _fadeAnimation,
-  //     child: Container(
-  //       padding: EdgeInsets.symmetric(
-  //         horizontal: 16.w,
-  //         vertical: 8.h,
-  //       ),
-  //       decoration: BoxDecoration(
-  //         color: Colors.white.withValues(alpha: 0.15),
-  //         borderRadius: BorderRadius.circular(20.r),
-  //         border: Border.all(
-  //           color: Colors.white.withValues(alpha: 0.3),
-  //           width: 1,
-  //         ),
-  //       ),
-  //       child: Text(
-  //         AppConstants.appVersion,
-  //         style: AppTypography.monoCaption(
-  //           color: Colors.white,
-  //           fontSize: 12,
-  //         ),
-  //       ),
-  //     ),
-  //   );
-  // }
 }

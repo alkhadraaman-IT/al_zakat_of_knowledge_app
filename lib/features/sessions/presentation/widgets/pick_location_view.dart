@@ -58,8 +58,7 @@ class _PickLocationPageState extends State<PickLocationPage> {
             ),
             children: [
               TileLayer(
- urlTemplate:
-      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',                // مطلوب من سياسة استخدام OpenStreetMap: اسم حزمة التطبيق.
+                urlTemplate: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', // مطلوب من سياسة استخدام OpenStreetMap: اسم حزمة التطبيق.
                 userAgentPackageName: 'com.example.al_zakat_of_knowledge_app',
                 maxNativeZoom: 19,
               ),

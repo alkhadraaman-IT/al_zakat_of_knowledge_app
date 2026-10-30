@@ -5,7 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../domain/entities/app_notification.dart';
-import '../../domain/entities/notification_failure.dart'; // تأكد من مسار الملف (مفرد أو جمع)
+import '../../domain/entities/notification_failure.dart';
 import '../../domain/entities/notifications_result.dart';
 import '../../domain/repositories/notification_repository.dart';
 import '../datasources/incoming_message_bus.dart';
@@ -20,11 +20,11 @@ class NotificationsRepositoryImpl implements NotificationsRepository {
   final String? Function() currentUserId;
   final Duration _localRetention = const Duration(days: 30);
 
-  // أدوات التحكم في التحديث (Debounce) لمنع التجميد
   Timer? _debounceTimer;
-  final StreamController<void> _changesController = StreamController<void>.broadcast();
-  StreamSubscription? _localSub;
-  StreamSubscription? _busSub;
+  final StreamController<void> _changesController =
+      StreamController<void>.broadcast();
+  StreamSubscription<void>? _localSub;
+  StreamSubscription<void>? _busSub;
 
   NotificationsRepositoryImpl({
     required NotificationsRemoteDataSource remote,
@@ -34,7 +34,6 @@ class NotificationsRepositoryImpl implements NotificationsRepository {
   })  : _remote = remote,
         _local = local,
         _bus = bus {
-    // الاستماع للتغييرات وإضافة تأخير 500 مللي ثانية لكسر الحلقة المفرغة
     _localSub = _local.watch().listen((_) => _triggerChange());
     _busSub = _bus.changes.listen((_) => _triggerChange());
   }
@@ -55,18 +54,18 @@ class NotificationsRepositoryImpl implements NotificationsRepository {
   Future<NotificationsResult> getNotifications({int limit = 50}) async {
     final uid = currentUserId();
     if (uid == null) {
-      return const NotificationsResult([]); // استخدام positional argument
+      return const NotificationsResult(
+        [],
+        remoteFailure: NotificationsFailureKind.unauthenticated,
+      );
     }
 
-    // 1. تنظيف الإشعارات القديمة محلياً
     await _local.deleteOlderThan(_localRetention);
 
     NotificationsFailureKind? remoteFailure;
 
-    // 2. جلب الإشعارات الجديدة من السيرفر
     try {
       final remoteModels = await _remote.fetch(limit: limit);
-      // استخدام حلقة تكرار لحفظ كل عنصر لأن دالة الحفظ تأخذ عنصراً واحداً
       for (final model in remoteModels) {
         await _local.save(model);
       }
@@ -75,12 +74,10 @@ class NotificationsRepositoryImpl implements NotificationsRepository {
       remoteFailure = _mapError(e);
     }
 
-    // 3. قراءة القائمة النهائية من الذاكرة المحلية
     final finalLocalModels = _local.getAll(uid);
-    
-    // بما أن NotificationModel يرث من AppNotification، يمكننا تمريره مباشرة
+
     return NotificationsResult(
-      finalLocalModels, // positional argument
+      finalLocalModels,
       remoteFailure: remoteFailure,
     );
   }

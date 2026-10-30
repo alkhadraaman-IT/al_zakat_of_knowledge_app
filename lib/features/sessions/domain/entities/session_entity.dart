@@ -14,6 +14,7 @@ class SessionEntity {
   final String lecturerName;
   final double? lat;
   final double? lng;
+  final DateTime? createdAt;  // 👈 جديد
 
   const SessionEntity({
     required this.id,
@@ -31,9 +32,65 @@ class SessionEntity {
     required this.lecturerName,
     this.lat,
     this.lng,
+    this.createdAt,  // 👈 جديد
   });
 
-  /// تحويل البيانات إلى خريطة مطابقة لأعمدة جدول sessions في Supabase
+  // 👈 جديد: نسخة معدلة
+  SessionEntity copyWith({
+    String? id,
+    String? publisherId,
+    String? title,
+    String? description,
+    int? categoryId,
+    String? city,
+    String? placeName,
+    String? startsAt,
+    int? durationMinutes,
+    int? maxSeats,
+    int? bookedCount,
+    String? status,
+    String? lecturerName,
+    double? lat,
+    double? lng,
+    DateTime? createdAt,
+  }) {
+    return SessionEntity(
+      id: id ?? this.id,
+      publisherId: publisherId ?? this.publisherId,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      categoryId: categoryId ?? this.categoryId,
+      city: city ?? this.city,
+      placeName: placeName ?? this.placeName,
+      startsAt: startsAt ?? this.startsAt,
+      durationMinutes: durationMinutes ?? this.durationMinutes,
+      maxSeats: maxSeats ?? this.maxSeats,
+      bookedCount: bookedCount ?? this.bookedCount,
+      status: status ?? this.status,
+      lecturerName: lecturerName ?? this.lecturerName,
+      lat: lat ?? this.lat,
+      lng: lng ?? this.lng,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  // 👈 جديد: للتمرير إلى شيت التعديل
+  Map<String, dynamic> toEditMap() {
+    return {
+      'title': title,
+      'description': description,
+      'max_seats': maxSeats,
+      'booked_count': bookedCount,
+      'city': city,
+      'place_name': placeName,
+      'duration_minutes': durationMinutes,
+      'category_id': categoryId,
+      'starts_at': startsAt,
+      'lat': lat,
+      'lng': lng,
+    };
+  }
+
   Map<String, dynamic> toInsertJson() {
     return {
       'publisher_id': publisherId,
@@ -74,6 +131,7 @@ class SessionEntity {
       lecturerName: lecturerName,
       lat: (map['lat'] as num?)?.toDouble(),
       lng: (map['lng'] as num?)?.toDouble(),
+      createdAt: DateTime.tryParse(map['created_at']?.toString() ?? ''),
     );
   }
 }
