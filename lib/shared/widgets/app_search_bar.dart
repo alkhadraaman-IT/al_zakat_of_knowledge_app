@@ -45,13 +45,16 @@ class _AppSearchBarState extends State<AppSearchBar> {
           color: Theme.of(context).colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(12.r),
           border: Border.all(
-            color: _hasFocus ? Theme.of(context).colorScheme.primary : Colors.transparent,
+            color: _hasFocus
+                ? Theme.of(context).colorScheme.primary
+                : Colors.transparent,
             width: 1.5,
           ),
           boxShadow: _hasFocus
               ? [
                   BoxShadow(
-                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15),
+                    color: Theme.of(context).colorScheme.primary
+                        .withValues(alpha: 0.15),
                     blurRadius: 12.r,
                     spreadRadius: 1.r,
                   ),
@@ -65,11 +68,15 @@ class _AppSearchBarState extends State<AppSearchBar> {
                 controller: widget.controller,
                 onChanged: widget.onChanged,
                 enabled: !isTappable,
-                style: AppTypography.arabicBody(fontSize: 16),
+                style: AppTypography.arabicBody(
+                  color: Theme.of(context).colorScheme.onSurface, // ✅ أضف هذا
+                  fontSize: 16,
+                ),
                 decoration: InputDecoration(
                   hintText: widget.hintText ?? 'search.hint'.tr(),
                   hintStyle: AppTypography.arabicBody(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                    color: Theme.of(context).colorScheme.onSurfaceVariant
+                        .withValues(alpha: 0.5),
                     fontSize: 16,
                   ),
                   border: InputBorder.none,
@@ -89,7 +96,9 @@ class _AppSearchBarState extends State<AppSearchBar> {
                 padding: EdgeInsetsDirectional.only(end: 8.w),
                 child: Icon(
                   Icons.search,
-                  color: _hasFocus ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurfaceVariant,
+                  color: _hasFocus
+                      ? Theme.of(context).colorScheme.primary
+                      : Theme.of(context).colorScheme.onSurfaceVariant,
                   size: 22.w,
                 ),
               ),

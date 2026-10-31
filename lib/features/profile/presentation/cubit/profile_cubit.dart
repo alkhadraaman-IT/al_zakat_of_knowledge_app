@@ -213,10 +213,10 @@ class ProfileCubit extends Cubit<ProfileState> {
     );
     if (!isClosed && state is ProfileLoaded) {
       final current = state as ProfileLoaded;
-      result.fold(
-        (_) {},
-        (lectures) => emit(current.copyWith(lectures: lectures)),
-      );
+      result.fold((_) {}, (lectures) {
+        final visible = lectures.where((s) => s.status != 'cancelled').toList();
+        emit(current.copyWith(lectures: visible));
+      });
     }
   }
 

@@ -123,17 +123,18 @@ class SessionRemoteDataSourceImpl implements SessionRemoteDataSource {
   }
 
   @override
-  Future<List<SessionEntity>> getSessionsByPublisher(
-    String publisherId,
-  ) async {
-    final data = await supabaseClient
-        .from('sessions')
-        .select(_sessionWithPublisher)
-        .eq('publisher_id', publisherId)
-        .order('created_at', ascending: false);
+Future<List<SessionEntity>> getSessionsByPublisher(
+  String publisherId,
+) async {
+  final data = await supabaseClient
+      .from('sessions')
+      .select(_sessionWithPublisher)
+      .eq('publisher_id', publisherId)
+      .neq('status', 'cancelled')         
+      .order('created_at', ascending: false);
 
-    return _asRows(data).map(SessionEntity.fromSupabase).toList();
-  }
+  return _asRows(data).map(SessionEntity.fromSupabase).toList();
+}
 
   @override
   Future<List<BookingEntity>> getUserBookings(String userId) async {

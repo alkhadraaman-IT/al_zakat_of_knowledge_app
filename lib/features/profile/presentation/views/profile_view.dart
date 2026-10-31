@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/di/injection_container.dart';
+import '../../../../core/utils/app_refresh.dart';   // ✅ جديد
 import '../../../../shared/widgets/app_top_header.dart';
 import '../../../articles/presentation/bloc/article_cubit.dart';
 import '../../../articles/presentation/cubit/categories_cubit.dart';
@@ -28,7 +29,7 @@ class ProfileView extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
-        BlocProvider.value(value: sl<FavoritesCubit>()), // ✅ أضف هذا
+        BlocProvider.value(value: sl<FavoritesCubit>()),
         BlocProvider.value(value: sl<StudyToolCubit>()),
         BlocProvider.value(value: sl<ArticleCubit>()),
         BlocProvider.value(value: sl<CategoriesCubit>()),
@@ -43,9 +44,56 @@ class ProfileView extends StatelessWidget {
           },
         ),
       ],
-      child: const _ProfileViewBody(),
+      // ✅ نلفّ الجسم بمستمع إشارة التحديث
+      child: const _ProfileRefreshListener(
+        child: _ProfileViewBody(),
+      ),
     );
   }
+}
+
+/// يستمع إلى [AppRefresh.profile] ويعيد جلب بيانات البروفايل
+/// عند إشارة تحديث (مثل حذف محاضرة من شاشة أخرى).
+class _ProfileRefreshListener extends StatefulWidget {
+  final Widget child;
+
+  const _ProfileRefreshListener({required this.child});
+
+  @override
+  State<_ProfileRefreshListener> createState() =>
+      _ProfileRefreshListenerState();
+}
+
+class _ProfileRefreshListenerState extends State<_ProfileRefreshListener> {
+  @override
+  void initState() {
+    super.initState();
+    AppRefresh.profile.addListener(_onRefreshRequested);
+  }
+
+  @override
+  void dispose() {
+    AppRefresh.profile.removeListener(_onRefreshRequested);
+    super.dispose();
+  }
+
+  void _onRefreshRequested() {
+    if (!mounted) return;
+    final cubit = context.read<ProfileCubit>();
+
+    // نُعيد الجلب فقط لبروفايل المالك
+    // (البروفايل العام لا يتأثر بحذف المحاضرات من مالك آخر)
+    if (cubit.userId != null) return;
+
+    final authState = context.read<AuthCubit>().state;
+    String? authUserId;
+    if (authState is AuthAuthenticated) authUserId = authState.user.id;
+
+    cubit.loadProfileData(authUserId);
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }
 
 class _ProfileViewBody extends StatelessWidget {
